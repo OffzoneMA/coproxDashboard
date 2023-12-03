@@ -2,25 +2,25 @@ version: '3.7'
 services:
   server:
     build:
-      context: .
-      dockerfile: ./server/Dockerfile
+      context: ./server
+      dockerfile: Dockerfile
     restart: always
     command: npm run dev
     volumes:
-      - ./server:/usr/src/app
-      - /usr/src/app/server/node_modules
+      - ./server/:/usr/src/app
+      - /usr/src/app/node_modules
     ports:
       - '8081:8081'
 
 
- # front: 
- #   container_name: front
- #   build: ./front # Specify the directory of the Dockerfile
- #   ports: # Specify port-forwarding
- #     - 3000:3000
- #   volumes:
- #     - ./front/:/usr/src/app # Link host directory to container=
- #     - /usr/src/app/node_modules
+  front: 
+    container_name: front
+    build: ./front # Specify the directory of the Dockerfile
+    ports: # Specify port-forwarding
+      - 3000:3000
+    volumes:
+      - ./front/:/usr/src/app # Link host directory to container=
+      - /usr/src/app/node_modules
 
 
 
