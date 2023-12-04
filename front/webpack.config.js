@@ -9,6 +9,7 @@ module.exports = {
     clean: true,
   },
   devServer: {
+    historyApiFallback: true,
     static: './dist',
     port: 3000,
     hot: true,

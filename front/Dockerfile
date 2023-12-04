@@ -1,4 +1,4 @@
-FROM node:20-alpine3.17
+FROM node:21-alpine3.17
 
 # Create App Directory
 RUN mkdir -p /usr/src/app
@@ -11,6 +11,7 @@ COPY package.json .
 RUN npm install
 RUN npm install --save-dev webpack-cli
 RUN npm install --save-dev webpack-dev-server@latest
+RUN npm install @mui/material @emotion/react @emotion/styled
 
 
 

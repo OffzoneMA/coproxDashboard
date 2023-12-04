@@ -14,14 +14,24 @@ exports.createTicket = async (req, res) => {
   }
 };
 
-exports.getCardsWithCheckItems = async (req, res) => {
+exports.getCardsWithIncompleteCheckItems = async (req, res) => {
   const { checkItemNames } = req.body;
 
   try {
-    const cards = await trelloService.getCardsWithCheckItems(checkItemNames);
+    const cards = await trelloService.getCardsWithIncompleteCheckItems(checkItemNames);
     res.json(cards);
   } catch (error) {
     console.error('Error fetching Trello data:', error.message);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+
+exports.getAllChecklistItems = async (req, res) => {
+  try {
+    const allChecklistItems = await trelloService.getAllChecklistItems();
+    res.json(allChecklistItems);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}

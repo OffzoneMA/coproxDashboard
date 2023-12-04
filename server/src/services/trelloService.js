@@ -1,4 +1,3 @@
-// src/services/trelloService.js
 const axios = require('axios');
 
 const API_KEY = '93bce8f264373d72b9e48d4ab24a4fc0';
@@ -10,38 +9,62 @@ const CHECKLISTS = [
   { name: 'Ouverture de la CS macopro', items: ['Action 2.1', 'Action 1.3','Action 1.4','Action 1.5','Action 1.6'] },
 ];
 
-// Function to create a ticket
-exports.createTicket = async (cardName) => {
+const trelloAPI = axios.create({
+  baseURL: 'https://api.trello.com/1',
+  params: {
+    key: API_KEY,
+    token: TOKEN,
+  },
+});
+
+const findListId = async () => {
   try {
-    // Step 1: Get the list ID for the specified list name
-    const listsResponse = await axios.get(`https://api.trello.com/1/boards/${BOARD_ID}/lists?key=${API_KEY}&token=${TOKEN}`);
-    const list = listsResponse.data.find(list => list.name === LIST_NAME);
+    const { data: lists } = await trelloAPI.get(`/boards/${BOARD_ID}/lists`);
+    const list = lists.find(list => list.name === LIST_NAME);
 
     if (!list) {
       throw new Error('List not found');
     }
 
-    // Step 2: Create a card in the specified list
-    const cardResponse = await axios.post(
-      `https://api.trello.com/1/cards?key=${API_KEY}&token=${TOKEN}&idList=${list.id}&name=${cardName}`
-    );
+    return list.id;
+  } catch (error) {
+    console.error('Error finding list ID:', error.message);
+    throw error;
+  }
+};
 
-    const cardId = cardResponse.data.id;
+const createCard = async (listId, cardName) => {
+  try {
+    const { data: card } = await trelloAPI.post('/cards', { idList: listId, name: cardName });
+    return card.id;
+  } catch (error) {
+    console.error('Error creating Trello card:', error.message);
+    throw error;
+  }
+};
 
-    // Step 3: Add checklists to the card
+const createChecklist = async (cardId, checklistName, checkItems) => {
+  try {
+    const { data: checklist } = await trelloAPI.post(`/checklists`, { idCard: cardId, name: checklistName });
+
+    for (const itemName of checkItems) {
+      await trelloAPI.post(`/checklists/${checklist.id}/checkItems`, { name: itemName });
+    }
+
+    return checklist.id;
+  } catch (error) {
+    console.error('Error creating Trello checklist:', error.message);
+    throw error;
+  }
+};
+
+exports.createTicket = async (cardName) => {
+  try {
+    const listId = await findListId();
+    const cardId = await createCard(listId, cardName);
+
     for (const { name, items } of CHECKLISTS) {
-      const checklistResponse = await axios.post(
-        `https://api.trello.com/1/checklists?key=${API_KEY}&token=${TOKEN}&idCard=${cardId}&name=${name}`
-      );
-
-      const checklistId = checklistResponse.data.id;
-
-      // Step 4: Add check items to the checklist
-      for (const itemName of items) {
-        await axios.post(
-          `https://api.trello.com/1/checklists/${checklistId}/checkItems?key=${API_KEY}&token=${TOKEN}&name=${itemName}`
-        );
-      }
+      await createChecklist(cardId, name, items);
     }
 
     return 'Ticket and checklists created successfully';
@@ -51,61 +74,53 @@ exports.createTicket = async (cardName) => {
   }
 };
 
-
-// Function to get cards with specific check items
-exports.getCardsWithCheckItems = async (checkItemNames) => {
+exports.getCardsWithIncompleteCheckItems = async (checkItemNames) => {
   try {
-    // Step 1: Get cards from the board
-    const cardsResponse = await axios.get(
-      `https://api.trello.com/1/boards/${BOARD_ID}/cards?key=${API_KEY}&token=${TOKEN}`
-    );
+    const { data: cards } = await trelloAPI.get(`/boards/${BOARD_ID}/cards`);
+    const cardsWithIncompleteCheckItems = [];
 
-    const cards = cardsResponse.data;
-
-    // Step 2: Filter cards with the specified check items
-    const filteredCards = cards.filter(async (card) => {
-      const cardChecklistsResponse = await axios.get(
-        `https://api.trello.com/1/cards/${card.id}/checklists?key=${API_KEY}&token=${TOKEN}`
-      );
-
-      const cardChecklists = cardChecklistsResponse.data;
+    for (const card of cards) {
+      const { data: cardChecklists } = await trelloAPI.get(`/cards/${card.id}/checklists`);
 
       for (const checklist of cardChecklists) {
-        for (const checkItemName of checkItemNames) {
-          const checkItemsResponse = await axios.get(
-            `https://api.trello.com/1/checklists/${checklist.id}/checkItems?key=${API_KEY}&token=${TOKEN}`
-          );
+        const { data: checklistCheckItems } = await trelloAPI.get(`/checklists/${checklist.id}/checkItems`);
 
-          const checkItems = checkItemsResponse.data;
-
-          const checkItem = checkItems.find((item) => item.name === checkItemName);
-
-          // If the check item is not found or is not marked as complete, exclude the card
-          if (!checkItem || !checkItem.state === 'complete') {
-            return false;
+        for (const checkItem of checklistCheckItems) {
+          if (checkItemNames.includes(checkItem.name) && checkItem.state === 'incomplete') {
+            cardsWithIncompleteCheckItems.push(card.name);
           }
         }
       }
+    }
 
-      // Include the card in the result
-      return true;
-    });
-
-    return filteredCards.map((card) => ({ id: card.id, name: card.name }));
+    return cardsWithIncompleteCheckItems;
   } catch (error) {
-    console.error('Error fetching Trello data:', error.message);
+    console.error('Error fetching Trello cards with incomplete check items:', error.message);
     throw error;
   }
 };
 
-// Function to get cards with specific check items (used by trelloCheckItemController)
-exports.getCardsWithCheckItemsFromService = async (checkItemNames) => {
+
+
+
+
+
+exports.getAllChecklistItems = async () => {
   try {
-    // Reusing the same logic as getCardsWithCheckItems
-    const cards = await exports.getCardsWithCheckItems(checkItemNames);
-    return cards;
+    const { data: cards } = await trelloAPI.get(`/boards/${BOARD_ID}/cards`);
+
+    const allChecklistItems = await Promise.all(
+      cards.map(async (card) => {
+        const { data: cardChecklists } = await trelloAPI.get(`/cards/${card.id}/checklists`);
+        return cardChecklists.flatMap((checklist) => checklist.checkItems.map((checkItem) => checkItem.name));
+      })
+    );
+
+    const uniqueChecklistItems = [...new Set(allChecklistItems.flat())];
+
+    return uniqueChecklistItems;
   } catch (error) {
-    console.error('Error fetching Trello data:', error.message);
+    console.error('Error fetching Trello checklist items:', error.message);
     throw error;
   }
 };

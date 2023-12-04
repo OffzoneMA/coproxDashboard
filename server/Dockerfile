@@ -14,6 +14,7 @@ COPY package.json .
 
 # Install other dependencies
 RUN npm install
+RUN npm install cors
 
 # Copy app source code
 COPY . .
