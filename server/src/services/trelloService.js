@@ -87,7 +87,11 @@ exports.getCardsWithIncompleteCheckItems = async (checkItemNames) => {
 
         for (const checkItem of checklistCheckItems) {
           if (checkItemNames.includes(checkItem.name) && checkItem.state === 'incomplete') {
-            cardsWithIncompleteCheckItems.push(card.name);
+            cardsWithIncompleteCheckItems.push({
+              id: card.id,
+              name: card.name,
+              link: card.url, // Assuming Trello card URL is the link you want
+            });
           }
         }
       }

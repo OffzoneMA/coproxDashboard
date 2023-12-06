@@ -1,0 +1,26 @@
+/* DashboardBox.css */
+.dashboard-box {
+    margin: 16px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Separate title and data areas */
+    width: 100%;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    padding: 8px;
+  }
+  
+  .title-area {
+    text-align: center;
+  }
+  
+  .data-area {
+    text-align: center;
+  }
+  
+  .number-style {
+    font-size: 2rem;
+    color: #007bff;
+    font-weight: bold;
+  }

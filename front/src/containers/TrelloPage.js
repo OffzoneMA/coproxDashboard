@@ -1,46 +1,33 @@
+// TrelloPage.js
 import React, { useState, useEffect } from 'react';
 import { fetchDataFromApi } from '@src/utils/api';
 import ChecklistItemsList from '../components/ChecklistItemsList';
-import CoproList from '../components/coprolist';
+import CoproListTrello from '../components/coprolisttrello';
 
-import Sidebar from '../components/Sidebar';
-import CssBaseline from '@mui/material/CssBaseline';
-
-function TrelloPage() {
-  const [trelloData, setTrelloData] = useState([]);
-  const [selectedCheckItem, setSelectedCheckItem] = useState('Item 1'); // Default value
+function TrelloPage({ onSetTitle }) {
   const [selectedTask, setSelectedTask] = useState('');
-  
+
+  useEffect(() => {
+    // Fetch data or perform other operations as needed
+
+    // Set the title dynamically
+    onSetTitle('Trello Page');
+
+    // Clean up the title when the component unmounts
+    return () => {
+      onSetTitle('');
+    };
+  }, [onSetTitle]);
+
   const handleSelectChange = (task) => {
     setSelectedTask(task);
   };
 
-
- /* useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result = await fetchDataFromApi('trello/cards', { checkItem: selectedCheckItem });
-        setTrelloData(result);
-      } catch (error) {
-        // Handle error
-      }
-    };
-
-    fetchData();
-  }, [selectedCheckItem]);*/
-
   return (
-    <div className="trello-page">
-      <CssBaseline />
-      <Sidebar />
-      <div className="main-container">
-        <h1>Trello Page</h1>
-        {/* Other components or content */}
-        <ChecklistItemsList onSelectChange={handleSelectChange} />
-        <CoproList selectedTask={selectedTask} />
-      </div>
-
-
+    <div>
+      {/* Content of TrelloPage */}
+      <ChecklistItemsList onSelectChange={handleSelectChange} />
+      <CoproListTrello selectedTask={selectedTask} />
     </div>
   );
 }

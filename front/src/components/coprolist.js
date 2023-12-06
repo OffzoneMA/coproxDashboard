@@ -1,36 +1,95 @@
-// src/components/coprolist.js
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+// CoproList.js
+import React, { useState, useEffect } from 'react';
+import CircularProgress from '@mui/material/CircularProgress';
+import CoproFilters from './copros/CoproFilters';
+import CoproTable from './copros/CoproTable';
+import CoproFabWithOptions from './copros/CoproFabWithOptions';
 
-const CoproList = ({ selectedTask }) => {
-  const [cardsWithCheckItems, setCardsWithCheckItems] = useState([]);
+const CoproList = () => {
+  const [coproList, setCoproList] = useState([]);
+  const [filteredCoproList, setFilteredCoproList] = useState([]);
+  const [filterVille, setFilterVille] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [villeOptions, setVilleOptions] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [tableLoading, setTableLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCardsWithCheckItems = async () => {
+    const fetchData = async () => {
       try {
-        if (selectedTask) {
-          const response = await axios.post('http://localhost:8081/trello/cardsWithCheckItems', {
-            checkItemNames: [selectedTask], // Assuming selectedTask is a single checkItemName
-          });
+        const response = await fetch('http://localhost:8081/copro/listCopro');
+        const data = await response.json();
 
-          setCardsWithCheckItems(response.data);
-        }
+        setCoproList(data);
+        setFilteredCoproList(data);
+        setLoading(false);
+
+        const uniqueVilles = Array.from(new Set(data.map((copro) => copro.ville))).sort();
+        setVilleOptions(uniqueVilles);
+        setTableLoading(false); // Set loading state for the table
       } catch (error) {
-        console.error('Error fetching cards with check items:', error.message);
+        console.error('Error fetching data:', error);
+        setLoading(false);
       }
     };
 
-    fetchCardsWithCheckItems();
-  }, [selectedTask]);
+    fetchData();
+  }, []);
+
+  const handleFilter = (field, value) => {
+    if (field === 'ville') {
+      setFilterVille(value);
+    }
+
+    setFilteredCoproList(filterCoproList(field, value));
+  };
+
+  const filterCoproList = (field, value) => {
+    return coproList.filter(
+      (item) => field === 'ville' && (value === '' || item.ville === value)
+    );
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleSearch = (searchTerm) => {
+    setSearchTerm(searchTerm);
+    const filteredData = coproList.filter((copro) => {
+      const searchData = Object.values(copro).join(' ').toLowerCase();
+      return searchData.includes(searchTerm.toLowerCase());
+    });
+    setFilteredCoproList(filteredData);
+  };
 
   return (
     <div>
-      <h2>Cards with Check Items</h2>
-      <ul>
-        {cardsWithCheckItems.map((card, index) => (
-          <li key={index}>{card}</li>
-        ))}
-      </ul>
+      <CoproFilters
+        filterVille={filterVille}
+        handleFilter={handleFilter}
+        villeOptions={villeOptions}
+        searchTerm={searchTerm}
+        handleSearch={handleSearch}
+      />
+      <CoproFabWithOptions />
+
+      {loading ? (
+        <CircularProgress style={{ margin: '20px' }} />
+      ) : (
+        <>
+          <CoproTable coproList={coproList} filteredCoproList={filteredCoproList} page={page} rowsPerPage={rowsPerPage} />
+          
+          {tableLoading && <CircularProgress style={{ margin: '20px' }} />} {/* Show table loading indicator */}
+        </>
+      )}
     </div>
   );
 };

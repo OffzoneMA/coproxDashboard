@@ -1,36 +1,48 @@
 import React from 'react';
-import '../assets/styles/Sidebar.css';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Avatar from '@mui/material/Avatar';
-import { Home } from '@mui/icons-material';
-
+import { Home,Groups,Apartment,Task } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
+import '../assets/styles/Sidebar.css';
 
 const Sidebar = () => {
   return (
     
      
-    <Drawer variant="permanent" anchor="left">
+    <Drawer className="drawer" variant="permanent" anchor="left">
       <List>
       <ListItem>
-          <ListItemAvatar>
-            <Avatar alt="Logo" src="https://www.coprox.immo/wp-content/uploads/2021/06/logo_coprox_baseline_degrade.png" />
+
+          <ListItemAvatar className="drawer-avatar">
+          <img alt="Logo" src="https://www.coprox.immo/wp-content/uploads/2021/06/logo_coprox_baseline_degrade.png" />
           </ListItemAvatar>
         </ListItem>
+
         <ListItem button component={Link} to="/">
-          <Home />
+          <Home  className="drawer-icon" />
           <ListItemText primary="Dashboard" />
         </ListItem>
+        
+        
         <ListItem button component={Link} to="/trello">
-          <ListItemText primary="Suivi Assemblées générales" />
+        <Task className="drawer-icon"/>
+          <ListItemText primary="Assemblées générales" />
         </ListItem>
-        <ListItem button component={Link} to="/ag">
+        
+        <ListItem button component={Link} to="/copro">
+          <Apartment  className="drawer-icon"/>
           <ListItemText primary="Mes copros" />
         </ListItem>
+        
+        <ListItem button component={Link} to="/clients">
+          <Groups  className="drawer-icon"/>
+          <ListItemText primary="Mes Clients" />
+        </ListItem>
+
         {/* Add more list items as needed */}
       </List>
     </Drawer>
