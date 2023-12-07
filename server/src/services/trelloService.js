@@ -104,11 +104,6 @@ exports.getCardsWithIncompleteCheckItems = async (checkItemNames) => {
   }
 };
 
-
-
-
-
-
 exports.getAllChecklistItems = async () => {
   try {
     const { data: cards } = await trelloAPI.get(`/boards/${BOARD_ID}/cards`);
@@ -125,6 +120,61 @@ exports.getAllChecklistItems = async () => {
     return uniqueChecklistItems;
   } catch (error) {
     console.error('Error fetching Trello checklist items:', error.message);
+    throw error;
+  }
+};
+
+exports.getAgSteps = async () => {
+  try {
+    const { data: lists } = await trelloAPI.get(`/boards/${BOARD_ID}/lists`);
+    const allLists = [];
+
+    for (const list of lists) {
+      allLists.push({
+        id: list.id,
+        name: list.name,
+      });
+    }
+
+    return allLists;
+  } catch (error) {
+    console.error('Error fetching Trello lists:', error.message);
+    throw error;
+  }
+};
+
+
+exports.getCardInfo = async (cardId) => {
+  try {
+    // Get card details
+    const { data: card } = await trelloAPI.get(`/cards/${cardId}`);
+
+    // Get the list details for the card
+    const { data: list } = await trelloAPI.get(`/lists/${card.idList}`);
+
+    // Get checklist items for the card
+    const { data: checklists } = await trelloAPI.get(`/cards/${cardId}/checklists`);
+
+    const checklistItems = [];
+    for (const checklist of checklists) {
+      for (const item of checklist.checkItems) {
+        checklistItems.push({
+          name: item.name,
+          status: item.state,
+        });
+      }
+    }
+
+    const cardInfo = {
+      id: card.id,
+      name: card.name,
+      list:  list.name,
+      checklistItems,
+    };
+
+    return cardInfo;
+  } catch (error) {
+    console.error('Error fetching Trello card information:', error.message);
     throw error;
   }
 };

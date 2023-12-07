@@ -35,3 +35,23 @@ exports.getAllChecklistItems = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+
+exports.getAgSteps = async (req, res) => {
+  try {
+    const agSteps = await trelloService.getAgSteps();
+    res.json(agSteps);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+exports.getInfoAg = async (req, res) => {
+  const cardId = req.params.id;
+
+  try {
+    const cardInfo = await trelloService.getCardInfo(cardId);
+    res.json(cardInfo);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
