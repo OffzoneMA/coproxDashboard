@@ -1,4 +1,3 @@
-// DetailCopro.js
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -20,6 +19,7 @@ const DetailCopro = ({ onSetTitle }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [steps, setSteps] = useState([]);
 
   useEffect(() => {
     const fetchData = async (url, setter) => {
@@ -35,11 +35,11 @@ const DetailCopro = ({ onSetTitle }) => {
     };
 
     const fetchCoproDetails = () => fetchData(`http://localhost:8081/copro/detailsCopro/${id}`, setCoproDetails);
-    const fetchLebarocoproDetails = () => fetchData(`http://localhost:8081/copro/lebarocopro/${id}`, setLebarocoproDetails);
+    const fetchLebarocoproDetails = () => fetchData(`http://localhost:8081/lebarocopro/lebarocopro/${id}`, setLebarocoproDetails);
+    const fetchAgSteps = () => fetchData('http://localhost:8081/trello/getAgSteps', setSteps);
 
-    Promise.all([fetchCoproDetails(), fetchLebarocoproDetails()])
+    Promise.all([fetchCoproDetails(), fetchLebarocoproDetails(), fetchAgSteps()])
       .then(() => {
-        // Assuming idCorpo is the correct property name from the response of detailsCopro
         const idCorpo = coproDetails?.idCorpo;
         if (idCorpo) {
           return fetchData(`http://localhost:8081/zendesk/organization/${idCorpo}/ticket/count`, setNonResolvedTicketsCount);
@@ -58,15 +58,10 @@ const DetailCopro = ({ onSetTitle }) => {
     return <LoadingComponent />;
   }
 
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
-
-  const steps = ['Lancement du chantier', 'Envoi des convocations', 'Finalisation de l\'AG']; // Add your steps here
-
   return (
-    <div>
-      {/* Content of DetailCopro component */}
+    <div className="container-main">
+      {error && <div>Error: {error}</div>}
+
       <Paper elevation={3} style={{ padding: '16px', marginBottom: '16px' }}>
         <Typography variant="h5">{coproDetails?.idCopro}</Typography>
         <Divider style={{ margin: '8px 0' }} />
@@ -89,9 +84,9 @@ const DetailCopro = ({ onSetTitle }) => {
       </div>
 
       <Stepper alternativeLabel activeStep={activeStep}>
-        {steps.map((label, index) => (
-          <Step key={label}>
-            <StepLabel>{label}</StepLabel>
+        {steps.map((step) => (
+          <Step key={step.id}>
+            <StepLabel>{step.name}</StepLabel>
           </Step>
         ))}
       </Stepper>

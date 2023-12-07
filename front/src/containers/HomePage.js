@@ -31,9 +31,9 @@ function HomePage({ onSetTitle }) {
   }, [onSetTitle]);
 
   return (
-    <div>
+    <div className="container-main" >
       {/* Content of HomePage component */}
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div  className="container-top" style={{  }}>
         <DashboardBox title="AG à lancer ce mois" data={5} />
         {coproWithoutAGCount === null ? (
           <p>Loading...</p>

@@ -52,6 +52,19 @@ body, .root, #root {
   align-self: stretch;
 }
 
+.container-main{
+display: flex;
+padding: 0px 32px;
+flex-direction: column;
+align-items: flex-start;
+gap: 24px;
+align-self: stretch;
+}
+
+.container-top{
+  display: 'flex';
+  justify-content: 'space-between';
+  }
 
 ul {
   list-style: none;

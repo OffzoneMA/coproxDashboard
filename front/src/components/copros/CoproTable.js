@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination } from '@mui/material';
 
+
 const CoproTable = ({ coproList, filteredCoproList, page, rowsPerPage, handleChangePage, handleChangeRowsPerPage }) => {
   return (
     <TableContainer component={Paper}>
@@ -21,18 +22,18 @@ const CoproTable = ({ coproList, filteredCoproList, page, rowsPerPage, handleCha
         </TableHead>
         <TableBody>
           {filteredCoproList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((copro) => (
-            <TableRow key={copro._id} style={{ background: copro.status !== 'Actif' ? 'lightgray' : 'inherit' }}>
-              <TableCell>
-                <Link to={`/detailCopro/${copro._id}`}>{copro.id}</Link>
-              </TableCell>
-              <TableCell>{copro.Nom}</TableCell>
-              <TableCell>{copro.ville}</TableCell>
-              <TableCell>{copro.status}</TableCell>
-              <TableCell>{copro.address}</TableCell>
-              <TableCell>{copro.codepostal}</TableCell>
-              <TableCell>{copro.Offre}</TableCell>
-              <TableCell>{copro.exerciceCT}</TableCell>
-            </TableRow>
+           
+                <TableRow key={copro._id} style={{ background: copro.status !== 'Actif' ? 'lightgray' : 'inherit' }}>
+                 <Link to={`/detailCopro/${copro._id}`}><TableCell>{copro.idCopro}</TableCell></Link>
+                <TableCell>{copro.Nom}</TableCell>
+                <TableCell>{copro.ville}</TableCell>
+                <TableCell>{copro.status}</TableCell>
+                <TableCell>{copro.address}</TableCell>
+                <TableCell>{copro.codepostal}</TableCell>
+                <TableCell>{copro.Offre}</TableCell>
+                <TableCell>{copro.exerciceCT}</TableCell>
+              </TableRow>
+            
           ))}
         </TableBody>
       </Table>

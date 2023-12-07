@@ -1,42 +1,105 @@
-import React, { useState, useEffect } from 'react';
-import { fetchDataFromApi } from '@src/utils/api';
-import CoproList from '../components/coprolist';
-import Sidebar from '../components/Sidebar';
+// Copro.js
+import React, { useEffect, useState } from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
+import CoproFilters from '../components/copros/CoproFilters';
+import CoproTable from '../components/copros/CoproTable';
+import CoproFabWithOptions from '../components/copros/CoproFabWithOptions';
 
-function Copro({ onSetTitle }) {
-  const [trelloData, setTrelloData] = useState([]);
+const Copro = ({ onSetTitle }) => {
+  const [coproList, setCoproList] = useState([]);
+  const [filteredCoproList, setFilteredCoproList] = useState([]);
+  const [filterVille, setFilterVille] = useState('');
   const [loading, setLoading] = useState(true);
-  const [selectedCheckItem, setSelectedCheckItem] = useState('Item 1'); // Default value
+  const [villeOptions, setVilleOptions] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [tableLoading, setTableLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
-        const result = await fetchDataFromApi('trello/cards', { checkItem: selectedCheckItem });
-        setTrelloData(result);
+        const response = await fetch('http://localhost:8081/copro/listCopro');
+        const data = await response.json();
+
+        setCoproList(data);
+        setFilteredCoproList(data);
+        setLoading(false);
+
+        const uniqueVilles = Array.from(new Set(data.map((copro) => copro.ville))).sort();
+        setVilleOptions(uniqueVilles);
+        setTableLoading(false);
       } catch (error) {
-        // Handle error
-      } finally {
+        console.error('Error fetching data:', error);
         setLoading(false);
       }
     };
+
     fetchData();
-    // Move this outside of the fetchData function
-    // This will update the title immediately
+  }, []);
+
+  useEffect(() => {
     onSetTitle('Les Coprox');
-  }, [selectedCheckItem, onSetTitle]);
+  }, [onSetTitle]);
+
+  const handleFilter = (field, value) => {
+    if (field === 'ville') {
+      setFilterVille(value);
+    }
+
+    setFilteredCoproList(filterCoproList(field, value));
+  };
+
+  const filterCoproList = (field, value) => {
+    return coproList.filter(
+      (item) => field === 'ville' && (value === '' || item.ville === value)
+    );
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleSearch = (searchTerm) => {
+    setSearchTerm(searchTerm);
+    const filteredData = coproList.filter((copro) => {
+      const searchData = Object.values(copro).join(' ').toLowerCase();
+      return searchData.includes(searchTerm.toLowerCase());
+    });
+    setFilteredCoproList(filteredData);
+  };
 
   return (
-    <div>
-      {/* Content of Copro component */}
+    <div className="container-main">
+      <CoproFilters
+        filterVille={filterVille}
+        handleFilter={handleFilter}
+        villeOptions={villeOptions}
+        searchTerm={searchTerm}
+        handleSearch={handleSearch}
+      />
+      <CoproFabWithOptions />
+
       {loading ? (
-        <CircularProgress />
+        <CircularProgress style={{ margin: '20px' }} />
       ) : (
-        <CoproList />
+        <>
+          <CoproTable
+            coproList={coproList}
+            filteredCoproList={filteredCoproList}
+            page={page}
+            rowsPerPage={rowsPerPage}
+          />
+          {tableLoading && <CircularProgress style={{ margin: '20px' }} />}
+        </>
       )}
     </div>
   );
-}
+};
 
 export default Copro;

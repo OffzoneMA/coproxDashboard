@@ -1,4 +1,3 @@
-// FabWithOptions.js
 import React, { useState } from 'react';
 import Fab from '@mui/material/Fab';
 import AddIcon from '@mui/icons-material/Add';
@@ -35,7 +34,7 @@ const FabWithOptions = () => {
   };
 
   return (
-    <div>
+    <div style={{ position: 'fixed', bottom: '16px', right: '16px' }}>
       <Fab color="primary" aria-label="add" onClick={handleClick}>
         <AddIcon />
       </Fab>
@@ -56,7 +55,7 @@ const FabWithOptions = () => {
         <DialogTitle>Ajouter Une Copropriété</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            ICI nous allons imaginer un formulaire pour creer une nouvelle copro
+            ICI nous allons imaginer un formulaire pour créer une nouvelle copro
           </DialogContentText>
         </DialogContent>
         <DialogActions>

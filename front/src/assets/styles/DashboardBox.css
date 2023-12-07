@@ -1,7 +1,7 @@
 /* DashboardBox.css */
 .dashboard-box {
     margin: 16px;
-    height: 120px;
+    height: 150px;
     display: flex;
     flex-direction: column;
     justify-content: space-between; /* Separate title and data areas */
@@ -9,6 +9,7 @@
     border: 1px solid #ccc;
     box-sizing: border-box;
     padding: 8px;
+    align-self: stretch;
   }
   
   .title-area {
@@ -20,7 +21,7 @@
   }
   
   .number-style {
-    font-size: 2rem;
+    font-size: 5rem;
     color: #007bff;
     font-weight: bold;
   }

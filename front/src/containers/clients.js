@@ -70,7 +70,7 @@ const PersonList = () => {
   };
 
   return (
-    <div>
+    <div className="container-main">
       <FormControl variant="outlined" style={{ marginBottom: '16px' }}>
         <InputLabel id="filter-type-label">Filter by Type</InputLabel>
         <Select
@@ -104,7 +104,7 @@ const PersonList = () => {
       {loading ? (
         <CircularProgress style={{ margin: '20px' }} />
       ) : (
-        <div>
+        <div className="container-main">
           <TableContainer component={Paper}>
             <Table>
               <TableHead>

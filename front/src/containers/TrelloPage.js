@@ -24,7 +24,7 @@ function TrelloPage({ onSetTitle }) {
   };
 
   return (
-    <div>
+    <div className="container-main">
       {/* Content of TrelloPage */}
       <ChecklistItemsList onSelectChange={handleSelectChange} />
       <CoproListTrello selectedTask={selectedTask} />
