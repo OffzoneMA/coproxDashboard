@@ -2,31 +2,39 @@
 const createZendeskService = require('../services/zendeskService');
 
 const subdomain = 'coprox8710'; // Replace with your Zendesk subdomain
-const apiToken = 'F76kBykpqb6QjhQYZ5Dcy4eqC5KMme0qNsGFu2KW'; // Replace with your Zendesk API token
+const username = 'software@youssefdiouri.net/token'; // Replace with your Zendesk username
+const password = 'EqkSrwivQe8RxioxUT4VFdiP1BR0ITMn0EgmQ8Sc'; // Replace with your Zendesk password
 
-const zendeskService = createZendeskService(subdomain, apiToken);
+const zendeskService = createZendeskService(subdomain, username, password);
 
-async function getCurrentUser(req, res) {
+async function handleRequest(res, action, errorMessage) {
   try {
-    const user = await zendeskService.getCurrentUser();
-    res.status(200).json(user);
+    const result = await action();
+    res.status(200).json(result);
   } catch (error) {
-    console.error(`Error fetching current user: ${error.message}`);
+    console.error(`${errorMessage}: ${error.message}`);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
+async function getCurrentUser(req, res) {
+  await handleRequest(res, zendeskService.getCurrentUser, 'Error fetching current user');
+}
+
 async function getNonResolvedTicketCount(req, res) {
-  try {
-    const count = await zendeskService.getNonResolvedTicketCount();
-    res.status(200).json({ count });
-  } catch (error) {
-    console.error(`Error fetching non-resolved ticket count: ${error.message}`);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+  await handleRequest(res, zendeskService.getNonResolvedTicketCount, 'Error fetching non-resolved ticket count');
+}
+async function getNonResolvedTicketCountOrganisation(req, res) {
+  const organizationExternalId = req.params.ID;
+  await handleRequest(
+    res,
+    () => zendeskService.getNonResolvedTicketCountOrganisation(organizationExternalId),
+    'Error fetching non-resolved ticket count for organization'
+  );
 }
 
 module.exports = {
   getCurrentUser,
   getNonResolvedTicketCount,
+  getNonResolvedTicketCountOrganisation
 };

@@ -1,56 +1,79 @@
 // zendeskService.js
 const axios = require('axios');
 
-function createZendeskService(subdomain, apiToken) {
-  const baseUrl = `https://${subdomain}.zendesk.com/api/v2`;
+function createZendeskService(subdomain, username, password) {
+  const baseURL = `https://${subdomain}.zendesk.com/api/v2`;
 
-  async function getCurrentUser() {
+  const axiosInstance = axios.create({
+    baseURL,
+    auth: {
+      username,
+      password,
+    },
+  });
+
+  async function makeRequest(url, errorMessage) {
     try {
-      const url = `${baseUrl}/users/me.json`;
-
       console.log(`Making request to: ${url}`);
-
-      const response = await axios.get(url, {
-        auth: {
-          username: `${apiToken}/token`,
-          password: 'x', // The password is arbitrary and required by Zendesk API
-        },
-      });
-
+      const response = await axiosInstance.get(url);
       console.log(`Response received:`, response.data);
-
-      return response.data.user;
+      return response.data;
     } catch (error) {
-      console.error(`Error fetching current user: ${error.message}`);
-      throw new Error(`Error fetching current user: ${error.message}`);
+      console.error(`${errorMessage}: ${error.message}`);
+      throw new Error(`${errorMessage}: ${error.message}`);
     }
   }
 
+  async function getCurrentUser() {
+    const url = '/users/me.json';
+    return makeRequest(url, 'Error fetching current user');
+  }
+
   async function getNonResolvedTicketCount() {
+    const url = '/tickets/count.json?status=unresolved';
+    return makeRequest(url, 'Error fetching non-resolved ticket count');
+  }
+
+  async function getNonResolvedTicketCountOrganisation(organizationExternalId) {
     try {
-      const url = `${baseUrl}/tickets/count.json?status=unresolved`;
+      
+      const organizationId = await getOrganizationIdByExternalId(organizationExternalId);
 
-      console.log(`Making request to: ${url}`);
-
-      const response = await axios.get(url, {
-        auth: {
-          username: `${apiToken}/token`,
-          password: 'x', // The password is arbitrary and required by Zendesk API
-        },
-      });
-
-      console.log(`Response received:`, response.data);
-
-      return response.data.count;
+      
+      const url = `/organizations/${organizationId}/tickets.json?status=unresolved&count=true`;
+      const response = await makeRequest(url, 'Error fetching non-resolved ticket count');
+      
+      // Assuming Zendesk API returns a count property in the response
+      const count = response.count || 0;
+      return { count };
     } catch (error) {
-      console.error(`Error fetching non-resolved ticket count: ${error.message}`);
-      throw new Error(`Error fetching non-resolved ticket count: ${error.message}`);
+      throw new Error(`Error getting non-resolved ticket count for organization: ${error.message}`);
+    }
+  }
+
+  async function getOrganizationIdByExternalId(organizationExternalId) {
+    try {
+      const url = `/organizations/search?external_id=${organizationExternalId}`;
+      const response = await makeRequest(url, 'Error searching for organization by external ID');
+
+      // Assuming Zendesk API returns an array of organizations in the response
+      // and we are taking the first organization found
+      const organization = response.organizations && response.organizations[0];
+
+      if (!organization) {
+        throw new Error(`Organization not found with external ID: ${organizationExternalId}`);
+      }
+
+      return organization.id;
+    } catch (error) {
+      throw new Error(`Error getting organization ID by external ID: ${error.message}`);
     }
   }
 
   return {
     getCurrentUser,
     getNonResolvedTicketCount,
+    getNonResolvedTicketCountOrganisation
   };
 }
 
