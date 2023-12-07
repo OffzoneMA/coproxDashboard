@@ -5,23 +5,29 @@ import DashboardBox from '../components/DashboardBox';
 
 function HomePage({ onSetTitle }) {
   const [coproWithoutAGCount, setCoproWithoutAGCount] = useState(null);
+  const [nonResolvedTicketsCount, setNonResolvedTicketsCount] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:8081/copro/coprowithoutag');
-        const data = await response.json();
-        setCoproWithoutAGCount(data.count);
+        const responseCoproWithoutAG = await fetch('http://localhost:8081/copro/coprowithoutag');
+        const dataCoproWithoutAG = await responseCoproWithoutAG.json();
+        setCoproWithoutAGCount(dataCoproWithoutAG.count);
+
+        const responseNonResolvedTickets = await fetch('http://localhost:8081/zendesk/non-resolved-tickets/count');
+        const dataNonResolvedTickets = await responseNonResolvedTickets.json();
+        setNonResolvedTicketsCount(dataNonResolvedTickets.count.value);
+
         // Pass the title to the parent component
-        
+        onSetTitle('Dashboard Coprox');
       } catch (error) {
-        console.error('Error fetching copro without AG count:', error.message);
+        console.error('Error fetching data:', error.message);
         setCoproWithoutAGCount(0);
+        setNonResolvedTicketsCount(0);
       }
     };
-    
+
     fetchData();
-    onSetTitle('Dashboard Coprox');
   }, [onSetTitle]);
 
   return (
@@ -34,7 +40,11 @@ function HomePage({ onSetTitle }) {
         ) : (
           <DashboardBox title="Copropriétés sans AG" data={coproWithoutAGCount} />
         )}
-        <DashboardBox title="Ticket Zendesk en cours" data={304} />
+        {nonResolvedTicketsCount === null ? (
+          <p>Loading...</p>
+        ) : (
+          <DashboardBox title="Ticket Zendesk en cours" data={nonResolvedTicketsCount} />
+        )}
         <DashboardBox title="Titre" data={50} />
         <DashboardBox title="Titre" data={480} />
       </div>

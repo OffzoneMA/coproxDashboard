@@ -16,6 +16,7 @@ const DetailCopro = ({ onSetTitle }) => {
   const { id } = useParams();
   const [coproDetails, setCoproDetails] = useState(null);
   const [lebarocoproDetails, setLebarocoproDetails] = useState(null);
+  const [nonResolvedTicketsCount, setNonResolvedTicketsCount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
@@ -37,8 +38,18 @@ const DetailCopro = ({ onSetTitle }) => {
     const fetchLebarocoproDetails = () => fetchData(`http://localhost:8081/copro/lebarocopro/${id}`, setLebarocoproDetails);
 
     Promise.all([fetchCoproDetails(), fetchLebarocoproDetails()])
-      .then(() => onSetTitle(coproDetails?.Nom || 'Copro Details'));
-
+      .then(() => {
+        // Assuming idCorpo is the correct property name from the response of detailsCopro
+        const idCorpo = coproDetails?.idCorpo;
+        if (idCorpo) {
+          return fetchData(`http://localhost:8081/zendesk/organization/${idCorpo}/ticket/count`, setNonResolvedTicketsCount);
+        }
+      })
+      .then(() => onSetTitle(coproDetails?.Nom || 'Copro Details'))
+      .catch((error) => {
+        console.error('Error fetching data:', error.message);
+        setError(error.message);
+      });
   }, [id, onSetTitle, coproDetails]);
 
   const statusColor = coproDetails?.status === 'Actif' ? 'green' : 'red';
@@ -57,7 +68,7 @@ const DetailCopro = ({ onSetTitle }) => {
     <div>
       {/* Content of DetailCopro component */}
       <Paper elevation={3} style={{ padding: '16px', marginBottom: '16px' }}>
-        <Typography variant="h5">{coproDetails?.id}</Typography>
+        <Typography variant="h5">{coproDetails?.idCopro}</Typography>
         <Divider style={{ margin: '8px 0' }} />
         <Typography variant="subtitle1" style={{ color: statusColor }}>
           Status: {coproDetails?.status}
@@ -65,7 +76,7 @@ const DetailCopro = ({ onSetTitle }) => {
       </Paper>
 
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <DashboardBox title="Zendesk Ticket" data={coproDetails?.zendeskTicketCount || 0} />
+        <DashboardBox title="Zendesk Ticket" data={nonResolvedTicketsCount || 0} />
         <DashboardBox title="Fin éxercice comptable" data={`${coproDetails?.exerciceCT || 'N/A'} $`} />
         <DashboardBox title="Budget" data={`${coproDetails?.budget || 0} $`} />
         <DashboardBox title="Offre" data={coproDetails?.Offre || 'N/A'} />
