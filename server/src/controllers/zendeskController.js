@@ -41,9 +41,8 @@ async function getTicketsNew(req, res) {
 }
 async function updateTicket(req, res) {
   const ticketId = req.params.ticket_id; 
-  const tagToAdd = req.params.tagToAdd; 
-  console.log();  // Add any additional logging or processing you need here
-  await handleRequest(res,zendeskService.updateTicket(ticketId, tagToAdd), `Error updating the ticket: ${ticketId}`);
+  const changes = req.params.tagToAdd; 
+  await handleRequest(res,zendeskService.updateTicket(ticketId, changes), `Error updating the ticket: ${ticketId}`);
 }
 
 async function getNonResolvedTicketCount(req, res) {

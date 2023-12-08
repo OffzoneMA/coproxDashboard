@@ -18,9 +18,9 @@ const zendeskTicket = {
                 },
                 json: async data => {
                     // Call getUserFromID for each ticket
-                    for (const ticket of data.tickets) {
+                    
+                    for (const ticket of data) {
                         //console.log(ticket.requester_id);
-                        
                          console.log('Ticket ID in start:',ticket.id)
                         await processUserTags(ticket.id,ticket.requester_id);
                     }
@@ -45,8 +45,8 @@ async function processUserTags(ticket_id, requesterId) {
             return this; // Return itself for method chaining
         },
         json: async data => {
-            const userTags = data.user.tags;
-            //console.log(userTags);
+            const userTags = data[0].tags;
+            console.log(userTags);
 
             if (userTags && userTags.length > 0) {
                 // If user tags are not empty, perform actions
@@ -61,18 +61,23 @@ async function processUserTags(ticket_id, requesterId) {
 
 async function checkAndPerformAction(ticket_id, tags) {
     console.log('starting with tags: ', tags);
+    console.log()
+    body={ticket: {tags: tags}};
+    console.log(body)
+    params ={  ticket_id: ticket_id, tagToAdd: tags};
 
+    
+    zendeskController.updateTicket({ params});
     // Use Promise.all to wait for all updateTicket promises to complete
     await Promise.all(tags.map(async (tag) => {
-        console.log('------------------------------------------- here is the tag', tag, '------------------1for ticket', ticket_id);
+        console.log('------------------------------------------- here is the tag', tag, '------------------for ticket', ticket_id);
+  
         switch (tag) {
+            
             case 'cs':
-                return zendeskController.updateTicket(ticket_id, 'cs');
-                // Optionally, perform additional actions related to the 'cs' tag here
+                console.log('cs')
             case 'locataire':
-                return zendeskController.updateTicket(ticket_id, 'locataire');
-                // Optionally, perform additional actions related to the 'locataire' tag here
-            // Add more cases for other tags as needed
+                console.log('locataire')    
             default:
                 // Default case if the tag is not matched
                 return Promise.resolve(); // Resolve with a promise for default case

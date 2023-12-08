@@ -14,24 +14,70 @@ function createZendeskService(subdomain, username, password) {
 
   async function makeRequest(url, errorMessage, { method = 'get', params = {}, body = {} } = {}) {
     try {
-      const link = `${baseURL}${url}`;
-      console.log(`Making ${method.toUpperCase()} request to: ${link}`);
-
-      const response = await axios({
-        method: method.toLowerCase(),
-        url: link,
-        params,
-        data: method.toLowerCase() !== 'get' ? body : undefined,
-        auth: { username, password },
-      });
-
-      //console.log(`Response received:`, response.data);
-      return response.data;
+      let allData = [];
+      let nextPage = url;
+  
+      do {
+        const link = `${baseURL}${nextPage}`;
+        console.log(link);
+        console.log(`Making ${method.toUpperCase()} request to: ${link}`);
+  
+        const response = await axios({
+          method: method.toLowerCase(),
+          url: link,
+          params,
+          data: method.toLowerCase() !== 'get' ? body : undefined,
+          auth: { username, password },
+        });
+  
+        const responseData = response.data;
+        // Merge data if 'next_page' exists
+        if (responseData.next_page) {
+          //console.log("here is a next page", responseData.next_page)
+          allData = allData.concat(responseData.users || responseData.organizations || responseData.results || responseData.tickets); // Assume single entity if 'users' property doesn't exist
+          nextPage = extractNextPage(responseData.next_page);
+          
+          
+        } else {
+          //console.log("no Next page")
+          nextPage = null;
+          allData = allData.concat(responseData.users || responseData.user || responseData.organizations || responseData.organization || responseData.results || responseData.tickets|| responseData.ticket || responseData.count   );
+        }
+        
+      } while (nextPage);
+      
+      //console.log("all data :", allData)
+      return allData;
     } catch (error) {
-        console.error(`${errorMessage}: ${error.message}`);
+      console.error(`${errorMessage}: ${error.message}`);
       throw new Error(`${errorMessage}: ${error.message}`);
-    }z
+    }
   }
+  
+  function extractNextPage(nextPage) {
+    if (!nextPage) {
+      return null;
+    }
+  
+    const url = new URL(nextPage);
+    const path = url.pathname + url.search;
+    return path.startsWith("/") ? path : `/${path}`;
+  }
+  function extractNextPage(nextPage) {
+    if (!nextPage) {
+      return null;
+    }
+  
+    const url = new URL(nextPage);
+    const pathParts = url.pathname.split('/');
+    const lastPart = pathParts[pathParts.length - 1];
+    const result = `/${lastPart}${url.search}`;
+    
+    console.log("pathParts :",pathParts," lastPart : ",lastPart, " result :", result )
+  
+    return result;
+  }
+  
 
 
   async function getCurrentUser() {
@@ -41,32 +87,12 @@ function createZendeskService(subdomain, username, password) {
 
   
   async function getAllUsers() {
-    let allUsers = [];
-    let nextPage = '/users.json';
-  
-    do {
-      const response = await makeRequest(nextPage, 'Error fetching end users', { method: 'get', params: { role: 'end-user' } });
-      const users = response.users || [];
-  
-      allUsers = allUsers.concat(users);
-  
-      nextPage = extractNextPage(response.next_page);
-    } while (nextPage);
-  
-    return allUsers;
+    let url = '/users.json';
+    return makeRequest(url, 'Error fetching current user');
+
   }
   
-  function extractNextPage(nextPage) {
-    if (!nextPage) {
-      return null;
-    }
-  
-    const nextPageRegex = /\/users\.json\?page=(\d+)&role=end-user/;
-    const match = nextPage.match(nextPageRegex);
-  
-    return match ? `/users.json?page=${parseInt(match[1], 10)}&role=end-user` : null;
-  }
-  
+
   
 
   async function getUserFromID(userID) {
@@ -84,16 +110,12 @@ function createZendeskService(subdomain, username, password) {
     return makeRequest(url, 'Error fetching All Ticket with status new');
   }
   
-  async function updateTicket(ticketId, tagToAdd) {
+  async function updateTicket(ticketId, changes) {
     const url = `/tickets/${ticketId}`;
-    const body = {
-      ticket: {
-        tags: [tagToAdd]
-      },
-    };
+
 
     // Pass method as lowercase 'put' here
-    return await makeRequest(url, 'Error updating ticket', { method: 'put', body });
+    return await makeRequest(url, 'Error updating ticket', { method: 'put', changes });
   }
   
   async function getNonResolvedTicketCount() {
@@ -111,7 +133,7 @@ function createZendeskService(subdomain, username, password) {
       const response = await makeRequest(url, 'Error fetching non-resolved ticket count');
       
       // Assuming Zendesk API returns a count property in the response
-      const count = response.count || 0;
+      const count = response.length || 0;
       return { count };
     } catch (error) {
       console.error(`Error getting non-resolved ticket count for organization: ${error.message}`);
@@ -126,7 +148,7 @@ function createZendeskService(subdomain, username, password) {
 
       // Assuming Zendesk API returns an array of organizations in the response
       // and we are taking the first organization found
-      const organization = response.organizations && response.organizations[0];
+      const organization = response[0]
 
       if (!organization) {
         // Instead of throwing an error
