@@ -1,13 +1,28 @@
 const axios = require('axios');
+require('dotenv').config(); 
 
-const API_KEY = '93bce8f264373d72b9e48d4ab24a4fc0';
-const TOKEN = '54e95d264d79e134e2e024738b1dc8ec9cc56bcf9ca1b46850a7c377975718d4';
-const BOARD_ID = '655e5c6ba83dc919979f41fa';
-const LIST_NAME = 'Initial';
-const CHECKLISTS = [
-  { name: 'Inscription questionaire ODG', items: ['Action 1.1', 'Action 1.2'] },
-  { name: 'Ouverture de la CS macopro', items: ['Action 2.1', 'Action 1.3','Action 1.4','Action 1.5','Action 1.6'] },
+const API_KEY  = process.env.TRELLO_API_KEY;
+const TOKEN  = process.env.TRELLO_TOKEN;
+const BOARD_ID  = process.env.TRELLO_BOARD_ID;
+const LIST_NAME  = process.env.TRELLO_LIST_NAME;
+
+const CHECKLISTS  = [
+  {
+    name: process.env.TRELLO_CHECKLISTS_0_NAME,
+    items: [process.env.TRELLO_CHECKLISTS_0_ITEMS_0, process.env.TRELLO_CHECKLISTS_0_ITEMS_1],
+  },
+  {
+    name: process.env.TRELLO_CHECKLISTS_1_NAME,
+    items: [
+      process.env.TRELLO_CHECKLISTS_1_ITEMS_0,
+      process.env.TRELLO_CHECKLISTS_1_ITEMS_1,
+      process.env.TRELLO_CHECKLISTS_1_ITEMS_2,
+      process.env.TRELLO_CHECKLISTS_1_ITEMS_3,
+      process.env.TRELLO_CHECKLISTS_1_ITEMS_4,
+    ],
+  },
 ];
+
 
 const trelloAPI = axios.create({
   baseURL: 'https://api.trello.com/1',

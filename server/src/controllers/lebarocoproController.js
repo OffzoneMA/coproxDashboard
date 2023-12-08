@@ -1,0 +1,30 @@
+// coproController.js
+const { ObjectID } = require('mongodb');
+const CoproService = require('../services/lebarocoproService');
+
+async function getLastTemporalRecord(req, res) {
+  const { id } = req.params;
+  try {
+    const result = await CoproService.getLastTemporalRecord(id);
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching copropriete details:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+async function addLebarocopro(req, res) {
+  const coproprieteData = req.body;
+  try {
+    const result = await CoproService.addLebarocopro(coproprieteData);
+    res.json(result);
+  } catch (error) {
+    console.error('Error adding Lebarocopro:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+module.exports = {
+  getLastTemporalRecord,
+  addLebarocopro,
+};

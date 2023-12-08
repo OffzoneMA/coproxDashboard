@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const CoproprieteSchema = new mongoose.Schema({
-    id: { type: String, required: true },
+    idCopro: { type: String, required: true },
     Nom: { type: String, required: true },
     ville: { type: String, required: true },
     status: { type: String, required: false },
