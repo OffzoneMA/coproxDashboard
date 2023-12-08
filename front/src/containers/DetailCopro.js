@@ -45,7 +45,7 @@ const DetailCopro = ({ onSetTitle }) => {
           return fetchData(`http://localhost:8081/zendesk/organization/${idCorpo}/ticket/count`, setNonResolvedTicketsCount);
         }
       })
-      .then(() => onSetTitle(coproDetails?.Nom || 'Copro Details'))
+      .then(() => onSetTitle(coproDetails?.Nom || 'Copro Details')) 
       .catch((error) => {
         console.error('Error fetching data:', error.message);
         setError(error.message);

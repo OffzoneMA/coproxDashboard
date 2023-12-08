@@ -5,15 +5,21 @@ mongoose.set('useFindAndModify', false);
 
 const LebarocoproModel = MongoDB.addSaveMiddleware('lebarocopro');
 
-async function connectAndExecute(callback) {
-  try {
-    console.log('Connecting to MongoDB');
-    await MongoDB.connectToDatabase();
-    return await callback();
-  } finally {
-    console.log('Closing MongoDB connection');
-    await MongoDB.closeConnection();
-  }
+function connectAndExecute(callback) {
+  console.log('Connecting to MongoDB');
+  return new Promise(async (resolve, reject) => {
+    try {
+      await MongoDB.connectToDatabase();
+      const result = await callback();
+      console.log('Closing MongoDB connection');
+      await MongoDB.closeConnection();
+      resolve(result);
+    } catch (error) {
+      console.error('Error connecting and executing:', error.message);
+      await MongoDB.closeConnection();
+      reject(error);
+    }
+  });
 }
 
 async function addLebarocopro(jsonData) {
@@ -37,46 +43,49 @@ async function addLebarocopro(jsonData) {
 }
 
 async function getLastTemporalRecord(idCopro) {
-    return connectAndExecute(async () => {
-      const lebarocoproCollection = MongoDB.getCollection('lebarocopro');
-      const objectIdCopro = new mongoose.Types.ObjectId(idCopro);
-  
-      try {
-        const result = await lebarocoproCollection.aggregate([
-          {
-            $match: {
-              _id: objectIdCopro,
-            },
+  return connectAndExecute(async () => {
+    const lebarocoproCollection = mongoose.connection.collection('lebarocopro');
+    const objectIdCopro = new mongoose.Types.ObjectId(idCopro);
+    console.log(lebarocoproCollection);
+    try {
+      const cursor = lebarocoproCollection.aggregate([
+        {
+          $match: {
+            idCopro: objectIdCopro, // Match documents where idCopro is equal to objectIdCopro
           },
-          {
-            $sort: {
-              date: -1,
-            },
+        },
+        {
+          $sort: {
+            date: -1, // Sort by date in descending order
           },
-          {
-            $limit: 1,
+        },
+        {
+          $limit: 1,
+        },
+        {
+          $project: {
+            _id: 0,
+            note: 1,
           },
-          {
-            $project: {
-              _id: 0,
-              note: 1,
-            },
-          },
-        ]).toArray();
-  
-        if (result.length > 0) {
-          console.log('Last temporal record:', result[0]);
-          return result[0].note;
-        } else {
-          console.log('No temporal records found for idCopro:', idCopro);
-          return null;
-        }
-      } catch (error) {
-        console.error('Error getting last temporal record:', error.message);
-        throw error;
+        },
+      ]);
+
+      const resultArray = await cursor.toArray();
+
+      if (resultArray.length > 0) {
+        console.log('Last temporal record:', resultArray[0]);
+        return resultArray[0].note;
+      } else {
+        console.log('No temporal records found for idCopro:', idCopro);
+        return null;
       }
-    });
-  }
+    } catch (error) {
+      console.error('Error getting last temporal record:', error.message);
+      throw error;
+    }
+  });
+}
+
 
 module.exports = {
   addLebarocopro,

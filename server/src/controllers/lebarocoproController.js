@@ -8,7 +8,7 @@ async function getLastTemporalRecord(req, res) {
     const result = await CoproService.getLastTemporalRecord(id);
     res.json(result);
   } catch (error) {
-    console.error('Error fetching copropriete details:', error.message);
+    console.error('Error fetching lebarocopro details:', error.message);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
@@ -19,7 +19,7 @@ async function addLebarocopro(req, res) {
     const result = await CoproService.addLebarocopro(coproprieteData);
     res.json(result);
   } catch (error) {
-    console.error('Error adding Lebarocopro:', error.message);
+    console.error('Error adding lebarocopro:', error.message);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }

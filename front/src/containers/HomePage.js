@@ -16,7 +16,7 @@ function HomePage({ onSetTitle }) {
 
         const responseNonResolvedTickets = await fetch('http://localhost:8081/zendesk/non-resolved-tickets/count');
         const dataNonResolvedTickets = await responseNonResolvedTickets.json();
-        setNonResolvedTicketsCount(dataNonResolvedTickets.count.value);
+        setNonResolvedTicketsCount(dataNonResolvedTickets[0].value);
 
         // Pass the title to the parent component
         onSetTitle('Dashboard Coprox');

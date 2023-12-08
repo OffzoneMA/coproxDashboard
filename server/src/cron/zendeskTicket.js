@@ -63,7 +63,6 @@ async function checkAndPerformAction(ticket_id, tags) {
     console.log('starting with tags: ', tags);
     console.log()
     body={ticket: {tags: tags}};
-    console.log(body)
     params ={  ticket_id: ticket_id, tagToAdd: tags};
 
     
