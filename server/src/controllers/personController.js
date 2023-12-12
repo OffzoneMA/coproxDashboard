@@ -3,7 +3,7 @@ const PersonService = require('../services/personService');
 async function addPerson(req, res) {
   try {
     const result = await PersonService.addPerson(req.body);
-    res.status(201).json(result);
+    res.status(200).json(result);
   } catch (error) {
     console.error('Error adding person:', error.message);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -34,6 +34,16 @@ async function getPersonsByCoproId(req, res) {
   }
 }
 
+async function getPersonsByInfo(req, res) {
+  try {
+    const persons = await PersonService.getPersonsByInfo(req.body.name,req.body.value);
+    res.status(200).json(persons);
+  } catch (error) {
+    console.error('Error getting persons by Infos:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
 async function getAllPersons(req, res) {
   try {
     const persons = await PersonService.getAllPersons();
@@ -44,4 +54,4 @@ async function getAllPersons(req, res) {
   }
 }
 
-module.exports = { addPerson, editPerson, getPersonsByCoproId, getAllPersons };
+module.exports = { addPerson, editPerson,getPersonsByInfo, getPersonsByCoproId, getAllPersons };

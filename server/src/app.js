@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const trelloRoutes = require('./routes/trelloRoutes.js');
 const coproRoutes = require('./routes/coproRoutes.js');
 const LebarocoproRoutes = require('./routes/lebarocoproRoutes.js');
+const suiviAGRoutes = require('./routes/suiviAgRoutes.js');
 const vilogiRoutes = require('./routes/vilogiRoutes.js');
 const personRoutes = require('./routes/personRoutes.js')
 const zendeskRoutes = require('./routes/zendeskRoutes');
@@ -24,11 +25,12 @@ app.use('/trello', trelloRoutes);
 app.use('/zendesk', zendeskRoutes);
 app.use('/copro', coproRoutes);
 app.use('/Lebarocopro', LebarocoproRoutes);
+app.use('/suiviAG', suiviAGRoutes);
 app.use('/person', personRoutes);
 app.use('/vilogi', vilogiRoutes);
 app.use('/mongodb', trelloRoutes);
 app.get('/batch', (req, res) => {
-  zendeskTicket.start();
+  synchroUsers.start();
   res.send('Cron test is running!');
 });
 

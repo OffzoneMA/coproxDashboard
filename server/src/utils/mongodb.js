@@ -16,7 +16,7 @@ class MongoDB {
 
         await mongoose.connect(connectionString, { useNewUrlParser: true, useUnifiedTopology: true });
 
-        console.log('Connected to MongoDB using Mongoose');
+        //console.log('Connected to MongoDB using Mongoose');
       }
     } catch (error) {
       console.error('Error connecting to MongoDB:', error.message);
@@ -37,7 +37,7 @@ class MongoDB {
   }
 
   static getCollection(collectionName) {
-    console.log("getting the collection");
+    //console.log("getting the collection");
     return mongoose.connection.collection(collectionName);
   }
 
@@ -49,7 +49,7 @@ class MongoDB {
 
     // Add a middleware function before saving a document
     collectionSchema.pre('save', function (next) {
-      console.log(`Middleware: Saving document to ${modelName}`);
+      //console.log(`Middleware: Saving document to ${modelName}`);
       next();
     });
 

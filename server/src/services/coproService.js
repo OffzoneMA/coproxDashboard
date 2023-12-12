@@ -4,12 +4,12 @@ const MongoDB = require('../utils/mongodb');
 mongoose.set('useFindAndModify', false);
 
 function connectAndExecute(callback) {
-  console.log('Connecting to MongoDB');
+  //console.log('Connecting to MongoDB');
   return new Promise(async (resolve, reject) => {
     try {
       await MongoDB.connectToDatabase();
       const result = await callback();
-      console.log('Closing MongoDB connection');
+      //console.log('Closing MongoDB connection');
       await MongoDB.closeConnection();
       resolve(result);
     } catch (error) {

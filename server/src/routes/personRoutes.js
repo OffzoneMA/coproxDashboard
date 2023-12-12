@@ -6,6 +6,7 @@ const router = express.Router();
 router.post('/addPerson', PersonController.addPerson);
 router.put('/editPerson/:id', PersonController.editPerson);
 router.get('/getPersonsByCoproId/:idCopro', PersonController.getPersonsByCoproId);
+router.get('/getPersonsByCoproId/', PersonController.getPersonsByInfo);
 router.get('/getAllPersons', PersonController.getAllPersons);
 
 module.exports = router;

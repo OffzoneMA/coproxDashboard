@@ -122,10 +122,10 @@ const PersonList = () => {
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((person) => (
                     <TableRow key={person._id}>
-                      <TableCell>{person.id}</TableCell>
+                      <TableCell>{person.idVilogi}</TableCell>
                       <TableCell>{person.nom}</TableCell>
                       <TableCell>{person.prenom}</TableCell>
-                      <TableCell>{person.type}</TableCell>
+                      <TableCell>{person.typePersonne}</TableCell>
                       <TableCell>{person.appartement}</TableCell>
                       {/* Add more cells as needed */}
                     </TableRow>

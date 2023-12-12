@@ -1,13 +1,6 @@
 // zendeskController.js
-const createZendeskService = require('../services/zendeskService');
-require('dotenv').config(); // Load environment variables from .env
+const zendeskService = require('../services/zendeskService');
 
-const subdomain = process.env.ZENDESK_SUBDOMAIN;
-const username = process.env.ZENDESK_USERNAME;
-const password = process.env.ZENDESK_PASSWORD;
-
-
-const zendeskService = createZendeskService(subdomain, username, password);
 
 async function handleRequest(res, action, errorMessage) {
   try {
