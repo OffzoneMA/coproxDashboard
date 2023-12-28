@@ -12,6 +12,7 @@ const personRoutes = require('./routes/personRoutes.js')
 const zendeskRoutes = require('./routes/zendeskRoutes');
 const synchroUsers = require('./cron/synchoUsers');
 const zendeskTicket = require('./cron/zendeskTicket');
+const zendeskTicketAI = require('./cron/zendeskTicketAI');
 
 
 
@@ -30,7 +31,7 @@ app.use('/person', personRoutes);
 app.use('/vilogi', vilogiRoutes);
 app.use('/mongodb', trelloRoutes);
 app.get('/batch', (req, res) => {
-  synchroUsers.start();
+  zendeskTicketAI.start();
   res.send('Cron test is running!');
 });
 

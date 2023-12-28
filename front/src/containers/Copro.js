@@ -12,7 +12,7 @@ const Copro = ({ onSetTitle }) => {
   const [loading, setLoading] = useState(true);
   const [villeOptions, setVilleOptions] = useState([]);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [tableLoading, setTableLoading] = useState(true);
 

@@ -22,6 +22,9 @@ async function makeRequest(url, errorMessage, { method = 'get', params = {}, bod
         params,
         data: method.toLowerCase() !== 'get' ? body : undefined,
         auth: { username, password },
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       const responseData = response.data;
@@ -48,7 +51,11 @@ function extractNextPage(nextPage) {
   }
 
   const url = new URL(nextPage);
-  const path = url.pathname + url.search;
+  let path = url.pathname + url.search;
+
+  // Remove "/api/v2" from the beginning of the path
+  path = path.replace(/^\/api\/v2/, '');
+
   return path.startsWith("/") ? path : `/${path}`;
 }
 

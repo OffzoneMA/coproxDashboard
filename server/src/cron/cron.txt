@@ -1,0 +1,4 @@
+2023-12-13T09:52:37.409Z | SyncUsers | fixUserRole | User with IdVilogi : 427502   --- not found for a user.
+2023-12-13T10:21:36.766Z | SyncUsers | fixUserRole | User with IdVilogi : 522733   --- not found for a user.
+2023-12-13T10:22:27.890Z | SyncUsers | fixUserRole | User with IdVilogi : 516496   --- not found for a user.
+2023-12-13T10:22:29.918Z | SyncUsers | fixUserRole | User with IdVilogi : 516494   --- not found for a user.

@@ -41,4 +41,24 @@ describe('Copro Routes', () => {
   });
 
   // Add more tests for other routes and methods
+});// Existing code...
+
+describe('Copro Routes', () => {
+  // Existing tests...
+
+  it('should handle a GET request to /copro/countOffers', async () => {
+    const response = await request(app).get('/copro/countOffers');
+
+    expect(response.status).toBe(200);
+    // Add more assertions to validate the response body or other properties
+  });
+
+  it('should handle a GET request to /copro/coprowithoutag', async () => {
+    const response = await request(app).get('/copro/coprowithoutag');
+
+    expect(response.status).toBe(200);
+    // Add more assertions to validate the response body or other properties
+  });
+
+  // Add more tests for other routes and methods
 });
