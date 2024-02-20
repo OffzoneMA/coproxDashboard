@@ -1,27 +1,33 @@
 /* DashboardBox.css */
 .dashboard-box {
-    margin: 16px;
-    height: 150px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between; /* Separate title and data areas */
-    width: 100%;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    padding: 8px;
-    align-self: stretch;
-  }
-  
-  .title-area {
-    text-align: center;
-  }
-  
-  .data-area {
-    text-align: center;
-  }
-  
-  .number-style {
-    font-size: 4rem;
-    color: #007bff;
-    font-weight: bold;
-  }
+  margin: 16px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  border: 1px solid #ddd; /* Adjust the border color as needed */
+  box-sizing: border-box;
+  padding: 16px; /* Adjust padding as needed */
+  align-self: stretch;
+  background-color: #fff; /* Adjust background color as needed */
+  border-radius: 8px; /* Adjust border-radius as needed */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add shadow if needed */
+}
+
+.title-area {
+  text-align: center;
+  font-size: 1.5rem; /* Adjust font size as needed */
+  font-weight: bold;
+  color: #333; /* Adjust color as needed */
+}
+
+.data-area {
+  text-align: center;
+}
+
+.number-style {
+  font-size: 2rem; /* Adjust font size as needed */
+  color: #007bff;
+  font-weight: bold;
+}

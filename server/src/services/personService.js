@@ -67,6 +67,14 @@ async function getAllPersons() {
   });
 }
 
+async function countAllPersons() {
+  return connectAndExecute(async () => {
+    const personCollection = MongoDB.getCollection('person');
+    const count = await personCollection.countDocuments({});
+    return count;
+  });
+}
+
 // Add your new functions here
 
 module.exports = {
@@ -75,5 +83,6 @@ module.exports = {
   getPersonsByInfo,
   getPersonsByCoproId,
   getAllPersons,
+  countAllPersons
   // Add your new functions here
 };

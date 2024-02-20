@@ -1,4 +1,5 @@
 const zendeskController = require('../controllers/zendeskController');
+const ZendeskService = require('../services/zendeskService');
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -21,8 +22,27 @@ const zendeskTicket = {
                     
                     for (const ticket of data) {
                         //console.log(ticket.requester_id);
-                         console.log('Ticket ID in start:',ticket.id)
-                        await processUserTags(ticket.id,ticket.requester_id);
+
+
+                        if (ticket.status == 'closed') {
+                            console.log(`Skipping ticket ${ticket.id} because its status is Closed.`);
+                          }
+                          
+                          else{
+                            console.log('Ticket ID in start:',ticket.id)
+
+                            const targetField = ticket.custom_fields.find(field => field.id === 15261491191197);
+                            if (targetField && targetField.value == null) {
+                                await processUserOrganization(ticket.id,ticket.requester_id)
+                            }
+                            else{
+                                
+                            }
+
+                            //await processUserTags(ticket.id,ticket.requester_id);
+                            await delay(1000); 
+                          }
+
                     }
                 },
                 // ... other Express.js response methods that you might use
@@ -35,6 +55,48 @@ const zendeskTicket = {
         }
     },
 };
+
+async function processUserOrganization(ticket_id, requesterId) {
+    const user = await zendeskController.getUserFromID({ params: { ID: requesterId } }, {
+        status: function (code) {
+            this.statusCode = code;
+            return this;
+        },
+        json: async data => {
+            const userOrganizationId = data[0].organization_id;
+            if (userOrganizationId) {
+                let organisation = await ZendeskService.getOrganizationsById(userOrganizationId)
+                let coproName = organisation[0].name
+                const pattern = /^S\d{3}$/;
+
+                // Test if the value matches the pattern
+                if (pattern.test(coproName)) {
+                    // If organization ID is available, you can update the data
+                    console.log('starting update ticket : ', ticket_id,' With Organisation in Custom field : ', coproName);
+                    const updateData = {
+                        "ticket": {
+                        "custom_fields": [
+                            {
+                            "id": "15261491191197",
+                            "value": userOrganizationId,
+                            }]
+                        }
+                    };
+                    
+                    await ZendeskService.updateTicket(ticket_id,updateData)
+                }
+                await delay(1000); 
+            }else{
+                await delay(1000); 
+                console.log("User's Orgnisation is empty - No  update")
+            }
+
+        },
+    });
+
+    // If you need to perform additional actions based on the organization, you can do it here
+    // checkAndPerformOtherAction(ticket_id, userOrganization);
+}
 
 async function processUserTags(ticket_id, requesterId) {
     //console.log('Ticket ID in processUserTags:', ticket_id);
@@ -75,6 +137,8 @@ async function checkAndPerformAction(ticket_id, tags) {
             
             case 'cs':
                 console.log('cs')
+            case 'locataire':
+                console.log('locataire') 
             case 'locataire':
                 console.log('locataire')    
             default:

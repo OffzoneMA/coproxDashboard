@@ -17,7 +17,9 @@
       "mongoose": "^5.12.2",
       "node-zendesk":"^5.0.6",
       "multer": "^1.4.5-lts.1",
-      "natural": "^6.10.4"
+      "natural": "^6.10.4",
+      "dd-trace": "^0.2",
+      "@datadog/browser-logs":"^5.6.0"
       
     },
     "devDependencies": {

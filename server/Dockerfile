@@ -15,6 +15,7 @@ COPY package.json .
 # Install other dependencies
 RUN npm install
 RUN npm install cors
+RUN npm install @datadog/browser-logs
 
 # Copy app source code
 COPY . .

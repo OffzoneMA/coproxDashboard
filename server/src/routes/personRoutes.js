@@ -8,5 +8,7 @@ router.put('/editPerson/:id', PersonController.editPerson);
 router.get('/getPersonsByCoproId/:idCopro', PersonController.getPersonsByCoproId);
 router.get('/getPersonsByCoproId/', PersonController.getPersonsByInfo);
 router.get('/getAllPersons', PersonController.getAllPersons);
+router.get('/countAllPersons', PersonController.countAllPersons);
+
 
 module.exports = router;

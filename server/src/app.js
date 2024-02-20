@@ -8,13 +8,14 @@ const coproRoutes = require('./routes/coproRoutes.js');
 const LebarocoproRoutes = require('./routes/lebarocoproRoutes.js');
 const suiviAGRoutes = require('./routes/suiviAgRoutes.js');
 const vilogiRoutes = require('./routes/vilogiRoutes.js');
-const personRoutes = require('./routes/personRoutes.js')
+const personRoutes = require('./routes/personRoutes.js');
 const zendeskRoutes = require('./routes/zendeskRoutes');
 const synchroUsers = require('./cron/synchoUsers');
 const zendeskTicket = require('./cron/zendeskTicket');
 const zendeskTicketAI = require('./cron/zendeskTicketAI');
-
-
+const extractContratsEntretien = require('./cron/extractContratsEntretien');
+const syncZendeskTags = require('./cron/syncZendeskTags');
+syncZendeskTags
 
 const app = express();
 const port = 8081;
@@ -31,14 +32,31 @@ app.use('/person', personRoutes);
 app.use('/vilogi', vilogiRoutes);
 app.use('/mongodb', trelloRoutes);
 app.get('/batch', (req, res) => {
-  zendeskTicketAI.start();
+  zendeskTicket.start();
   res.send('Cron test is running!');
 });
 
+cron.schedule('0 12 * * *', () => {
+  zendeskTicket.start();
+});
 
-cron.schedule('* * * * *', () => {
-  //synchroUsers.start();
-  console.log('Cron job is running!');
+cron.schedule('*/30 * * * *', () => {
+  console.log("-------------------------Starting Zendesk Ticket AI--------------------------------------------")
+  //zendeskTicketAI.start();
+  
+  console.log("-------------------------Ending Zendesk Ticket AI--------------------------------------------")
+});
+
+// Schedule a task at 10 AM every day
+cron.schedule('0 11 * * *', () => {
+  syncZendeskTags.start();
+
+});
+
+// Schedule a task at 3 PM every day
+cron.schedule('0 15 * * *', () => {
+  syncZendeskTags.start();
+
 });
 
 app.listen(port, () => {

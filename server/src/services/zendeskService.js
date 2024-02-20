@@ -28,13 +28,14 @@ async function makeRequest(url, errorMessage, { method = 'get', params = {}, bod
       });
 
       const responseData = response.data;
+      
       // Merge data if 'next_page' exists
       if (responseData.next_page) {
-        allData = allData.concat(responseData.users || responseData.organizations || responseData.results || responseData.tickets);
+        allData = allData.concat(responseData.users || responseData.organizations || responseData.results || responseData.tickets || responseData.comments);
         nextPage = extractNextPage(responseData.next_page);
       } else {
         nextPage = null;
-        allData = allData.concat(responseData.users || responseData.user || responseData.organizations || responseData.organization || responseData.results || responseData.tickets|| responseData.ticket || responseData.count);
+        allData = allData.concat(responseData.users || responseData.user || responseData.organizations || responseData.organization || responseData.results || responseData.tickets|| responseData.comments || responseData.comment || responseData.ticket ||  responseData.count );
       }
     } while (nextPage);
 
@@ -89,20 +90,43 @@ async function getUserFromEmail(userEmail) {
   const url = `/users/search.json?query=${`email:${userEmail}`}`;
   return makeRequest(url, 'Error fetching user');
 }
+async function getUsersByOrg(orgID) {
+
+  const url = `/organizations/${orgID}/users`;
+  return makeRequest(url, 'Error fetching user');
+}
 
 async function getAllorganizations() {
   const url = '/organizations.json';
   return makeRequest(url, 'Error fetching All Organizations');
 }
 
+async function getOrganizationsById(organizationID) {
+  const url = `/organizations/${organizationID}.json`;
+  return makeRequest(url, 'Error fetching All Organizations');
+}
+
 async function getTicketsNew() {
-  const url = '/tickets.json?status=new';
+  const url = '/search.json?query=status%3Anew';
   return makeRequest(url, 'Error fetching All Ticket with status new');
 }
 
-async function updateTicket(ticketId, changes) {
+async function getTicketsByUser(userID) {
+  const url = `/users/${userID}/tickets/requested`;
+  return makeRequest(url, 'Error fetching All Ticket with status new');
+}
+async function getTicketsById(ticketID) {
+  const url = `/tickets/${ticketID}.json`;
+  return makeRequest(url, 'Error fetching All Ticket with status new');
+}
+async function getTicketsComments(ticketID) {
+  const url = `/tickets/${ticketID}/comments`;
+  return makeRequest(url, 'Error fetching All Ticket with status new');
+}
+
+async function updateTicket(ticketId, ticketData) {
   const url = `/tickets/${ticketId}`;
-  return await makeRequest(url, 'Error updating ticket', { method: 'put', body: changes });
+  return await makeRequest(url, 'Error updating ticket', { method: 'put', body: ticketData });
 }
 
 async function getNonResolvedTicketCount() {
@@ -148,8 +172,13 @@ module.exports = {
   getAllUsers,
   getUserFromID,
   getUserFromEmail,
+  getUsersByOrg,
   getAllorganizations,
+  getOrganizationsById,
   getTicketsNew,
+  getTicketsByUser,
+  getTicketsById,
+  getTicketsComments,
   getNonResolvedTicketCount,
   getNonResolvedTicketCountOrganisation
 };

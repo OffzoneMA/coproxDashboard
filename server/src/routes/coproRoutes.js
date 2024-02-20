@@ -12,4 +12,7 @@ router.get('/coprowithoutag', CoproController.countCoproprieteWithoutSuiviAG); /
 router.post('/addCopro', CoproController.addCopropriete); // Keep the same endpoint name
 router.put('/editCopro/:id', CoproController.editCopropriete); // Keep the same endpoint name
 
+router.get('/coprowithoutag', CoproController.countCoproprieteWithoutSuiviAG); // Keep the same endpoint name
+
+
 module.exports = router;

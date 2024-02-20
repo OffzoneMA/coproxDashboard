@@ -53,5 +53,15 @@ async function getAllPersons(req, res) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+async function countAllPersons(req, res) {
+  try {
+    const count = await PersonService.countAllPersons();
+    res.status(200).json(count);
+  } catch (error) {
+    console.error('Error getting all persons:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
 
-module.exports = { addPerson, editPerson,getPersonsByInfo, getPersonsByCoproId, getAllPersons };
+
+module.exports = { addPerson, editPerson,getPersonsByInfo, getPersonsByCoproId, getAllPersons,countAllPersons };

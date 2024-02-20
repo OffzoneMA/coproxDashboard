@@ -11,10 +11,19 @@ const path = require('path');
 const logFilePath = path.join(__dirname, 'cron.txt');
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
 
-function customLog(...args) {
+function FileLog(...args) {
   const timestamp = new Date().toISOString();
   const logMessage = `${timestamp} ${args.join(' ')}\n`;
   logStream.write(logMessage);
+  process.stdout.write(logMessage); // Optional: Write to the console as well
+}
+
+const logFilePath2 = path.join(__dirname, 'stats.txt');
+const logStream2 = fs.createWriteStream(logFilePath2, { flags: 'a' }); // 'a' means append
+function FileStatLog(...args) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `${timestamp} ${args.join(' ')}\n`;
+  logStream2.write(logMessage);
   process.stdout.write(logMessage); // Optional: Write to the console as well
 }
 
@@ -43,10 +52,10 @@ const synchroUsers = {
           await getAllUsersAndManageThem(copro.idVilogi,copro)
           await fixUserRole(copro.idVilogi,copro)
         } 
-        //await SynchoZendesk();
+        
         
       }
-
+      await SynchoZendesk();
 
 
 
@@ -56,6 +65,7 @@ const synchroUsers = {
 async function getAllUsersAndManageThem(idVilogi,Copro){
   const users = await vilogiService.getAllAdherents(idVilogi);
   let i =0
+  FileStatLog("Charging from Copro : [",Copro.idCopro, " - " , Copro.Nom,"]"+` Users From Vilogi To MongoDB : [${users.length + 1}]`)
   if (users && users.length > 0) {
     // Iterate through each user in the array
     for (const user of users) {
@@ -79,7 +89,7 @@ async function getAllUsersAndManageThem(idVilogi,Copro){
         
       } else {
         // Log a message if the user object or email property is missing
-        customLog('| SyncUsers | getAllUsersAndManageThem | User with email :',user.email,' ---  email missing.');
+        FileLog('| SyncUsers | getAllUsersAndManageThem | User with email :',user.email,' ---  email missing.');
       }
     }
   }
@@ -105,7 +115,7 @@ async function SynchoMongoDB(userData) {
       // Add your logic to add the record here
     } else if (val > 1) {
       // Handle duplication when there are multiple matches    
-      customLog('| SyncUsers | SynchoMongoDB | User with email :',user.email,' ---  Double Users.');
+      FileLog('| SyncUsers | SynchoMongoDB | User with email :',user.email,' ---  Double Users.');
     }
 
   } catch (error) {
@@ -138,7 +148,7 @@ async function fixUserRole(coproId,Copro) {
           await PersonService.editPerson(result[0]._id,newDataObject );
         }else{
           
-          customLog('| SyncUsers | fixUserRole | User with IdVilogi :',user.idCoproprietaire,'  --- not found for a user.');
+          FileLog('| SyncUsers | fixUserRole | User with IdVilogi :',user.idCoproprietaire,'  --- not found for a user.');
         }
       }
     }
@@ -157,19 +167,23 @@ async function SynchoZendesk() {
       
       console.log(`Charging to Zendesk: [${i}/${users.length + 1}]`);
       const organisationName= await coproService.detailsCopropriete(user.idCopro);
-      const UserData={"user": {
-        "email": user.email,
-        "skip_verify_email": true,
-        "tags": [user.typePersonne],
-        "name": user.nom + " " + user.prenom,
-        "phone":user.telephone,
-        "organization": {
-          "name": organisationName.idCopro
-        },
-        "role": "end-user"
+      console.log([user.typePersonne])
+      const UserData = {
+        "user": {
+          "email": user.email,
+          "skip_verify_email": true,
+          "tags": [user.typePersonne],
+          "name": user.nom + " " + user.prenom,
+          "phone": user.telephone,
+          "organization": {
+            "name": organisationName.idCopro
+          },
+          "role": "end-user",
+          "user_fields":{
+            "role_du_demandeur": user.typePersonne
+          }
         }
       };
-    
       if (user.idZendesk){
         console.log("there is an User with this email")
         //ZendeskService.updateUser(id,data)
