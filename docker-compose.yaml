@@ -21,13 +21,3 @@ services:
     volumes:
       - ./front/:/usr/src/app # Link host directory to container=
       - /usr/src/app/node_modules
-
-  agent:
-    image: datadog/agent
-    environment:
-      - DD_API_KEY=pub60964f6cc9b1582c4e7c8f797fccc232
-      - DD_APM_ENABLED=true
-      - DD_LOGS_ENABLED=true
-      - DD_PROCESS_AGENT_ENABLED=true
-      - DD_HOSTNAME=app-web-app
-      - DD_LOG_LEVEL=debug
