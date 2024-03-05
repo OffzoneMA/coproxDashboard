@@ -1,4 +1,5 @@
 const axios = require('axios');
+const axiosOAuthClient = require('axios-oauth-client');
 
 require('dotenv').config(); // Load environment variables from .env
 
@@ -110,6 +111,10 @@ async function getTicketsNew() {
   const url = '/search.json?query=status%3Anew';
   return makeRequest(url, 'Error fetching All Ticket with status new');
 }
+async function getTicketsNewAssigned() {
+  const url = '/search.json?query=assignee%3A*+status%3Aopen&sort_by=created_at&sort_order=desc';
+  return makeRequest(url, 'Error fetching All Ticket with status new');
+}
 
 async function getTicketsByUser(userID) {
   const url = `/users/${userID}/tickets/requested`;
@@ -176,6 +181,7 @@ module.exports = {
   getAllorganizations,
   getOrganizationsById,
   getTicketsNew,
+  getTicketsNewAssigned,
   getTicketsByUser,
   getTicketsById,
   getTicketsComments,

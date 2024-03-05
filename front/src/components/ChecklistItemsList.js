@@ -5,6 +5,7 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
+require('dotenv').config(); // Load environment variables from .env
 
 const ChecklistItemsList = ({ onSelectChange }) => {
   const [checklistItems, setChecklistItems] = useState([]);
@@ -12,7 +13,7 @@ const ChecklistItemsList = ({ onSelectChange }) => {
 
   useEffect(() => {
     // Fetch checklist items from the backend endpoint
-    axios.get('http://localhost:8081/trello/checklist-items')
+    axios.get(`${process.env.BACKEND_URL}/trello/checklist-items`)
       .then((response) => {
         setChecklistItems(response.data);
       })

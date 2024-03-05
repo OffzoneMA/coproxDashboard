@@ -1,4 +1,5 @@
 const vilogiService = require('../services/vilogiService');
+const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const ZendeskService = require('../services/zendeskService');
 const zendeskTicket = require('./zendeskTicket');
@@ -23,45 +24,71 @@ const extractContratsEntretien = {
                     let contrats = await vilogiService.getCoproContratEntretien(copro.idVilogi);
                     //console.log(contrats);
                     for (const contrat of contrats) {
-                        // Select specific data from contrat and push it into FinalContrat array
+                        // Define a regular expression pattern to match the desired format
+                        const regex = /^(\d+)-(.*)$/;
+                        
+                        // Check if the variable contrat.fournisseur matches the pattern
+                        const match = contrat.fournisseur.match(regex);
+                        let infoFournisseur = {};
+                    
+                        if (match) {
+                            // Extract the numbers from the match
+                            const fournisseurID = match[1];
+                            infoFournisseur = await vilogiService.getPrestataireById(fournisseurID, copro.idVilogi);
+                            //console.log(`${copro.idCopro} - ${match[1]} - ${match[2]}` )
+                            //console.log(infoFournisseur)
+                            await delay(200)
+                        } else {
+                            //console.log("Invalid format for contrat.fournisseur");
+                        }
+                        if (infoFournisseur === undefined){
+                            console.log("Break");
+                            break;
+                        }else{
+
+                        }
+                                       
                         const selectedData = {
                             copro: copro.idCopro,
-                            fournisseur:contrat.fournisseur,
+                            fournisseur: contrat.fournisseur,
+                            societe: infoFournisseur.societe || "",
                             typecontrat: contrat.typecontrat,
+                            description: contrat.description,
                             dateeffet: contrat.dateeffet,
                             dateecheance: contrat.dateecheance,
                             datefin: contrat.datefin,
+                            adresse: infoFournisseur.adresse || "",
+                            complement: infoFournisseur.complement || "",
+                            ville: infoFournisseur.ville || "",
+                            codepostal: infoFournisseur.codepostal || "",
+                            telephone: infoFournisseur.telephone || "",
+                            secteur: infoFournisseur.secteur || "",
                             file: contrat.idFichier
                             // Add other properties as needed
                         };
+                    
                         FinalContrat.push(selectedData);
-                        if(contrat.idFichier){
-                            try {
-                            if (contrat.datefin){
-                                let outputFileName = `downloads/contrats/nonactif/${copro.idCopro}-Contrat -${contrat.fournisseur} - ${contrat.fournisseur}.pdf`;
-                                const apiResponse = await vilogiService.getCoproContratEntretienFichier(contrat.idFichier, copro.idVilogi,outputFileName);
-                            }else{
-                                let outputFileName = `downloads/contrats/actif/${copro.idCopro}-Contrat -${contrat.fournisseur} - ${contrat.fournisseur}.pdf`;
-                                const apiResponse = await vilogiService.getCoproContratEntretienFichier(contrat.idFichier, copro.idVilogi,outputFileName);
-                            }
-
-                            await delay(1000)
-                            } catch (error) {
-                            console.error('Error getting file from API:', error);
-                            }
+                    
+                        if (contrat.idFichier) {
+                            // await saveFileLocally(apiResponse, localFilePath, contrat)
                         }
-                        
                     }
+                    
                 }
             }
 
             // Now, FinalContrat array contains selected data from contrat
-            //console.log('FinalContrat:', FinalContrat);
+            console.log('FinalContrat:', FinalContrat);
 
             // Write FinalContrat array to a JSON file
-            //fs.writeFileSync('finalContrat.json', JSON.stringify(FinalContrat, null, 2));
-            //console.log('FinalContrat written to finalContrat.json');
-
+            fs.writeFileSync('finalContrat.json', JSON.stringify(FinalContrat, null, 2));
+            console.log('FinalContrat written to finalContrat.json');
+            const fields = ['copro','typecontrat','file','societe','description','dateeffet','datefin','dateecheance','fournisseur','adresse','complement','ville','codepostal','telephone'];
+            const csv = json2csv(FinalContrat, { fields });
+            fs.writeFile('contratEntretien.csv', csv, function(err) {
+                if (err) throw err;
+                console.log('CSV file saved as output.csv');
+            });
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
             console.error('An error occurred:', error.message);
@@ -69,22 +96,22 @@ const extractContratsEntretien = {
     }
 };
 
+
+
 async function saveFileLocally(apiResponse, localFilePath) {
     try {
-      // Assuming apiResponse is a readable stream
-      const fileStream = fs.createWriteStream(localFilePath);
-      apiResponse.data(fileStream);
-  
-      // Wait for the file to finish writing
-      await new Promise((resolve, reject) => {
-        fileStream.on('finish', resolve);
-        fileStream.on('error', reject);
-      });
-  
-      console.log(`File downloaded and saved to ${localFilePath}`);
-    } catch (error) {
-      console.error('Error saving file locally:', error.message);
-    }
+    if (contrat.datefin){
+            let outputFileName = `downloads/contrats/nonactif/${copro.idCopro}-Contrat -${contrat.fournisseur} - ${contrat.fournisseur}.pdf`;
+            const apiResponse = await vilogiService.getCoproContratEntretienFichier(contrat.idFichier, copro.idVilogi,outputFileName);
+        }else{
+            let outputFileName = `downloads/contrats/actif/${copro.idCopro}-Contrat -${contrat.fournisseur} - ${contrat.fournisseur}.pdf`;
+            const apiResponse = await vilogiService.getCoproContratEntretienFichier(contrat.idFichier, copro.idVilogi,outputFileName);
+        }
+
+        await delay(1000)
+        } catch (error) {
+        console.error('Error getting file from API:', error);
+        }
   }
 
 

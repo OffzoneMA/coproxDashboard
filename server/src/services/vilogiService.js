@@ -19,6 +19,16 @@ const authenticateUser = async () => {
   }
 };
 
+const getAllCopros = async () => {
+  const coproEndpoint = `/SyndicInfo/copro?token=${process.env.VILOGI_TOKEN}&idCopro=48239&idAdh=${process.env.VILOGI_IDAUTH}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 const getCoproData = async (coproID) => {
   const coproEndpoint = `/copro?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
 
@@ -66,10 +76,23 @@ const getCoproContratEntretienFichier = async (fichierID,coproID,outputFileName)
 };
 
 const getPrestataireById = async (prestaireID,coproID) => {
-  const coproEndpoint = `/professionnel?idProfessionnel=${prestaireID}&token=${process.env.VILOGI_TOKEN}&Copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
-  try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
-    return response.data;
+  //const coproEndpoint = `/professionnel/idProfessionnel=${prestaireID}?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  const coproEndpoint = `/professionnel?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  //https://copro.vilogi.com/rest/professionnel?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&Copro=44378&id=749799
+  //https://copro.vilogi.com/rest/professionnel?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&copro=44378&id=749799
+  
+  try { 
+    //console.log(`${apiUrl}${coproEndpoint}`)
+    const pros = await axios.get(`${apiUrl}${coproEndpoint}`);
+    //console.log(pros.data)
+    for(const pro in pros.data){
+      //console.log(pros.data[pro])
+      if(prestaireID.includes(pros.data[pro].idCompte)){
+        //console.log(pros.data[pro])
+        return pros.data[pro];
+      }
+        
+    }
   } catch (error) {
     throw error;
   }
@@ -89,6 +112,7 @@ const getAllAdherents = async (coproID) => {
 
 module.exports = {
   authenticateUser,
+  getAllCopros,
   getCoproData,
   getCoproContratEntretien,
   getCoproContratEntretienFichier,
