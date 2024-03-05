@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchDataFromApi } from '@src/utils/api';
 import DashboardBox from '../components/DashboardBox';
+require('dotenv').config(); // Load environment variables from .env
 
 function HomePage({ onSetTitle }) {
   const [coproWithoutAGCount, setCoproWithoutAGCount] = useState(null);
@@ -10,11 +11,11 @@ function HomePage({ onSetTitle }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const responseCoproWithoutAG = await fetch('http://localhost:8081/copro/coprowithoutag');
+        const responseCoproWithoutAG = await fetch( `${process.env.BACKEND_URL}/copro/coprowithoutag`);
         const dataCoproWithoutAG = await responseCoproWithoutAG.json();
         setCoproWithoutAGCount(dataCoproWithoutAG.count);
 
-        const responseNonResolvedTickets = await fetch('http://localhost:8081/zendesk/non-resolved-tickets/count');
+        const responseNonResolvedTickets = await fetch( `${process.env.BACKEND_URL}/zendesk/non-resolved-tickets/count`);
         const dataNonResolvedTickets = await responseNonResolvedTickets.json();
         setNonResolvedTicketsCount(dataNonResolvedTickets[0].value);
 

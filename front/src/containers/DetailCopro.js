@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
 import DashboardBox from '../components/DashboardBox';
+require('dotenv').config(); // Load environment variables from .env
 
 const LoadingComponent = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -49,31 +50,31 @@ const DetailCopro = ({ onSetTitle }) => {
       setError(error.message);
     }
   };
-
+ 
   const fetchCoproDetails = async () => {
-    await fetchData(`http://localhost:8081/copro/detailsCopro/${id}`, setCoproDetails);
+    await fetchData(`${process.env.BACKEND_URL}/copro/detailsCopro/${id}`, setCoproDetails);
   };
 
   const fetchLebarocoproDetails = async () => {
-    await fetchData(`http://localhost:8081/lebarocopro/lebarocopro/${id}`, setLebarocoproDetails);
+    await fetchData(`${process.env.BACKEND_URL}/lebarocopro/lebarocopro/${id}`, setLebarocoproDetails);
   };
 
   const fetchAgSteps = async () => {
-    await fetchData('http://localhost:8081/trello/getAgSteps', setSteps);
+    await fetchData(`${process.env.BACKEND_URL}/trello/getAgSteps`, setSteps);
   };
 
   const fetchCoproData = async () => {
-    await fetchData(`http://localhost:8081/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCoproData);
+    await fetchData(`${process.env.BACKEND_URL}/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCoproData);
   };
 
   const fetchCouncilMembers = async () => {
-    await fetchData(`http://localhost:8081/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCouncilMembers);
+    await fetchData(`${process.env.BACKEND_URL}/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCouncilMembers);
   };
 
   const fetchNonResolvedTicketsCount = async () => {
     const idCorpo = coproDetails?.idCorpo;
     if (idCorpo) {
-      await fetchData(`http://localhost:8081/zendesk/organization/${idCorpo}/ticket/count`, setNonResolvedTicketsCount);
+      await fetchData(`${process.env.BACKEND_URL}/zendesk/organization/${idCorpo}/ticket/count`, setNonResolvedTicketsCount);
     }
   };
 

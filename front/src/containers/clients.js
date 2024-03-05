@@ -16,6 +16,8 @@ import {
   TextField,
 } from '@mui/material';
 
+require('dotenv').config(); // Load environment variables from .env
+
 const PersonList = () => {
   const [personList, setPersonList] = useState([]);
   const [filteredPersonList, setFilteredPersonList] = useState([]);
@@ -27,7 +29,7 @@ const PersonList = () => {
 
   useEffect(() => {
     // Fetch data from your API
-    fetch('http://localhost:8081/person/getAllPersons')
+    fetch(`${process.env.BACKEND_URL}/person/getAllPersons`)
       .then((response) => response.json())
       .then((data) => {
         setPersonList(data);
