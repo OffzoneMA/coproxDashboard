@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchDataFromApi } from '@src/utils/api';
 import ChecklistItemsList from '../components/ChecklistItemsList';
 import CoproListTrello from '../components/coprolisttrello';
+require('dotenv').config(); // Load environment variables from .env
 
 function TrelloPage({ onSetTitle }) {
   const [selectedTask, setSelectedTask] = useState('');

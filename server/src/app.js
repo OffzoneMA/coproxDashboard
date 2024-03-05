@@ -10,12 +10,15 @@ const suiviAGRoutes = require('./routes/suiviAgRoutes.js');
 const vilogiRoutes = require('./routes/vilogiRoutes.js');
 const personRoutes = require('./routes/personRoutes.js');
 const zendeskRoutes = require('./routes/zendeskRoutes');
+const synchroCopro = require('./cron/synchroCopro');
 const synchroUsers = require('./cron/synchoUsers');
 const zendeskTicket = require('./cron/zendeskTicket');
 const zendeskTicketAI = require('./cron/zendeskTicketAI');
 const extractContratsEntretien = require('./cron/extractContratsEntretien');
 const syncZendeskTags = require('./cron/syncZendeskTags');
-syncZendeskTags
+const zendeskTicketDocuments = require('./cron/zendeskTicketDocuments');
+
+
 
 const app = express();
 const port = 8081;
@@ -32,7 +35,7 @@ app.use('/person', personRoutes);
 app.use('/vilogi', vilogiRoutes);
 app.use('/mongodb', trelloRoutes);
 app.get('/batch', (req, res) => {
-  zendeskTicket.start();
+  zendeskTicketAI.start();
   res.send('Cron test is running!');
 });
 
@@ -40,9 +43,16 @@ cron.schedule('0 12 * * *', () => {
   zendeskTicket.start();
 });
 
-cron.schedule('*/30 * * * *', () => {
+cron.schedule('0 0 * * 0', () => {
+  synchroCopro.start();
+  synchroUsers.start();
+});
+
+
+
+cron.schedule('0 0 * * *', () => {
   console.log("-------------------------Starting Zendesk Ticket AI--------------------------------------------")
-  //zendeskTicketAI.start();
+  zendeskTicketAI.start();
   
   console.log("-------------------------Ending Zendesk Ticket AI--------------------------------------------")
 });

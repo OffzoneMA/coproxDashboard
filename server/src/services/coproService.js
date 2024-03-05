@@ -33,6 +33,12 @@ async function detailsCopropriete(id) {
     return await coproprieteCollection.findOne({ _id: mongoose.Types.ObjectId(id) });
   });
 }
+async function detailsCoproprieteByidVilogi(id) {
+  return connectAndExecute(async () => {
+    const coproprieteCollection = MongoDB.getCollection('copropriete');
+    return await coproprieteCollection.findOne({ idVilogi: id });
+  });
+}
 
 async function addCopropriete(newCoproprieteData) {
   return connectAndExecute(async () => {
@@ -110,6 +116,7 @@ async function countCoproprieteWithoutSuiviAG() {
 module.exports = {
   listCopropriete,
   detailsCopropriete,
+  detailsCoproprieteByidVilogi,
   addCopropriete,
   editCopropriete,
   countOffers,

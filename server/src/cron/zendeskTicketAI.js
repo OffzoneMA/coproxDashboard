@@ -84,7 +84,7 @@ async function updateZendeskTicketCategory(ticketId, message) {
 
 async function answerNewZendeskTickets() {
   try {
-    const tickets = await ZendeskService.getTicketsNew();
+    const tickets = await ZendeskService.getTicketsNewAssigned();
     const delay = async (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 
@@ -98,29 +98,40 @@ for (const ticket of tickets) {
   if (users.includes(ticket.assignee_id)) {
     const ticketDetails = await ZendeskService.getTicketsComments(ticket.id);
     const lengthComment = ticketDetails.length;
-  
-    for (let i = lengthComment - 1; i >= 0; i--) {
-      if (coproxUsers.includes(ticketDetails[i].author_id)) {
-        // Do something when coproxUsers includes the author_id
-      } else {
-        console.log(ticketDetails[i].author_id)
-         const result = await HandleTickets(ticket, ticketDetails[i]);
-         answeredTickets.push(result);
-        break;
+    
+    // If Last message from AI break
+    if(coproxUsers.includes(ticketDetails[lengthComment-1].author_id)){
+
+    }else{
+      for (let i = lengthComment - 1; i >= 0; i--) {
+
+
+        if (coproxUsers.includes(ticketDetails[i].author_id)) {
+          // Do something when coproxUsers includes the author_id
+        } else {
+            console.log(ticketDetails[i].author_id)
+            const result = await HandleTickets(ticket, ticketDetails[i]);
+            answeredTickets.push(result);
+            // Increment the counter
+            ticketCount++;
+          break;
+        }
+        console.log("-------------------------------------------------------------------------------------------------------------");
       }
-      console.log("-------------------------------------------------------------------------------------------------------------");
     }
+
+
+
   }
 
 
     // Add a delay between tickets (e.g., 5000 milliseconds = 5 seconds)
     await delay(500);
 
-    // Increment the counter
-    ticketCount++;
+  
 
     // Break the loop if the counter reaches 10
-    if (ticketCount === 60) {
+    if (ticketCount === 10) {
         break;
     }
 }

@@ -9,6 +9,8 @@ const CoproprieteSchema = new mongoose.Schema({
     codepostal: { type: String, required: false },
     Offre: { type: String, required: false },
     exerciceCT: { type: Date, required: false },
+    dateReprise:{ type: Date, required: false },
+    idVilogi:{ type: String, required: false }
 });
 
 const Copropriete = mongoose.model('Copropriete', CoproprieteSchema);
