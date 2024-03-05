@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import PropTypes from 'prop-types';
 import {
   Paper,
   Typography,
@@ -26,6 +27,12 @@ const TabPanel = ({ value, index, children }) => (
     {value === index && children}
   </div>
 );
+
+TabPanel.propTypes = {
+  value: PropTypes.number.isRequired,
+  index: PropTypes.number.isRequired,
+  children: PropTypes.node,
+};
 
 const DetailCopro = ({ onSetTitle }) => {
   const { id } = useParams();
@@ -73,7 +80,7 @@ const DetailCopro = ({ onSetTitle }) => {
   const fetchNonResolvedTicketsCount = async () => {
     const idCorpo = coproDetails?.idCorpo;
     if (idCorpo) {
-      await fetchData(`http://localhost:8081/zendesk/organization/${idCorpo}/ticket/count`, setNonResolvedTicketsCount);
+      await fetchData(`${process.env.REACT_APP_BACKEND_URL}/zendesk/organization/${idCorpo}/ticket/count`, setNonResolvedTicketsCount);
     }
   };
 
@@ -122,8 +129,6 @@ const DetailCopro = ({ onSetTitle }) => {
         </Typography>
       </Paper>
 
-
-
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <DashboardBox title="Zendesk Ticket" data={nonResolvedTicketsCount || 0} />
         <DashboardBox title="Fin éxercice comptable" data={`${coproDetails?.exerciceCT || 'N/A'} `} />
@@ -132,8 +137,8 @@ const DetailCopro = ({ onSetTitle }) => {
         <DashboardBox title="Nombre de coproprietaire" data={coproDetails?.nombreCoproprietaire || 0} />
         <DashboardBox title="Satisfaction client" data={coproDetails?.satisfaction || 'N/A'} />
         <DashboardBox title="Lebarocopro" data={lebarocoproDetails || 'N/A'} />
-        {/* Additional DashboardBoxes as needed */}
       </div>
+
       <div style={{ width: '100%' }}>
         <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
           <Tab label="Avancement AG" />
@@ -168,8 +173,7 @@ const DetailCopro = ({ onSetTitle }) => {
           )}
         </TabPanel>
       </div>
-      
-      </div>
+    </div>
   );
 };
 
