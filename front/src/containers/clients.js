@@ -29,7 +29,7 @@ const PersonList = () => {
 
   useEffect(() => {
     // Fetch data from your API
-    fetch(`${process.env.BACKEND_URL}/person/getAllPersons`)
+    fetch(`http://localhost:8081/person/getAllPersons`)
       .then((response) => response.json())
       .then((data) => {
         setPersonList(data);

@@ -59,23 +59,23 @@ const DetailCopro = ({ onSetTitle }) => {
   };
  
   const fetchCoproDetails = async () => {
-    await fetchData(`${process.env.BACKEND_URL}/copro/detailsCopro/${id}`, setCoproDetails);
+    await fetchData(`http://localhost:8081/copro/detailsCopro/${id}`, setCoproDetails);
   };
 
   const fetchLebarocoproDetails = async () => {
-    await fetchData(`${process.env.BACKEND_URL}/lebarocopro/lebarocopro/${id}`, setLebarocoproDetails);
+    await fetchData(`http://localhost:8081/lebarocopro/lebarocopro/${id}`, setLebarocoproDetails);
   };
 
   const fetchAgSteps = async () => {
-    await fetchData(`${process.env.BACKEND_URL}/trello/getAgSteps`, setSteps);
+    await fetchData(`http://localhost:8081/trello/getAgSteps`, setSteps);
   };
 
   const fetchCoproData = async () => {
-    await fetchData(`${process.env.BACKEND_URL}/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCoproData);
+    await fetchData(`http://localhost:8081/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCoproData);
   };
 
   const fetchCouncilMembers = async () => {
-    await fetchData(`${process.env.BACKEND_URL}/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCouncilMembers);
+    await fetchData(`http://localhost:8081/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCouncilMembers);
   };
 
   const fetchNonResolvedTicketsCount = async () => {

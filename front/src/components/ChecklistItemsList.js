@@ -13,7 +13,7 @@ const ChecklistItemsList = ({ onSelectChange }) => {
 
   useEffect(() => {
     // Fetch checklist items from the backend endpoint
-    axios.get(`${process.env.BACKEND_URL}/trello/checklist-items`)
+    axios.get(`http://localhost:8081/trello/checklist-items`)
       .then((response) => {
         setChecklistItems(response.data);
       })

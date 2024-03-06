@@ -20,7 +20,7 @@ const Copro = ({ onSetTitle }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`${process.env.BACKEND_URL}/copro/listCopro`);
+        const response = await fetch(`http://localhost:8081/copro/listCopro`);
         const data = await response.json();
 
         setCoproList(data);

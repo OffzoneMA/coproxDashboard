@@ -11,11 +11,11 @@ function HomePage({ onSetTitle }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const responseCoproWithoutAG = await fetch( `${process.env.BACKEND_URL}/copro/coprowithoutag`);
+        const responseCoproWithoutAG = await fetch( `http://localhost:8081/copro/coprowithoutag`);
         const dataCoproWithoutAG = await responseCoproWithoutAG.json();
         setCoproWithoutAGCount(dataCoproWithoutAG.count);
 
-        const responseNonResolvedTickets = await fetch( `${process.env.BACKEND_URL}/zendesk/non-resolved-tickets/count`);
+        const responseNonResolvedTickets = await fetch( `http://localhost:8081/zendesk/non-resolved-tickets/count`);
         const dataNonResolvedTickets = await responseNonResolvedTickets.json();
         setNonResolvedTicketsCount(dataNonResolvedTickets[0].value);
 
