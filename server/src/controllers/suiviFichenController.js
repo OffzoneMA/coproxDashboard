@@ -24,9 +24,9 @@ async function editPerson(req, res) {
   }
 }
 
-async function getinfo(req, res) {
+async function getInfo(req, res) {
   try {
-    const fiche = await suiviFichenService.getinfo(req.params.idCopro);
+    const fiche = await suiviFichenService.getInfo(req.params.idCopro);
     res.status(200).json(fiche);
 
   } catch (error) {
@@ -34,6 +34,24 @@ async function getinfo(req, res) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+
+async function generatePdf(req, res) {
+  try {
+    const id = req.params.id;
+
+    const pdfBuffer = await suiviFichenService.generatePdf(id);
+
+    // Serve the PDF to the client
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error generating PDF');
+  }
+}
+
+
 async function getPersonsByCoproId(req, res) {
   try {
     const persons = await suiviFichenService.getPersonsByCoproId(req.params.idCopro);
@@ -74,4 +92,4 @@ async function countAllPersons(req, res) {
 }
 
 
-module.exports = { addPerson,getinfo, editPerson,getPersonsByInfo, getPersonsByCoproId, getAllPersons,countAllPersons };
+module.exports = { addPerson,getInfo,generatePdf, editPerson,getPersonsByInfo, getPersonsByCoproId, getAllPersons,countAllPersons };
