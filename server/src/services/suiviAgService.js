@@ -5,21 +5,15 @@ mongoose.set('useFindAndModify', false);
 
 const suiviAgModel = MongoDB.addSaveMiddleware('suiviAg');
 
-function connectAndExecute(callback) {
-  console.log('Connecting to MongoDB');
-  return new Promise(async (resolve, reject) => {
-    try {
-      await MongoDB.connectToDatabase();
-      const result = await callback();
-      console.log('Closing MongoDB connection');
-      await MongoDB.closeConnection();
-      resolve(result);
-    } catch (error) {
-      console.error('Error connecting and executing:', error.message);
-      await MongoDB.closeConnection();
-      reject(error);
-    }
-  });
+async function connectAndExecute(callback) {
+  try {
+    await MongoDB.connectToDatabase();
+    const result = await callback();
+    return result;
+  } catch (error) {
+    console.error('Error connecting and executing:', error.message);
+    throw error;
+  } 
 }
 
 async function addsuiviAg(jsonData) {
