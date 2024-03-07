@@ -168,6 +168,34 @@ async function getOrganizationIdByExternalId(organizationExternalId) {
     throw new Error(`Error getting organization ID by external ID: ${error.message}`);
   }
 }
+async function getSuspendedTickets() {
+  const url = '/tickets.json?status=suspended';
+  return makeRequest(url, 'Error fetching suspended tickets');
+}
+
+async function recoverTicket(ticketId) {
+  const url = `/tickets/${ticketId}`;
+  const ticketData = {
+    ticket: {
+      status: 'open'
+    }
+  };
+  return await makeRequest(url, 'Error recovering ticket', { method: 'put', body: ticketData });
+}
+
+async function recoverAllSuspendedTickets() {
+  try {
+    const suspendedTickets = await getSuspendedTickets();
+    for (const ticket of suspendedTickets) {
+      console.log(`Recovering ticket with ID: ${ticket.id}`);
+      await recoverTicket(ticket.id);
+    }
+    console.log('All suspended tickets have been recovered.');
+  } catch (error) {
+    console.error(`Error recovering suspended tickets: ${error.message}`);
+    throw new Error(`Error recovering suspended tickets: ${error.message}`);
+  }
+}
 
 module.exports = {
   updateTicket,
@@ -186,5 +214,6 @@ module.exports = {
   getTicketsById,
   getTicketsComments,
   getNonResolvedTicketCount,
+  recoverAllSuspendedTickets,
   getNonResolvedTicketCountOrganisation
 };
