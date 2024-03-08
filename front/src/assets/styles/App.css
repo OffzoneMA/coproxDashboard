@@ -60,6 +60,18 @@ body, .root, #root {
   gap: 24px;
   align-self: stretch;
 }
+.cropo_details_box {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  gap: 10px;
+}
 
 .container-top {
   display: flex;

@@ -24,7 +24,7 @@ const CoproTable = ({ coproList, filteredCoproList, page, rowsPerPage, handleCha
           {filteredCoproList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((copro) => (
            
                 <TableRow key={copro._id} style={{ background: copro.status !== 'Actif' ? 'lightgray' : 'inherit' }}>
-                 <Link to={`/detailCopro/${copro._id}`}><TableCell>{copro.idCopro}</TableCell></Link>
+                 <TableCell><Link style={{ textDecoration: 'none', color: 'inherit' }} to={`/detailCopro/${copro._id}`}>{copro.idCopro}</Link></TableCell>
                 <TableCell>{copro.Nom}</TableCell>
                 <TableCell>{copro.ville}</TableCell>
                 <TableCell>{copro.status}</TableCell>

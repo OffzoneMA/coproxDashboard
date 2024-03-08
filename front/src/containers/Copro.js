@@ -4,7 +4,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import CoproFilters from '../components/copros/CoproFilters';
 import CoproTable from '../components/copros/CoproTable';
 import CoproFabWithOptions from '../components/copros/CoproFabWithOptions';
-require('dotenv').config(); // Load environment variables from .env
 
 const Copro = ({ onSetTitle }) => {
   const [coproList, setCoproList] = useState([]);
@@ -20,7 +19,7 @@ const Copro = ({ onSetTitle }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`http://localhost:8081/copro/listCopro`);
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/copro/listCopro`);
         const data = await response.json();
 
         setCoproList(data);
@@ -95,6 +94,8 @@ const Copro = ({ onSetTitle }) => {
             filteredCoproList={filteredCoproList}
             page={page}
             rowsPerPage={rowsPerPage}
+            handleChangePage={handleChangePage}
+            handleChangeRowsPerPage={handleChangeRowsPerPage}
           />
           {tableLoading && <CircularProgress style={{ margin: '20px' }} />}
         </>

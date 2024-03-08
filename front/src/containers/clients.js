@@ -16,7 +16,6 @@ import {
   TextField,
 } from '@mui/material';
 
-require('dotenv').config(); // Load environment variables from .env
 
 const PersonList = () => {
   const [personList, setPersonList] = useState([]);
@@ -29,7 +28,7 @@ const PersonList = () => {
 
   useEffect(() => {
     // Fetch data from your API
-    fetch(`http://localhost:8081/person/getAllPersons`)
+    fetch(`${process.env.REACT_APP_BACKEND_URL}/person/getAllPersons`)
       .then((response) => response.json())
       .then((data) => {
         setPersonList(data);
@@ -73,6 +72,7 @@ const PersonList = () => {
 
   return (
     <div className="container-main">
+      <div>
       <FormControl variant="outlined" style={{ marginBottom: '16px' }}>
         <InputLabel id="filter-type-label">Filter by Type</InputLabel>
         <Select
@@ -102,6 +102,8 @@ const PersonList = () => {
         }}
         style={{ marginBottom: '16px' }}
       />
+      </div>
+      
 
       {loading ? (
         <CircularProgress style={{ margin: '20px' }} />

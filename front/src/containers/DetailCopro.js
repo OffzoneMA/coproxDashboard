@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import PropTypes from 'prop-types';
 import {
   Paper,
   Typography,
@@ -15,7 +14,6 @@ import {
 } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
 import DashboardBox from '../components/DashboardBox';
-require('dotenv').config(); // Load environment variables from .env
 
 const LoadingComponent = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -28,12 +26,6 @@ const TabPanel = ({ value, index, children }) => (
     {value === index && children}
   </div>
 );
-
-TabPanel.propTypes = {
-  value: PropTypes.number.isRequired,
-  index: PropTypes.number.isRequired,
-  children: PropTypes.node,
-};
 
 const DetailCopro = ({ onSetTitle }) => {
   const { id } = useParams();
@@ -57,31 +49,31 @@ const DetailCopro = ({ onSetTitle }) => {
       setError(error.message);
     }
   };
- 
+
   const fetchCoproDetails = async () => {
-    await fetchData(`http://localhost:8081/copro/detailsCopro/${id}`, setCoproDetails);
+    await fetchData(`${process.env.REACT_APP_BACKEND_URL}/copro/detailsCopro/${id}`, setCoproDetails);
   };
 
   const fetchLebarocoproDetails = async () => {
-    await fetchData(`http://localhost:8081/lebarocopro/lebarocopro/${id}`, setLebarocoproDetails);
+    await fetchData(`${process.env.REACT_APP_BACKEND_URL}/lebarocopro/lebarocopro/${id}`, setLebarocoproDetails);
   };
 
   const fetchAgSteps = async () => {
-    await fetchData(`http://localhost:8081/trello/getAgSteps`, setSteps);
+    await fetchData(`${process.env.REACT_APP_BACKEND_URL}/trello/getAgSteps`, setSteps);
   };
 
   const fetchCoproData = async () => {
-    await fetchData(`http://localhost:8081/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCoproData);
+    await fetchData(`${process.env.REACT_APP_BACKEND_URL}/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCoproData);
   };
 
   const fetchCouncilMembers = async () => {
-    await fetchData(`http://localhost:8081/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCouncilMembers);
+    await fetchData(`${process.env.REACT_APP_BACKEND_URL}/vilogi/getCoproData/${coproDetails?.idVilogi}`, setCouncilMembers);
   };
 
   const fetchNonResolvedTicketsCount = async () => {
     const idCorpo = coproDetails?.idCorpo;
     if (idCorpo) {
-      await fetchData(`http://localhost:8081/zendesk/organization/${idCorpo}/ticket/count`, setNonResolvedTicketsCount);
+      await fetchData(`${process.env.REACT_APP_BACKEND_URL}/zendesk/organization/${idCorpo}/ticket/count`, setNonResolvedTicketsCount);
     }
   };
 
@@ -97,6 +89,7 @@ const DetailCopro = ({ onSetTitle }) => {
           fetchNonResolvedTicketsCount(),
         ]);
         onSetTitle(coproDetails?.Nom || 'Copro Details');
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error.message);
         setError(error.message);
@@ -130,18 +123,21 @@ const DetailCopro = ({ onSetTitle }) => {
         </Typography>
       </Paper>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <DashboardBox title="Zendesk Ticket" data={nonResolvedTicketsCount || 0} />
+
+
+      <div className='grid-container'>
+        <DashboardBox className="" title="Zendesk Ticket" data={nonResolvedTicketsCount || 0} />
         <DashboardBox title="Fin éxercice comptable" data={`${coproDetails?.exerciceCT || 'N/A'} `} />
         <DashboardBox title="Budget" data={`${coproDetails?.budget || 0} $`} />
         <DashboardBox title="Offre" data={coproDetails?.Offre || 'N/A'} />
         <DashboardBox title="Nombre de coproprietaire" data={coproDetails?.nombreCoproprietaire || 0} />
         <DashboardBox title="Satisfaction client" data={coproDetails?.satisfaction || 'N/A'} />
         <DashboardBox title="Lebarocopro" data={lebarocoproDetails || 'N/A'} />
+        {/* Additional DashboardBoxes as needed */}
       </div>
 
-      <div style={{ width: '100%' }}>
-        <Tabs value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
+      <div style={{ width: '100%', marginBottom:'5px' }}>
+        <Tabs style={{ marginBottom:'15px' }} value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
           <Tab label="Avancement AG" />
           <Tab label="Conseil Syndical" />
         </Tabs>
@@ -174,7 +170,8 @@ const DetailCopro = ({ onSetTitle }) => {
           )}
         </TabPanel>
       </div>
-    </div>
+      
+      </div>
   );
 };
 

@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import CircularProgress from '@mui/material/CircularProgress';
-require('dotenv').config(); // Load environment variables from .env
-
 
 const CoproListTrello = ({ selectedTask }) => {
   const [cardsWithCheckItems, setCardsWithCheckItems] = useState([]);
@@ -15,7 +13,7 @@ const CoproListTrello = ({ selectedTask }) => {
           // Set loading to true when starting the API call
           setLoading(true);
 
-          const response = await axios.post(`http://localhost:8081/trello/cardsWithCheckItemskawa`, {
+          const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/trello/cardsWithCheckItems`, {
             checkItemNames: [selectedTask],
           });
 
