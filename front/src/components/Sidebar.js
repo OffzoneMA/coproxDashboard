@@ -37,6 +37,10 @@ const Sidebar = () => {
           <Apartment  className="drawer-icon"/>
           <ListItemText primary="Mes copros" />
         </ListItem>
+        <ListItem button component={Link} to="/listefiches">
+          <Apartment  className="drawer-icon"/>
+          <ListItemText primary="Fiches d'informations" />
+        </ListItem>
         
         <ListItem button component={Link} to="/clients">
           <Groups  className="drawer-icon"/>

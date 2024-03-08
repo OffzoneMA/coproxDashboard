@@ -5,8 +5,10 @@ import { CssBaseline } from '@mui/material';
 import Sidebar from './components/Sidebar';
 import TrelloPage from './containers/TrelloPage';
 import Copro from './containers/Copro';
+import AddFiches from './containers/AddFiches';
+import ListeFiches from './containers/ListeFiches.js';
 import Clients from './containers/clients';
-import DetailCopro from './containers/detailCopro';
+import DetailCopro from './containers/DetailCopro';
 import HomePage from './containers/HomePage';
 import './assets/styles/App.css';
 
@@ -31,6 +33,8 @@ function App() {
             <Route path="/" element={<HomePage onSetTitle={setTitle}/>} />
             <Route path="/trello" element={<TrelloPage onSetTitle={setTitle} />} />
             <Route path="/copro" element={<Copro onSetTitle={setTitle} />} />
+            <Route path="/addfiches" element={<AddFiches onSetTitle={setTitle} />} />
+            <Route path="/listefiches" element={<ListeFiches onSetTitle={setTitle} />} />
             <Route path="/clients" element={<Clients onSetTitle={setTitle} />} />
             <Route path="/detailcopro/:id" element={<DetailCopro onSetTitle={setTitle} />} />
 
