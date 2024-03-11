@@ -95,10 +95,16 @@ for (const ticket of tickets) {
   let users = [15116020640413, 15115995844637];
   let coproxUsers = [15116020640413, 15115995844637,16427900046109,15114640058525,15206663482269,15420362913693,16310145706013];
   
+
+  if (ticket.custom_status_id && ticket.custom_status_id == 15662538914333) {
+    // break if the AI already generated a message to the ticket 
+    break;
+  }
   if (users.includes(ticket.assignee_id)) {
     const ticketDetails = await ZendeskService.getTicketsComments(ticket.id);
     const lengthComment = ticketDetails.length;
-    
+
+
     // If Last message from AI break
     if(coproxUsers.includes(ticketDetails[lengthComment-1].author_id)){
 
