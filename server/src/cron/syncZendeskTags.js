@@ -1,10 +1,6 @@
 const fs = require('fs');
 const zendeskController = require('../controllers/zendeskController');
 const zendeskService = require('../services/zendeskService');
-
-
-
-const fs = require('fs');
 const path = require('path');
 
 const logFilePath = path.join(__dirname, '../../logs/cron.txt');
