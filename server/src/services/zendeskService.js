@@ -42,8 +42,17 @@ async function makeRequest(url, errorMessage, { method = 'get', params = {}, bod
 
     return allData;
   } catch (error) {
-    console.error(`${errorMessage}: ${error.message}`);
-    throw new Error(`${errorMessage}: ${error.message}`);
+    const responseError = {
+      data: error.response ? error.response.data : null,
+      status: error.response ? error.response.status : null,
+      statusText: error.response ? error.response.statusText : null,
+    };
+    const messages =flattenJSON(responseError.data)
+
+    const requestBody = error.config ? error.config.data : null;
+
+    console.error(`${errorMessage}: ${error}. Response data: ${JSON.stringify(responseError.data.error)} -- ${messages} . Request body: ${JSON.stringify(requestBody)}`);
+    throw new Error(`${errorMessage}: Response data: ${messages}`);
   }
 }
 
@@ -61,9 +70,29 @@ function extractNextPage(nextPage) {
   return path.startsWith("/") ? path : `/${path}`;
 }
 
+function flattenJSON(obj, separatorKey = '--', separatorValue = ':') {
+  const result = [];
+
+  function traverse(obj, parentKey = '') {
+      for (const key in obj) {
+          const currentKey = parentKey ? `${parentKey}${separatorKey}${key}` : key;
+          if (typeof obj[key] === 'object') {
+              traverse(obj[key], currentKey);
+          } else {
+              result.push(`${currentKey}${separatorValue}${obj[key]}`);
+          }
+      }
+  }
+
+  traverse(obj);
+  return result;
+}
+
 async function addUser(userData) {
   const url = '/users';
-  return makeRequest(url, 'Error fetching current user', { method: 'post', body: userData });
+  response = await makeRequest(url, 'Error fetching current user', { method: 'post', body: userData });
+  console.log(response[0].id)
+  return response[0].id
 }
 async function updateUser(userID,userData) {
   const url = `/users/${userID}`;
@@ -89,7 +118,9 @@ async function getUserFromID(userID) {
 async function getUserFromEmail(userEmail) {
 
   const url = `/users/search.json?query=${`email:${userEmail}`}`;
-  return makeRequest(url, 'Error fetching user');
+   user = await makeRequest(url, 'Error fetching user');
+   const userEnd = user[0]?.id || {};
+   return userEnd
 }
 async function getUsersByOrg(orgID) {
 
@@ -135,14 +166,16 @@ async function updateTicket(ticketId, ticketData) {
 }
 
 async function getNonResolvedTicketCount() {
-  const url = '/tickets/count.json?status=unresolved';
-  return makeRequest(url, 'Error fetching non-resolved ticket count');
+  const url = '/search.json?query=status<solved%20status<closed';
+  const response = await makeRequest(url, 'Error fetching non-resolved ticket count');
+  const count = response.length || 0;
+  return count
 }
 
 async function getNonResolvedTicketCountOrganisation(organizationExternalId) {
   try {
     const organizationId = await getOrganizationIdByExternalId(organizationExternalId);
-    const url = `/organizations/${organizationId}/tickets.json?status=unresolved&count=true`;
+    const url = `/search.json?query=status<solved%20status<closed%20organization:${organizationId}`
     const response = await makeRequest(url, 'Error fetching non-resolved ticket count');
     const count = response.length || 0;
     return { count };
