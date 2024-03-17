@@ -49,8 +49,8 @@ const synchroUsers = {
         if(copro.idVilogi){
           //console.log(copro)
           
-         // await getAllUsersAndManageThem(copro.idVilogi,copro)
-          //await fixUserRole(copro.idVilogi,copro)
+          await getAllUsersAndManageThem(copro.idVilogi,copro)
+          await fixUserRole(copro.idVilogi,copro)
         } 
         
         

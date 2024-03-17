@@ -2,19 +2,22 @@ const fs = require('fs');
 const zendeskController = require('../controllers/zendeskController');
 const zendeskService = require('../services/zendeskService');
 
-const logFilePath = 'logs/syncZendeskTagsLogs.txt';
 
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+
+const fs = require('fs');
+const path = require('path');
+
+const logFilePath = path.join(__dirname, '../../logs/cron.txt');
+const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
+
+function FileLog(...args) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `${timestamp} ${args.join(' ')}\n`;
+  logStream.write(logMessage);
+  process.stdout.write(logMessage); // Optional: Write to the console as well
 }
 
-function log(message) {
-    // Log to console
-    console.log(message);
 
-    // Log to file
-    fs.appendFileSync(logFilePath, `${new Date().toISOString()} - ${message}\n`, 'utf8');
-}
 
 const syncZendeskTags = {
     start: async () => {
@@ -42,31 +45,38 @@ const syncZendeskTags = {
                 await delay(200);
             }
         } catch (error) {
-            log(`Error occurred: ${error.message}`);
+            FileLog('| syncZendeskTags | init | error :',error);
+
         }
     }
 };
 
 async function PushTagToTicket(userTags, ticketTags, ticketId) {
-    for (const userTag of userTags) {
-        if (!ticketTags.includes(userTag)) {
-            console.log(`Updating ticket ${ticketId} by adding tag: ${userTag}`);
-            console.log(`Old tags: ${ticketTags}`);
-            
-            ticketTags.push(userTag);
-            
-            console.log(`New tags: ${ticketTags}`);
-            
-            const updateData = {
-                "ticket": {
-                    "tags": ticketTags
-                }
-            };
-            console.log(updateData)
-            log(`Update data: ${ticketId} by adding tag: ${userTag} `);
-            
-            await zendeskService.updateTicket(ticketId, updateData);
+    try {
+        for (const userTag of userTags) {
+            if (!ticketTags.includes(userTag)) {
+                console.log(`Updating ticket ${ticketId} by adding tag: ${userTag}`);
+                console.log(`Old tags: ${ticketTags}`);
+                
+                ticketTags.push(userTag);
+                
+                console.log(`New tags: ${ticketTags}`);
+                
+                const updateData = {
+                    "ticket": {
+                        "tags": ticketTags
+                    }
+                };
+                console.log(updateData)
+                
+                FileLog('| syncZendeskTags | PushTagToTicket | ticket id : ',user.email,' ---  .');
+                
+                await zendeskService.updateTicket(ticketId, updateData);
+            }
         }
+    } catch (error) {
+        FileLog('| syncZendeskTags | init | error :',error);
+
     }
 }
 
