@@ -119,7 +119,7 @@ async function getUserFromEmail(userEmail) {
 
   const url = `/users/search.json?query=${`email:${userEmail}`}`;
    user = await makeRequest(url, 'Error fetching user');
-   const userEnd = user[0]?.id || {};
+   const userEnd = {id: user[0]?.id} || {};
    return userEnd
 }
 async function getUsersByOrg(orgID) {

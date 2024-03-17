@@ -19,8 +19,41 @@ const authenticateUser = async () => {
   }
 };
 
+
+const connection = async () => {
+  const coproEndpoint = `/adherant/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+const postAdherant = async () => {
+  const coproEndpoint = `/adherant/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+const putAdherant = async () => {
+  const coproEndpoint = `/SyndicInfo/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 const getAllCopros = async () => {
-  const coproEndpoint = `/SyndicInfo/copro?token=${process.env.VILOGI_TOKEN}&idCopro=48239&idAdh=${process.env.VILOGI_IDAUTH}`;
+  const coproEndpoint = `/SyndicInfo/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
 
   try {
     const response = await axios.get(`${apiUrl}${coproEndpoint}`);
@@ -112,6 +145,8 @@ const getAllAdherents = async (coproID) => {
 
 module.exports = {
   authenticateUser,
+  postAdherant,
+  putAdherant,
   getAllCopros,
   getCoproData,
   getCoproContratEntretien,

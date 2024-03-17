@@ -8,7 +8,7 @@ const personModel = require('../models/person');
 const fs = require('fs');
 const path = require('path');
 
-const logFilePath = path.join(__dirname, 'cron.txt');
+const logFilePath = path.join(__dirname, '../../logs/cron.txt');
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
 
 function FileLog(...args) {
@@ -18,7 +18,7 @@ function FileLog(...args) {
   process.stdout.write(logMessage); // Optional: Write to the console as well
 }
 
-const logFilePath2 = path.join(__dirname, 'stats.txt');
+const logFilePath2 = path.join(__dirname, '../../logs/stats.txt');
 const logStream2 = fs.createWriteStream(logFilePath2, { flags: 'a' }); // 'a' means append
 function FileStatLog(...args) {
   const timestamp = new Date().toISOString();
@@ -49,8 +49,8 @@ const synchroUsers = {
         if(copro.idVilogi){
           //console.log(copro)
           
-          await getAllUsersAndManageThem(copro.idVilogi,copro)
-          await fixUserRole(copro.idVilogi,copro)
+         // await getAllUsersAndManageThem(copro.idVilogi,copro)
+          //await fixUserRole(copro.idVilogi,copro)
         } 
         
         
@@ -65,7 +65,7 @@ const synchroUsers = {
 async function getAllUsersAndManageThem(idVilogi,Copro){
   const users = await vilogiService.getAllAdherents(idVilogi);
   let i =0
-  FileStatLog("Charging from Copro : [",Copro.idCopro, " - " , Copro.Nom,"]"+` Users From Vilogi To MongoDB : [${users.length + 1}]`)
+  FileStatLog("Charging from Copro : [",Copro.idCopro,"]"+` Users From Vilogi To MongoDB : [${users.length + 1}] -------- ${Copro.Nom},`)
   if (users && users.length > 0) {
     // Iterate through each user in the array
     for (const user of users) {
@@ -158,67 +158,62 @@ async function fixUserRole(coproId,Copro) {
 async function SynchoZendesk() {
   const users = await PersonService.getAllPersons();
   let i = 0;
-  
+
   try {
-  if (users && users.length > 0) {
-    // Iterate through each user in the array
-    for (const user of users) {
-      i++;
-      
-      console.log(`Charging to Zendesk: [${i}/${users.length + 1}]`);
-      const organisationName= await coproService.detailsCopropriete(user.idCopro);
-      console.log([user.typePersonne])
-      const UserData = {
-        "user": {
-          "email": user.email,
-          "skip_verify_email": true,
-          "tags": [user.typePersonne],
-          "name": user.nom + " " + user.prenom,
-          "phone": user.telephone,
-          "organization": {
-            "name": organisationName.idCopro
-          },
-          "role": "end-user",
-          "user_fields":{
-            "role_du_demandeur": user.typePersonne
+    if (users && users.length > 0) {
+      // Iterate through each user in the array
+      for (const user of users) {
+        i++;
+
+        console.log(`Charging to Zendesk: [${i}/${users.length}]`);
+        const organisationName = await coproService.detailsCopropriete(user.idCopro);
+        const baseUserData = {
+          "user": {
+            "email": user.email,
+            "skip_verify_email": true,
+            "name": `${user.nom} ${user.prenom}`,
+            "role": "end-user",
           }
+        };
+        const UserData = {
+          ...baseUserData,
+          "user": {
+            ...baseUserData.user,
+            "tags": [user.typePersonne],
+            "phone": user.telephone,
+            "organization": { "name": organisationName.idCopro },
+            "user_fields": { "role_du_demandeur": user.typePersonne }
+          }
+        };
+        try {
+          const zendeskUser = user.idZendesk ? { id: user.idZendesk } : await ZendeskService.getUserFromEmail(user.email);
+          console.log(zendeskUser)
+          if (zendeskUser && zendeskUser.id) {
+            console.log("Edit User " ,zendeskUser.id)
+            await ZendeskService.updateUser(zendeskUser.id, UserData);
+            user.idZendesk = zendeskUser.id;
+            await PersonService.editPerson(user._id, user);
+            await delay(100);
+          } else {
+            console.log(UserData)
+            const idzendeskAfterAdd = await ZendeskService.addUser(baseUserData);
+            console.log("   Zendesk ID to Mongo db : ", idzendeskAfterAdd, " - " , user._id)
+            user.idZendesk = idzendeskAfterAdd
+            await PersonService.editPerson(user._id, user);
+            await delay(100);
+          }
+        } catch (error) {
+          FileLog('| SyncUsers | SynchoZendesk | User with ID Vilogi :', user.idVilogi, ' and The user is : ', user.idZendesk || user.email, '  ---', error );
+          console.error("Error synchronizing user with Zendesk:", error);
         }
-      };
-      if (user.idZendesk){
-        console.log("there is an User with this email")
-        //ZendeskService.updateUser(id,data)
-
-        ZendeskService.updateUser(user.idZendesk,UserData);
-        //console.log("-----------------------------------User have been updated in Zendesk: ", user.email)
-      }else{
-        //search in zendesk via email 
-        const ZendeskUser=await ZendeskService.getUserFromEmail(user.email);
-        //console.log(ZendeskUser.length===0)
-        if (ZendeskUser.length===0){ 
-
-        ZendeskService.addUser(UserData);
-        //console.log("----------------------------------- User have been added to Zendesk : ", user.email)
-        }
-        else{
-
-          console.log(ZendeskUser[0].id)
-          ZendeskService.updateUser(ZendeskUser[0].id,UserData);
-          //console.log("-------------------------------User have been updated in Zendesk: ", user.email)
-
-
-          ////Add User ID to mongoDB
-        }
-
-        //updateUserID
+        await delay(300);
       }
-      delay(2000);
     }
+  } catch (error) {
+      // Handle errors that might occur during the Zendesk API call
+      console.error("Error fetching user from Zendesk:", error);
   }
-} catch (error) {
-    // Handle errors that might occur during the Zendesk API call
-    console.error("Error fetching user from Zendesk:", error);
 }
 
-}
 // Export the synchronization object
 module.exports = synchroUsers;
