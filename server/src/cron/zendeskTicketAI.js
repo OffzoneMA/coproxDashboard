@@ -96,7 +96,7 @@ for (const ticket of tickets) {
   let coproxUsers = [15116020640413, 15115995844637,16427900046109,15114640058525,15206663482269,15420362913693,16310145706013];
   
 
-  if (ticket.custom_status_id && ticket.custom_status_id == 15662538914333) {
+  if (ticket.custom_status_id == 15662538914333) {
     // break if the AI already generated a message to the ticket 
     break;
   }

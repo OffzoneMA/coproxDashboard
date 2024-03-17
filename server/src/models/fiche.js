@@ -1,0 +1,65 @@
+  const mongoose = require('mongoose');
+
+  const AdherantInfoSchema = new mongoose.Schema({
+      id: String,
+      civilite: String,
+      civiliteLettre: String,
+      nom: String,
+      prenom: String,
+      copropriete: Number,
+      envoiSimple: String,
+      envoiAR: String,
+      rgpd: Number,
+      tva: Number,
+      imposition: Number,
+      idGestionnaire: Number,
+      gestionnaireAG: String,
+      gestionnaireCopie: String,
+      adeli: Number,
+      rpps: Number,
+      stopMail: Boolean,
+      valide: Boolean
+  });
+  
+  const UserSchema = new mongoose.Schema({
+      id: String,
+      copropriete: Number,
+      civilite: String,
+      nom: String,
+      prenom: String,
+      adresse: String,
+      complement: String,
+      codepostal: String,
+      ville: String,
+      region: String,
+      pays: String,
+      telephone: String,
+      telephone2: String,
+      fax: String,
+      mobile: String,
+      mobile2: String,
+      email: String,
+      login: String,
+      pass: String,
+      titre: String,
+      profession: String,
+      secteur: String,
+      organisme: String,
+      poste: String,
+      description: String,
+      compte: String,
+      idGroupe: Number,
+      active: Number,
+      lieunaissance: Date,
+      datenaissance: Date,
+      lieunaissance2: Date,
+      datenaissance2: Date,
+      tva: Number,
+      imposition: Number,
+      typePersonne: String,
+      idCopro: { type: mongoose.Schema.Types.ObjectId, ref: 'copropriete' },
+      adherantInfo: AdherantInfoSchema
+  });
+  
+  module.exports = mongoose.model('User', UserSchema);
+

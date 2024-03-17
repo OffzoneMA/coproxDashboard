@@ -30,6 +30,8 @@ const syncZendeskTags = {
                     let tickets = await zendeskService.getTicketsByUser(user.id);
 
                     for (const ticket of tickets) {
+                        if(ticket.status=="closed") continue
+                        
                         //console.log(`checking ticket ${ticket.id} by adding tags from user ${user.name}`);
                         await PushTagToTicket(user.tags, ticket.tags, ticket.id);
                     }

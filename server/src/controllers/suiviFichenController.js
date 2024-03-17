@@ -1,8 +1,8 @@
 const suiviFichenService = require('../services/suiviFichenService');
 
-async function addPerson(req, res) {
+async function saveFiches(req, res) {
   try {
-    const result = await suiviFichenService.addPerson(req.body);
+    const result = await suiviFichenService.saveFiches(req.body);
     res.status(200).json(result);
   } catch (error) {
     console.error('Error adding person:', error.message);
@@ -10,9 +10,9 @@ async function addPerson(req, res) {
   }
 }
 
-async function editPerson(req, res) {
+async function editFiche(req, res) {
   try {
-    const result = await suiviFichenService.editPerson(req.params.id, req.body);
+    const result = await suiviFichenService.editFiche(req.params.id, req.body);
     if (result.matchedCount > 0) {
       res.status(200).json({ message: 'Person updated successfully' });
     } else {
@@ -26,7 +26,7 @@ async function editPerson(req, res) {
 
 async function getInfo(req, res) {
   try {
-    const fiche = await suiviFichenService.getInfo(req.params.idCopro);
+    const fiche = await suiviFichenService.getInfo(req.params.id);
     res.status(200).json(fiche);
 
   } catch (error) {
@@ -52,9 +52,9 @@ async function generatePdf(req, res) {
 }
 
 
-async function getPersonsByCoproId(req, res) {
+async function getFichesByCoproId(req, res) {
   try {
-    const persons = await suiviFichenService.getPersonsByCoproId(req.params.idCopro);
+    const persons = await suiviFichenService.getFichesByCoproId(req.params.idCopro);
     res.status(200).json(persons);
   } catch (error) {
     console.error('Error getting persons by coproId:', error.message);
@@ -72,9 +72,9 @@ async function getPersonsByInfo(req, res) {
   }
 }
 
-async function getAllPersons(req, res) {
+async function getAllFiches(req, res) {
   try {
-    const persons = await suiviFichenService.getAllPersons();
+    const persons = await suiviFichenService.getAllFiches();
     res.status(200).json(persons);
   } catch (error) {
     console.error('Error getting all persons:', error.message);
@@ -92,4 +92,4 @@ async function countAllPersons(req, res) {
 }
 
 
-module.exports = { addPerson,getInfo,generatePdf, editPerson,getPersonsByInfo, getPersonsByCoproId, getAllPersons,countAllPersons };
+module.exports = { saveFiches,getInfo,generatePdf, editFiche,getPersonsByInfo, getFichesByCoproId, getAllFiches,countAllPersons };

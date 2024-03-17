@@ -4,6 +4,7 @@ const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
+const { ObjectId } = require('mongodb');
 
 mongoose.set('useFindAndModify', false);
 
@@ -23,26 +24,42 @@ function handleMongoError(message, error) {
   throw error;
 }
 
-async function addPerson(newPersonData) {
+async function saveFiches(fiches) {
   return connectAndExecute(async () => {
-    const suiviFichenCollection = MongoDB.getCollection('person');
-    const result = await suiviFichenCollection.insertOne(newPersonData);
+    const ficheCollection = MongoDB.getCollection('fiche');
+    const formattedFiches = fiches.map(fiche => ({
+      nom: fiche.nom || '',
+      prenom: fiche.prenom || '',
+      adresse: fiche.adresse || '',
+      codepostale: fiche.codepostale || '',
+      editPersonmail: fiche.Email || '',
+      telephone1: fiche.telephone1 || '',
+      telephone2: fiche.telephone2 || '',
+      ville: fiche.ville || '',
+      idCopro: new ObjectId(fiche.idCopro),
+      status:fiche.status || '',
+      creationDateTime: new Date(),
+      editDateTime: new Date()
+    }));
+    const result = await ficheCollection.insertMany(formattedFiches);
     return result;
   });
 }
 
-async function editPerson(id, updatedPersonData) {
+async function editFiche(id, updatedFicheData) {
   return connectAndExecute(async () => {
-    const suiviFichenCollection = MongoDB.getCollection('person');
-    const result = await suiviFichenCollection.updateOne({ _id: mongoose.Types.ObjectId(id) }, { $set: updatedPersonData });
+    const ficheCollection = MongoDB.getCollection('fiche');
+    const result = await ficheCollection.updateOne({ _id: mongoose.Types.ObjectId(id) }, { $set: updatedFicheData });
     return result;
   });
 }
 
 async function getInfo(id) {
   return connectAndExecute(async () => {
-    const suiviFichenCollection = MongoDB.getCollection('suiviFiche');
-    const fiche = await suiviFichenCollection.find({ _id: mongoose.Types.ObjectId(id) }).toArray();;
+    console.log(id)
+    const ficheCollection = MongoDB.getCollection('fiche');
+    const fiche = await ficheCollection.find({ _id: mongoose.Types.ObjectId(id) }).toArray();
+    console.log(fiche)
     return fiche;
   });
 }
@@ -112,44 +129,44 @@ async function generatePdf(id) {
 }
 async function getPersonsByInfo(infoName,infoValue) {
   return connectAndExecute(async () => {
-    const suiviFichenCollection = MongoDB.getCollection('person');
+    const suiviFichenCollection = MongoDB.getCollection('fiche');
     const query = {[infoName]: infoValue };
     const persons = await suiviFichenCollection.find(query).toArray();
     return persons;
   });
 }
 
-async function getPersonsByCoproId(idCopro) {
+async function getFichesByCoproId(idCopro) {
   return connectAndExecute(async () => {
-    const suiviFichenCollection = MongoDB.getCollection('person');
-    const persons = await suiviFichenCollection.find({ idCopro: mongoose.Types.ObjectId(idCopro) }).toArray();
+    const ficheCollection = MongoDB.getCollection('fiche');
+    const persons = await ficheCollection.find({ idCopro: mongoose.Types.ObjectId(idCopro) }).toArray();
     return persons;
   });
 }
 
-async function getAllPersons() {
+async function getAllFiches() {
   return connectAndExecute(async () => {
-    const suiviFichenCollection = MongoDB.getCollection('person');
-    const persons = await suiviFichenCollection.find({}).toArray();
+    const ficheCollection = MongoDB.getCollection('fiche');
+    const persons = await ficheCollection.find({}).toArray();
     return persons;
   });
 }
 
 async function countAllPersons() {
   return connectAndExecute(async () => {
-    const suiviFichenCollection = MongoDB.getCollection('person');
+    const suiviFichenCollection = MongoDB.getCollection('fiche');
     const count = await suiviFichenCollection.countDocuments({});
     return count;
   });
 }
 
 module.exports = {
-  addPerson,
-  editPerson,
+  saveFiches,
   getInfo,
   generatePdf,
+  editFiche,
   getPersonsByInfo,
-  getPersonsByCoproId,
-  getAllPersons,
+  getFichesByCoproId,
+  getAllFiches,
   countAllPersons
 };

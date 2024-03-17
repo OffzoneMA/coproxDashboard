@@ -11,6 +11,7 @@ const personRoutes = require('./routes/personRoutes.js');
 const suiviFicheRoutes = require('./routes/suiviFicheRoutes.js');
 const zendeskRoutes = require('./routes/zendeskRoutes');
 const cronStart = require('./cron/cronStart');
+const synchroUsers = require('./cron/synchroUsers');
 
 const app = express();
 const port = 8081;
@@ -24,11 +25,12 @@ app.use('/copro', coproRoutes);
 app.use('/Lebarocopro', LebarocoproRoutes);
 app.use('/suiviAG', suiviAGRoutes);
 app.use('/person', personRoutes);
-app.use('/suiviFiche', suiviFicheRoutes);
+app.use('/fiche', suiviFicheRoutes);
 app.use('/vilogi', vilogiRoutes);
 app.use('/mongodb', trelloRoutes);
+
 app.get('/batch', (req, res) => {
-  zendeskTicketAI.start();
+  synchroUsers.start();
   res.send('Cron test is running!');
 });
 

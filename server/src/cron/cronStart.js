@@ -1,13 +1,13 @@
 // cronJobs/cronStart.js
 const cron = require('node-cron');
 const synchroCopro = require('./synchroCopro');
-const synchroUsers = require('./synchoUsers');
+const synchroUsers = require('./synchroUsers');
 const zendeskTicket = require('./zendeskTicket');
 const zendeskTicketAI = require('./zendeskTicketAI');
 const syncZendeskTags = require('./syncZendeskTags');
 
 function cronStart() {
-  cron.schedule('0 12 * * *', () => {
+  cron.schedule('0 7 * * *', () => {
     zendeskTicket.start();
   });
 
@@ -28,6 +28,7 @@ function cronStart() {
 
   cron.schedule('0 11 * * *', () => {
     syncZendeskTags.start();
+    zendeskTicket.start();
   });
 
   cron.schedule('0 15 * * *', () => {

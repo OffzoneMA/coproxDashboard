@@ -20,3 +20,11 @@ services:
     volumes:
       - ./front/:/usr/src/app # Link host directory to container=
       - /usr/src/app/node_modules
+
+  coproprietaire: 
+    build: ./coproprietaire # Specify the directory of the Dockerfile
+    ports: # Specify port-forwarding
+      - 5000:5000
+    volumes:
+      - ./coproprietaire/:/usr/src/app # Link host directory to container=
+      - /usr/src/app/node_modules
