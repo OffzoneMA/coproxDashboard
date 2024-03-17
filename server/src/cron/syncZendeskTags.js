@@ -69,7 +69,6 @@ async function PushTagToTicket(userTags, ticketTags, ticketId) {
                 };
                 console.log(updateData)
                 
-                FileLog('| syncZendeskTags | PushTagToTicket | ticket id : ',user.email,' ---  .');
                 
                 await zendeskService.updateTicket(ticketId, updateData);
             }
