@@ -13,7 +13,10 @@ function FileLog(...args) {
   process.stdout.write(logMessage); // Optional: Write to the console as well
 }
 
-
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+  
 
 const syncZendeskTags = {
     start: async () => {
