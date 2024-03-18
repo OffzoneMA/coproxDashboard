@@ -5,13 +5,13 @@ const synchroUsers = require('./synchroUsers');
 const zendeskTicket = require('./zendeskTicket');
 const zendeskTicketAI = require('./zendeskTicketAI');
 const syncZendeskTags = require('./syncZendeskTags');
-const RecoverZendeskTicket = require('./RecoverZendeskTicket');
+const zendeskService = require('../services/zendeskService');
 
 
 function cronStart() {
   cron.schedule('0 * * * *', () => {
     zendeskTicket.start();
-    RecoverZendeskTicket.start();
+    zendeskService.recoverAllSuspendedTickets();
   });
 
   cron.schedule('0 0 * * 0', () => {
@@ -19,9 +19,6 @@ function cronStart() {
     synchroUsers.start();
   });
 
-  cron.schedule('0 * * * *', () => {
-    zendeskService.recoverAllSuspendedTickets();
-  });
 
   cron.schedule('0 0 * * *', () => {
     console.log("-------------------------Starting Zendesk Ticket AI--------------------------------------------")
