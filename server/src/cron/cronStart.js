@@ -9,7 +9,7 @@ const zendeskService = require('../services/zendeskService');
 
 
 function cronStart() {
-  cron.schedule('0 * * * *', () => {
+  cron.schedule('0 8-16/2 * * *', () => {
     zendeskTicket.start();
     zendeskService.recoverAllSuspendedTickets();
   });
