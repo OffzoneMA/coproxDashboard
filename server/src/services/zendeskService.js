@@ -1,5 +1,4 @@
 const axios = require('axios');
-const axiosOAuthClient = require('axios-oauth-client');
 
 require('dotenv').config(); // Load environment variables from .env
 
