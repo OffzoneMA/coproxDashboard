@@ -138,7 +138,8 @@ async function getOrganizationsById(organizationID) {
 }
 
 async function getTicketsNew() {
-  const url = '/search.json?query=status%3Anew';
+  const today = new Date().toISOString().slice(0, 10);
+  const url = `/search.json?query=created>=${today} 00:00:00&sort_by=created_at&sort_order=desc`;
   return makeRequest(url, 'Error fetching All Ticket with status new');
 }
 async function getTicketsNewAssigned() {
