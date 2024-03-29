@@ -55,8 +55,8 @@ async function getItemsDetails(itemID) {
     const result = await executeGraphQLQuery(query);
     //console.log("name : ",result.items[0].name)
     //console.log("values : ",result.items[0].column_values[0].value)
-    //for(column in result.items[0].column_values)
-      //console.log("ColumnID : ",result.items[0].column_values[column].id,"                 Column : ",result.items[0].column_values[column].column.title,"                  Value : " ,result.items[0].column_values[column].value)
+    for(column in result.items[0].column_values)
+    console.log("ColumnID : ",result.items[0].column_values[column].id,"                 Column : ",result.items[0].column_values[column].column.title,"                  Value : " ,result.items[0].column_values[column].value)
     //console.log(result.items[0])
     //console.log("---------------------------")
     return result.items[0];

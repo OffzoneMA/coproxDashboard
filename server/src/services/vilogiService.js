@@ -2,6 +2,9 @@ const axios = require('axios');
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 const apiUrl = 'https://copro.vilogi.com/rest'; // Update with the correct base URL
 
@@ -54,7 +57,6 @@ const putAdherant = async () => {
 
 const getAllCopros = async () => {
   const coproEndpoint = `/SyndicInfo/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
-
   try {
     const response = await axios.get(`${apiUrl}${coproEndpoint}`);
     return response.data;
@@ -63,8 +65,25 @@ const getAllCopros = async () => {
   }
 };
 const getCoproData = async (coproID) => {
-  const coproEndpoint = `/copro?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  const mergedData = {};
+  const coproEndpoint1 = `/copro?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  //const coproEndpoint3= `/copro/donneeTechnique?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  try {
+    const response1 = await axios.get(`${apiUrl}${coproEndpoint1}`);
+    await delay(300)
+    //const response3 = await axios.get(`${apiUrl}${coproEndpoint3}`);
+    Object.assign(mergedData, response1.data);
+    //Object.assign(mergedData, response3.data);
 
+    return mergedData;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+const getCoproTravaux = async (coproID) => {
+  const coproEndpoint = `/travaux?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
   try {
     const response = await axios.get(`${apiUrl}${coproEndpoint}`);
     return response.data;
@@ -83,6 +102,26 @@ const getCoproContratEntretien = async (coproID) => {
   }
 };
 
+
+const getCoproManda = async (coproID) => {
+  const coproEndpoint = `/mandatSyndic?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getCoproContratAssurance = async (coproID) => {
+  const coproEndpoint = `/assurances?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 const getCoproContratEntretienFichier = async (fichierID,coproID,outputFileName) => {
 
   const coproEndpoint = `/contratEntretien/getFile/${fichierID}?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
@@ -111,8 +150,6 @@ const getCoproContratEntretienFichier = async (fichierID,coproID,outputFileName)
 const getPrestataireById = async (prestaireID,coproID) => {
   //const coproEndpoint = `/professionnel/idProfessionnel=${prestaireID}?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
   const coproEndpoint = `/professionnel?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
-  //https://copro.vilogi.com/rest/professionnel?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&Copro=44378&id=749799
-  //https://copro.vilogi.com/rest/professionnel?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&copro=44378&id=749799
   
   try { 
     //console.log(`${apiUrl}${coproEndpoint}`)
@@ -131,6 +168,16 @@ const getPrestataireById = async (prestaireID,coproID) => {
   }
 };
 
+const getCoproAssemblee = async (coproID) => {
+  const adherentsEndpoint = `/adherant/all?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 
 const getAllAdherents = async (coproID) => {
   const adherentsEndpoint = `/adherant/all?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
@@ -142,6 +189,17 @@ const getAllAdherents = async (coproID) => {
     throw error;
   }
 };
+const getpayementAdherant = async (idAdh,coproID) => {
+  const adherentsEndpoint = `/suiviPaiment?token=${process.env.VILOGI_TOKEN}&idAdh=${idAdh}&idCopro=${coproID}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 module.exports = {
   authenticateUser,
@@ -149,8 +207,14 @@ module.exports = {
   putAdherant,
   getAllCopros,
   getCoproData,
+  getCoproTravaux,
+  getCoproContratAssurance,
   getCoproContratEntretien,
   getCoproContratEntretienFichier,
   getPrestataireById,
+  getCoproAssemblee,
+  getCoproManda,
   getAllAdherents,
+  getpayementAdherant
+
 };
