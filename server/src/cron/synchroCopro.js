@@ -2,6 +2,7 @@ const vilogiService = require('../services/vilogiService');
 const coproService = require('../services/coproService');
 const zendeskService =require('../services/zendeskService')
 const mondayService = require('../services/mondayService');
+const logs = require('../services/logs');
 const LesCoprosIDBoard=1404452123
 const LesCoprosInfoMorteIDBoard=1436164777
 
@@ -12,9 +13,10 @@ function delay(ms) {
 const synchroCopro = {
     start: async () => {
         
-        //await vilogiToMongodb()
-        //await mongodbToZendesk()
-        //await mongodbToMonday()
+        logs.logExecution("synchroCopro")
+        await vilogiToMongodb()
+        await mongodbToZendesk()
+        await mongodbToMonday()
         await mongodbToMondayCoproMorte()
     }
 
@@ -75,7 +77,7 @@ async function mongodbToMonday(){
           if(copro.idMonday){
             //console.log(copro)
             const data = await mondayService.getItemsDetails(copro.idMonday);
-            console.log(data)
+            //console.log(data)
             delay(200)
           }else{
             if(!copro.idCopro) continue

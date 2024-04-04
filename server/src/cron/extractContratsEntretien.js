@@ -3,6 +3,7 @@ const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const ZendeskService = require('../services/zendeskService');
 const zendeskTicket = require('./zendeskTicket');
+const logs = require('../services/logs');
 const fs = require('fs');
 
 
@@ -14,6 +15,7 @@ let FinalContrat = [];
 const extractContratsEntretien = {
     start: async () => {
         console.log('Start Extraction ...');
+        logs.logExecution("extractContratsEntretien")
         try {
             let copros = await coproService.listCopropriete();
             let FinalContrat = [];  // Initialize FinalContrat array

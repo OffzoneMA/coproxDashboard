@@ -5,6 +5,7 @@ const PersonService = require('../services/personService');
 const ZendeskService = require('../services/zendeskService');
 const mongoose = require('mongoose');
 const personModel = require('../models/person');
+const logs = require('../services/logs');
 const fs = require('fs');
 const path = require('path');
 
@@ -35,7 +36,7 @@ function delay(ms) {
 // Object for synchronizing users
 const synchroUsers = {
   start: async () => {
-    
+      logs.logExecution("synchroUsers")
       console.log('Synchronizing users...');
 
       // TODO: Fetch the list of all copros
@@ -51,6 +52,8 @@ const synchroUsers = {
           
           await getAllUsersAndManageThem(copro.idVilogi,copro)
           await fixUserRole(copro.idVilogi,copro)
+        }else{
+          console.log("------------------------------------ Attention copro",copro._id," - ",copro.Nom ,"Sans IDVilogi ----------------------------------------------")
         } 
         
         

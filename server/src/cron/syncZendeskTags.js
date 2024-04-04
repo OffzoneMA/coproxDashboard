@@ -2,6 +2,7 @@ const fs = require('fs');
 const zendeskController = require('../controllers/zendeskController');
 const zendeskService = require('../services/zendeskService');
 const path = require('path');
+const logs = require('../services/logs');
 
 const logFilePath = path.join(__dirname, '../../logs/cron.txt');
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
@@ -20,6 +21,7 @@ function delay(ms) {
 
 const syncZendeskTags = {
     start: async () => {
+        logs.logExecution("syncZendeskTags")
         try {
             let copros = await zendeskService.getAllorganizations();
 

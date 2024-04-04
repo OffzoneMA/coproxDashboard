@@ -1,6 +1,7 @@
 
 const ZendeskService = require('../services/zendeskService');
 const dropboxService = require('../services/dropboxService');
+const logs = require('../services/logs');
 const axios = require('axios');
 require('dotenv').config();
 const fs = require('fs');
@@ -134,6 +135,7 @@ const saveFile = async (Url,ticketID,filename) => {
 // Modified code for zendeskTicketAI
 const zendeskTicketDocuments = {
   start: async () => {
+    logs.logExecution("zendeskTicketDocuments")
     try {
       const answeredTickets = await answerNewZendeskTickets();
       console.log('answered Zendesk tickets:', answeredTickets);

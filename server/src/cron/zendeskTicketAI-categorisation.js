@@ -1,6 +1,7 @@
 
 const ZendeskService = require('../services/zendeskService');
 const axios = require('axios');
+const logs = require('../services/logs');
 require('dotenv').config();
 
 const possibleCategories = [

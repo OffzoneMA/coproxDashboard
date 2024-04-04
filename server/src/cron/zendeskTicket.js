@@ -1,5 +1,6 @@
 const zendeskController = require('../controllers/zendeskController');
 const ZendeskService = require('../services/zendeskService');
+const logs = require('../services/logs');
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -8,6 +9,7 @@ function delay(ms) {
 const zendeskTicket = {
     start: async () => {
         console.log('Zendesk ticket start ...');
+        logs.logExecution("zendeskTicket")
 
         try {
             // Call controller function to fetch tickets

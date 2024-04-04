@@ -1,6 +1,7 @@
 
 const ZendeskService = require('../services/zendeskService');
 const axios = require('axios');
+const logs = require('../services/logs');
 require('dotenv').config();
 
 
@@ -152,6 +153,7 @@ for (const ticket of tickets) {
 // Modified code for zendeskTicketAI
 const zendeskTicketAI = {
   start: async () => {
+    logs.logExecution("zendeskTicketAI")
     try {
       const answeredTickets = await answerNewZendeskTickets();
       console.log('answered Zendesk tickets:', answeredTickets);
