@@ -31,11 +31,11 @@ async function makeRequest(url, errorMessage, { method = 'get', params = {}, bod
       
       // Merge data if 'next_page' exists
       if (responseData.next_page) {
-        allData = allData.concat(responseData.users || responseData.organizations || responseData.results || responseData.tickets || responseData.comments);
+        allData = allData.concat(responseData.users || responseData.organizations || responseData.results || responseData.tickets || responseData.comments || responseData.suspended_tickets) ;
         nextPage = extractNextPage(responseData.next_page);
       } else {
         nextPage = null;
-        allData = allData.concat(responseData.users || responseData.user || responseData.organizations || responseData.organization || responseData.results || responseData.tickets|| responseData.comments || responseData.comment || responseData.ticket ||  responseData.count );
+        allData = allData.concat(responseData.users || responseData.user || responseData.organizations || responseData.organization || responseData.results || responseData.tickets|| responseData.comments || responseData.comment ||  responseData.suspended_tickets || responseData.ticket ||  responseData.count );
       }
     } while (nextPage);
 
@@ -202,24 +202,25 @@ async function getOrganizationIdByExternalId(organizationExternalId) {
   }
 }
 async function getSuspendedTickets() {
-  const url = '/tickets.json?status=suspended';
+  const url = '/suspended_tickets';
   return makeRequest(url, 'Error fetching suspended tickets');
 }
 
 async function recoverTicket(ticketId) {
-  const url = `/tickets/${ticketId}`;
+  const url = `/suspended_tickets/${ticketId}`;
   const ticketData = {
     ticket: {
       status: 'open'
     }
   };
-  return await makeRequest(url, 'Error recovering ticket', { method: 'put', body: ticketData });
+  return await makeRequest(url, 'Error recovering ticket', { method: 'get' });
 }
 
 async function recoverAllSuspendedTickets() {
   try {
     const suspendedTickets = await getSuspendedTickets();
     for (const ticket of suspendedTickets) {
+      //console.log(ticket)
       console.log(`Recovering ticket with ID: ${ticket.id}`);
       await recoverTicket(ticket.id);
     }
