@@ -6,12 +6,17 @@ const subdomain = process.env.ZENDESK_SUBDOMAIN;
 const username = process.env.ZENDESK_USERNAME;
 const password = process.env.ZENDESK_PASSWORD;
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function makeRequest(url, errorMessage, { method = 'get', params = {}, body = {} } = {}) {
   try {
     let allData = [];
     let nextPage = url;
 
     do {
+      await delay(300)
       const link = `https://${subdomain}.zendesk.com/api/v2${nextPage}`;
       console.log(link);
       console.log(`Making ${method.toUpperCase()} request to: ${link}`);
@@ -28,12 +33,14 @@ async function makeRequest(url, errorMessage, { method = 'get', params = {}, bod
       });
 
       const responseData = response.data;
-      
+
       // Merge data if 'next_page' exists
       if (responseData.next_page) {
         allData = allData.concat(responseData.users || responseData.organizations || responseData.results || responseData.tickets || responseData.comments || responseData.suspended_tickets) ;
         nextPage = extractNextPage(responseData.next_page);
+
       } else {
+ 
         nextPage = null;
         allData = allData.concat(responseData.users || responseData.user || responseData.organizations || responseData.organization || responseData.results || responseData.tickets|| responseData.comments || responseData.comment ||  responseData.suspended_tickets || responseData.ticket ||  responseData.count );
       }
@@ -138,8 +145,8 @@ async function getOrganizationsById(organizationID) {
 }
 
 async function getTicketsNew() {
-  const today = new Date().toISOString().slice(0, 10);
-  const url = `/search.json?query=created>=${today} 00:00:00&sort_by=created_at&sort_order=desc`;
+  const today = new Date(new Date().getTime() - (1 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+  const url = `/search.json?query=created>=${today}&status:open+status:new&sort_by=created_at&sort_order=desc`;
   return makeRequest(url, 'Error fetching All Ticket with status new');
 }
 async function getTicketsNewAssigned() {

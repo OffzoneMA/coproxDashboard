@@ -33,13 +33,16 @@ const zendeskTicket = {
                           else{
                             console.log('Ticket ID in start:',ticket.id)
 
-                            const targetField = ticket.custom_fields.find(field => field.id === 15261491191197);
-                            if (targetField && targetField.value == null) {
-                                await processUserOrganization(ticket.id,ticket.requester_id)
+                            if(ticket.custom_fields){
+                                const targetField = ticket.custom_fields.find(field => field.id === 15261491191197);
+                                if (targetField && targetField.value == null) {
+                                    await processUserOrganization(ticket.id,ticket.requester_id, ticket.subject)
+                                }
+                                else{
+                                    await processUserOrganization(ticket.id,ticket.requester_id, ticket.subject)
+                                }
                             }
-                            else{
-                                
-                            }
+
 
                             //await processUserTags(ticket.id,ticket.requester_id);
                             await delay(1000); 
@@ -58,7 +61,7 @@ const zendeskTicket = {
     },
 };
 
-async function processUserOrganization(ticket_id, requesterId) {
+async function processUserOrganization(ticket_id, requesterId, subject) {
     const user = await zendeskController.getUserFromID({ params: { ID: requesterId } }, {
         status: function (code) {
             this.statusCode = code;
@@ -71,12 +74,19 @@ async function processUserOrganization(ticket_id, requesterId) {
                 let coproName = organisation[0].name
                 const pattern = /^S\d{3}$/;
 
+
                 // Test if the value matches the pattern
                 if (pattern.test(coproName)) {
+                    console.log(subject)
+                    if (!pattern.test(subject) && !subject.startsWith(coproName)) {
+                        subject = `${coproName} - ${subject}`;
+                        console.log("New subject : ",subject)
+                    }
                     // If organization ID is available, you can update the data
                     console.log('starting update ticket : ', ticket_id,' With Organisation in Custom field : ', coproName);
                     const updateData = {
                         "ticket": {
+                        "subject": subject,
                         "custom_fields": [
                             {
                             "id": "15261491191197",

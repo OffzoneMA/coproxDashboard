@@ -12,7 +12,7 @@ const synchroMandats = require('./synchroMandats');
 
 
 function cronStart() {
-  cron.schedule('0 * * * *', async () => {
+  cron.schedule('0 5 * * *', async () => {
     await zendeskTicket.start();
     await zendeskService.recoverAllSuspendedTickets();
   });
