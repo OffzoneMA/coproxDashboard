@@ -11,3 +11,18 @@ export const fetchDataFromApi = async (endpoint, params = {}) => {
     throw error;
   }
 };
+
+// Define fetchApiData function and export it
+export const fetchApiData = async (endpoint, method = 'GET', data = null) => {
+  try {
+    const response = await axios({
+      method,
+      url: `${API_BASE_URL}/${endpoint}`,
+      data
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error ${method}ing data from API:`, error.message);
+    throw error;
+  }
+};
