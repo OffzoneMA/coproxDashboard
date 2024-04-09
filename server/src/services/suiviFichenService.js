@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
-const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
@@ -65,7 +64,7 @@ async function getInfo(id) {
 }
 
 async function generatePdf(id) {
-  try {
+  try {/*
     console.log(id);
 
     // Ensure 'getInfo' is defined and returns a promise
@@ -121,7 +120,7 @@ async function generatePdf(id) {
     // Optionally, you may want to remove the temporary PDF file
     fs.unlinkSync('output.pdf');
 
-    return pdfBuffer;
+    return pdfBuffer;*/
   } catch (error) {
     console.error('Error generating PDF:', error);
     throw error;
