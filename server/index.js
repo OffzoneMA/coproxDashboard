@@ -14,8 +14,6 @@ const zendeskRoutes = require('./src/routes/zendeskRoutes.js');
 const scriptRoutes = require('./src/routes/scriptRoutes.js');
 
 const zendeskService = require('./src/services/zendeskService.js');
-const cronStart = require('./src/cron/cronStart.js');
-const synchroContratEntretien = require('./src/cron/synchroContratEntretien.js');
 
 const app = express();
 const port = 8081;
@@ -36,11 +34,9 @@ app.use('/monday', mondayRoutes);
 app.use('/script', scriptRoutes);
 
 app.get('/batch', (req, res) => {
-  synchroContratEntretien.start();
   res.send('Cron test is running!');
 });
 
-cronStart();
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
