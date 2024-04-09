@@ -4,6 +4,7 @@ const CoproController = require('../controllers/coproController');
 
 const router = express.Router();
 
+router.get('/', CoproController.listCopropriete); // Keep the same endpoint name
 router.get('/listCopro', CoproController.listCopropriete); // Keep the same endpoint name
 router.get('/detailsCopro/:id', CoproController.detailsCopropriete); // Keep the same endpoint name
 router.get('/countOffers', CoproController.countOffers);
