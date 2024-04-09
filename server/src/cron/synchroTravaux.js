@@ -15,7 +15,8 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 let FinalContrat = [];
-
+const boardId = 1438946150;
+const typeData="travaux"
 const synchroTravaux = {
     start: async () => {
         logs.logExecution("synchroTravaux")
@@ -23,7 +24,7 @@ const synchroTravaux = {
         try {
             let copros = await coproService.listCopropriete();
             let FinalContrat = [];  // Initialize FinalContrat array
-
+            let totalTravaux=0;
             for (const copro of copros) {
                 console.log("ID Vilogi:", copro.idCopro);
                 if (copro.idVilogi !== undefined) {
@@ -31,28 +32,31 @@ const synchroTravaux = {
 
                     //const data = await mondayService.getItemsDetails(1439055076);
                     //console.log(data)
-                    
+                    let NbTravaux=0;
                     for (const travaux of travauxAll) {
+                        totalTravaux++;
+                        NbTravaux++;
+                        console.log(` Contrat numero ${totalTravaux}  Sync contrat Number :${travaux.id}   ---- ${copro.idCopro} -  [${NbTravaux}   /  ${travauxAll.length}] `)      
                         //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
                         const columnValues = {
                             
-                            texte_1: travaux.description,
+                            //texte_1: travaux.description,
                             texte_3: travaux.contrat,
                             texte_32: travaux.montant,
                             texte_6: travaux.assemblee,
                             texte_8:travaux.nbEcheance,
-                            board_relation:{"item_ids" : [copro.idMonday]},
+                            ...(copro.idMonday != null && { board_relation: { "item_ids": [copro.idMonday] } }),
                             date:{"date" : travaux.dateDebut.split('/').reverse().join('-')},
                             date_1:{"date" : travaux.dateFin.split('/').reverse().join('-')}
 
                           };
                           
-                          const boardId = 1438946150;
+
                           const itemName = `${travaux.nom}`;
                           
                           try {
                             await saveMonday(itemName,columnValues,travaux.id)
-                            await delay(300);
+                            //await delay(300);
                             //monday.api(`mutation {change_multiple_column_values(item_id:${newItem.id},board_id:${boardId}, column_values: \"{\\\"board_relation\\\" : {\\\"item_ids\\\" : [${copro.idMonday}]}}\") {id}}` )
                           } catch (error) {
                             console.error("Erreur lors de la création de l'élément:", error);
@@ -62,7 +66,7 @@ const synchroTravaux = {
                     
                 }
             }
-            //console.log(FinalContrat)
+            console.log(totalTravaux)
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
             console.error('An error occurred:', error.message);
@@ -80,15 +84,15 @@ async function saveMonday(itemName,data,idVilogi) {
         }else{
             const newItem = await mondayService.createItem(boardId, itemName, data);
             //console.log("Nouvel élément créé:", newItem);
-            const data={
+            const dataMongo={
                 boardID:boardId,
                 mondayItenID:newItem.id,
-                vilogiEndpoint:"travaux",
+                vilogiEndpoint:typeData,
                 //vilogiEndpointData:mandat,
                 vilogiItemID:idVilogi
 
             }
-            mondayVilogiSyncService.addItem(data)
+            mondayVilogiSyncService.addItem(dataMongo)
         }
         await delay(300);
         //monday.api(`mutation {change_multiple_column_values(item_id:${newItem.id},board_id:${boardId}, column_values: \"{\\\"board_relation\\\" : {\\\"item_ids\\\" : [${copro.idMonday}]}}\") {id}}` )

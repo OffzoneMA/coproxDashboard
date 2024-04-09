@@ -16,11 +16,13 @@ function delay(ms) {
 }
 let FinalContrat = [];
 const boardId = 1437344331;
+const typeData="manda"
 
 const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
         logs.logExecution("synchroMandats")
+        console.log(await mondayService.getItemsDetails("1455188129"))
         try {
             let copros = await coproService.listCopropriete();
             let FinalManda = [];  // Initialize FinalContrat array
@@ -29,11 +31,12 @@ const synchroMandats = {
                 console.log("ID Vilogi:", copro.idCopro);
                 if (copro.idVilogi !== undefined) {
                     let madats = await vilogiService.getCoproManda(copro.idVilogi);
-
+                    
                     //const data = await mondayService.getItemsDetails(1439055076);
                     //console.log(data)
                     let j=0
                     for (const mandat of madats) {
+                        console.log(mandat.idFichier)
                         j++;
                         //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
                         urlMandat=`https://copro.vilogi.com/rest/mandatSyndic/getFile/${mandat.idFichier}?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&idCopro=44378&idAdh=749799`
@@ -53,7 +56,8 @@ const synchroMandats = {
                                  idFichier : `https://copro.vilogi.com/rest/mandatSyndic/getFile/${mandat.idFichier}?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&idCopro=44378&idAdh=749799`,
                                  ville : mandat.ville,
                                  codepostal : mandat.codepostal,*/
-                                 //link : {"url" : urlMandat, "text":"Lien vers mandat"},
+                                 chiffres:mandat.idFichier,
+                                 lien_internet : {"url" : urlMandat, "text":"Lien vers mandat"},
                                  id:mandat.id,
                                  orderDate:mandat.dateDebut,
                                  date_1:{"date" : mandat.dateDebut.split('/').reverse().join('-')},
@@ -84,9 +88,10 @@ const synchroMandats = {
                 const itemName = `${year} - ${paddedIndex} (${item.number})`;
                 delete item.number
                 delete item.orderDate;
+                const itemID=item.id
                 delete item.id;
                 i++; 
-                await saveMonday(itemName,item,item.id,"manda")
+                await saveMonday(itemName,item,itemID)
                 await delay(300);
               });
 
@@ -100,39 +105,31 @@ const synchroMandats = {
 };
 
 
-async function saveMonday(itemName,item,idVilogi,typeData) {
+async function saveMonday(itemName,data,idVilogi) {
     try {
         const checkValue= await mondayVilogiSyncService.getItemsByInfo(boardId,idVilogi)
         console.log(checkValue)
         if(checkValue.length > 0){
             console.log("Already exist")
-            const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, item);
+            const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
         }else{
-            const newItem = await mondayService.createItem(boardId, itemName, item);
+            const newItem = await mondayService.createItem(boardId, itemName, data);
             //console.log("Nouvel élément créé:", newItem);
-            const data={
+            const dataMongo={
                 boardID:boardId,
                 mondayItenID:newItem.id,
                 vilogiEndpoint:typeData,
+                //vilogiEndpointData:mandat,
                 vilogiItemID:idVilogi
 
             }
-            mondayVilogiSyncService.addItem(data)
+            mondayVilogiSyncService.addItem(dataMongo)
         }
         await delay(300);
         //monday.api(`mutation {change_multiple_column_values(item_id:${newItem.id},board_id:${boardId}, column_values: \"{\\\"board_relation\\\" : {\\\"item_ids\\\" : [${copro.idMonday}]}}\") {id}}` )
       } catch (error) {
         console.error("Erreur lors de la création de l'élément:", error);
       }
-}
-async function LogSaving(){
-    const logFilePath = path.join(__dirname, '../../logs/cron.txt');
-    const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
-      const timestamp = new Date().toISOString();
-      const logMessage = `${timestamp} ${args.join(' ')}\n`;
-      logStream.write(logMessage);
-      process.stdout.write(logMessage); // Optional: Write to the console as well
-
 }
 
 

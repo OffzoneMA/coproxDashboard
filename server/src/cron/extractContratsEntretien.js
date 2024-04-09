@@ -63,6 +63,7 @@ const extractContratsEntretien = {
                             complement: infoFournisseur.complement || "",
                             ville: infoFournisseur.ville || "",
                             codepostal: infoFournisseur.codepostal || "",
+                            email:infoFournisseur.email || "",
                             telephone: infoFournisseur.telephone || "",
                             secteur: infoFournisseur.secteur || "",
                             file: contrat.idFichier

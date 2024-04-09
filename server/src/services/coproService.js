@@ -17,7 +17,7 @@ async function connectAndExecute(callback) {
 async function listCopropriete() {
   return connectAndExecute(async () => {
     const coproprieteCollection = MongoDB.getCollection('copropriete');
-    return await coproprieteCollection.find({}).toArray();
+    return await coproprieteCollection.find({ status: { $ne: 'Inactif' } }).toArray();
   });
 }
 

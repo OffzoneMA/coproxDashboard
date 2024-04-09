@@ -3,6 +3,7 @@ const cors = require('cors');
 const express = require('express');
 const bodyParser = require('body-parser');
 const trelloRoutes = require('./routes/trelloRoutes.js');
+const mondayRoutes = require('./routes/mondayRoutes.js');
 const coproRoutes = require('./routes/coproRoutes.js');
 const LebarocoproRoutes = require('./routes/lebarocoproRoutes.js');
 const suiviAGRoutes = require('./routes/suiviAgRoutes.js');
@@ -10,8 +11,10 @@ const vilogiRoutes = require('./routes/vilogiRoutes.js');
 const personRoutes = require('./routes/personRoutes.js');
 const suiviFicheRoutes = require('./routes/suiviFicheRoutes.js');
 const zendeskRoutes = require('./routes/zendeskRoutes');
+
+const zendeskService = require('./services/zendeskService');
 const cronStart = require('./cron/cronStart');
-const synchroUsers = require('./cron/synchroUsers');
+const synchroContratEntretien = require('./cron/synchroContratEntretien');
 
 const app = express();
 const port = 8081;
@@ -28,9 +31,10 @@ app.use('/person', personRoutes);
 app.use('/fiche', suiviFicheRoutes);
 app.use('/vilogi', vilogiRoutes);
 app.use('/mongodb', trelloRoutes);
+app.use('/monday', mondayRoutes);
 
 app.get('/batch', (req, res) => {
-  synchroUsers.start();
+  synchroContratEntretien.start();
   res.send('Cron test is running!');
 });
 

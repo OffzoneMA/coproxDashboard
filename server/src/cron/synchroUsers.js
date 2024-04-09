@@ -84,8 +84,12 @@ async function getAllUsersAndManageThem(idVilogi,Copro){
           "idVilogi": user.id,
           "nom": user.nom,  
           "prenom": user.prenom, 
-          "telephone": user.mobile,
-          "typePersonne": user.typePersonne
+          "telephone": user.telephone,
+          "telephone2":user.telephone2,
+          "mobile":user.mobile,
+          "mobile2":user.mobile2,
+          "typePersonne": user.typePersonne,
+          "active":user.active
         };
         //console.log(userData);
         await SynchoMongoDB(userData)
@@ -183,7 +187,7 @@ async function SynchoZendesk() {
           "user": {
             ...baseUserData.user,
             "tags": [user.typePersonne],
-            "phone": user.telephone,
+            "phone": user.mobile,
             "organization": { "name": organisationName.idCopro },
             "user_fields": { "role_du_demandeur": user.typePersonne }
           }

@@ -65,7 +65,7 @@ const contratAssurance = {
                             texte_10: contrat.compteCharge,
                             texte_11: contrat.datefin,
                             texte_12: contrat.idFichier,
-                            board_relation:{"item_ids" : [copro.idMonday]},
+                            ...(copro.idMonday != null && { board_relation: { "item_ids": [copro.idMonday] } }),
                           };
                           
                           const boardId = 1436546197;
@@ -92,21 +92,32 @@ const contratAssurance = {
 
 
 
-async function saveFileLocally(apiResponse, localFilePath) {
+async function saveMonday(itemName,data,idVilogi) {
     try {
-    if (contrat.datefin){
-            let outputFileName = `downloads/contrats/nonactif/${copro.idCopro}-Contrat -${contrat.fournisseur} - ${contrat.fournisseur}.pdf`;
-            const apiResponse = await vilogiService.getCoproContratEntretienFichier(contrat.idFichier, copro.idVilogi,outputFileName);
+        const checkValue= await mondayVilogiSyncService.getItemsByInfo(boardId,idVilogi)
+        console.log(checkValue)
+        if(checkValue.length > 0){
+            console.log("Already exist")
+            const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
         }else{
-            let outputFileName = `downloads/contrats/actif/${copro.idCopro}-Contrat -${contrat.fournisseur} - ${contrat.fournisseur}.pdf`;
-            const apiResponse = await vilogiService.getCoproContratEntretienFichier(contrat.idFichier, copro.idVilogi,outputFileName);
-        }
+            const newItem = await mondayService.createItem(boardId, itemName, data);
+            //console.log("Nouvel élément créé:", newItem);
+            const dataMongo={
+                boardID:boardId,
+                mondayItenID:newItem.id,
+                vilogiEndpoint:typeData,
+                //vilogiEndpointData:mandat,
+                vilogiItemID:idVilogi
 
-        await delay(1000)
-        } catch (error) {
-        console.error('Error getting file from API:', error);
+            }
+            mondayVilogiSyncService.addItem(dataMongo)
         }
-  }
+        await delay(300);
+        //monday.api(`mutation {change_multiple_column_values(item_id:${newItem.id},board_id:${boardId}, column_values: \"{\\\"board_relation\\\" : {\\\"item_ids\\\" : [${copro.idMonday}]}}\") {id}}` )
+      } catch (error) {
+        console.error("Erreur lors de la création de l'élément:", error);
+      }
+}
 
 
 //extraction des contrat par copro

@@ -10,7 +10,7 @@ async function executeGraphQLQuery(queryString) {
   try {
       console.log(queryString)
       const res = await monday.api(queryString);
-      console.log(res.data);
+      //console.log(res.data);
       return res.data ;
     
 
@@ -43,7 +43,8 @@ async function getItems(boardId) {
   try {
     const query = `query { boards(ids: ${boardId}) { items_page (limit: 100) { cursor items { id  name  } } } }`;
     result=await executeGraphQLQuery(query)
-    return result.boards[0]
+    //console.log(result.boards[0].items_page.items)
+    return result.boards[0].items_page.items
   } catch (error) {
     throw new Error('Error fetching items:', error.message);
   }
@@ -56,7 +57,7 @@ async function getItemsDetails(itemID) {
     //console.log("name : ",result.items[0].name)
     //console.log("values : ",result.items[0].column_values[0].value)
     for(column in result.items[0].column_values)
-    console.log("ColumnID : ",result.items[0].column_values[column].id,"                 Column : ",result.items[0].column_values[column].column.title,"                  Value : " ,result.items[0].column_values[column].value)
+    //console.log("ColumnID : ",result.items[0].column_values[column].id,"                 Column : ",result.items[0].column_values[column].column.title,"                  Value : " ,result.items[0].column_values[column].value)
     //console.log(result.items[0])
     //console.log("---------------------------")
     return result.items[0];
@@ -91,7 +92,7 @@ async function createItem(boardId, itemName, columnValues) {
     const query = `mutation {
       create_item (
         board_id: ${boardId},
-        item_name: "${itemName}",
+        item_name: "${removeFrenchSpecialCharacters(itemName)}",
         column_values: "${JSON.stringify(columnValues).replace(/"/g, '\\"')}"
       ) {id name}}`;
     const response = await executeGraphQLQuery(query);
@@ -129,6 +130,16 @@ async function createSubitem(parentItemId, subitemName) {
   } catch (error) {
     throw new Error('Error creating subitem:', error.message);
   }
+}
+
+function removeFrenchSpecialCharacters(inputString) {
+  // Define the regular expression pattern to match French special characters
+  //const frenchSpecialCharactersRegex = /[ÀÁÂÃÄÅàáâãäåÇçÈÉÊËèéêëÌÍÎÏìíîïÑñÒÓÔÕÖØòóôõöøÙÚÛÜùúûüÝýÿ]/g;
+  
+  // Remove the French special characters using the replace method with an empty string
+  const cleanedString = inputString.replace(/"/g, '\\"');
+
+  return cleanedString;
 }
 
 module.exports = {
