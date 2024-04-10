@@ -73,7 +73,7 @@ const PersonList = () => {
   return (
     <div className="container-main">
       <div>
-      <FormControl variant="outlined" style={{ marginBottom: '16px' }}>
+      <FormControl variant="outlined" style={{ marginBottom: '16px',width: '200opx' }}>
         <InputLabel id="filter-type-label">Filter by Type</InputLabel>
         <Select
           labelId="filter-type-label"
@@ -83,10 +83,12 @@ const PersonList = () => {
           label="Filter by Type"
         >
           <MenuItem value="">
-            <em>All</em>
+            <em>Tous</em>
           </MenuItem>
-          <MenuItem value="proprietaire">Propriétaire</MenuItem>
-          <MenuItem value="locataire">Locataire</MenuItem>
+          <MenuItem value="PROPRIETAIRE">Propriétaire</MenuItem>
+          <MenuItem value="LOCATAIRE">Locataire</MenuItem>
+          <MenuItem value="CS">Conseil Syndical</MenuItem>
+          
           {/* Add more types as needed */}
         </Select>
       </FormControl>

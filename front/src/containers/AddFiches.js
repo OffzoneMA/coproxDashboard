@@ -24,10 +24,12 @@ const addFiches = () => {
   const [selectedVariableId, setSelectedVariableId] = useState(''); // Add this state variable
   const [selectedVariable, setSelectedVariable] = useState('');
   const [previewData, setPreviewData] = useState([]);
+  const [notification, setNotification] = useState(''); // Add this state variable
+
 
   // Define the column titles
   const columnTitles = [
-    'prenom','nom','adresse','codepostale','email','telephone1','telephone2','ville'
+    'prenom','nom','adresse','codepostale','email1','email2','telephone1','telephone2','ville'
   ];
 
   useEffect(() => {
@@ -68,6 +70,7 @@ const addFiches = () => {
         jsonRow[title] = row[title];
       });
       jsonRow.idCopro = selectedVariableId ; // Add copro object with selectedVariableId
+      jsonRow.status="Initié"
       return jsonRow;
     });
   
@@ -75,14 +78,22 @@ const addFiches = () => {
     axios.post(`${process.env.REACT_APP_BACKEND_URL}/fiche/saveFiches`, jsonData)
       .then(response => {
         console.log('Data saved successfully:', response.data);
+        setNotification('Data saved successfully'); // Set notification message
+        setPreviewData([]); // Clear preview data
       })
       .catch(error => {
         console.error('Error saving data:', error);
+        setNotification('Error saving data'); // Set notification message
       });
   };
 
   return (
     <div className="container-main">
+      {notification && (
+        <div style={{ color: notification.includes('Error') ? 'red' : 'green', marginTop: '16px' }}>
+          {notification}
+        </div>
+      )}
       <FormControl variant="outlined" style={{ marginBottom: '16px',width:'300px' }}>
         <InputLabel id="variable-select-label">Select API Variable</InputLabel>
         <Select

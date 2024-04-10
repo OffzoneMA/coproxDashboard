@@ -47,6 +47,11 @@ const Sidebar = () => {
           <ListItemText primary="Mes Clients" />
         </ListItem>
 
+        <ListItem button component={Link} to="/scripts">
+          <Groups  className="drawer-icon"/>
+          <ListItemText primary="Les Scripts" />
+        </ListItem>
+
         {/* Add more list items as needed */}
       </List>
     </Drawer>

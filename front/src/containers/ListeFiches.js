@@ -17,7 +17,7 @@ import axios from 'axios';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import { Link } from 'react-router-dom';
 
-const FicheList = () => {
+const FicheList = ({ onSetTitle }) => {
   // State variables
   const [coproId, setCoproId] = useState('');
   const [fiches, setFiches] = useState([]);
@@ -26,6 +26,7 @@ const FicheList = () => {
 
   useEffect(() => {
     // Fetch copros
+    onSetTitle('Suivi des Fiches de ren');
     axios.get(`${process.env.REACT_APP_BACKEND_URL}/copro/listCopro`)
       .then(response => {
         setCopros(response.data);
@@ -36,9 +37,17 @@ const FicheList = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch fiches by copro ID
+    // Fetch fiches by copro ID or all fiches if copro ID is empty
     if (coproId) {
       axios.get(`${process.env.REACT_APP_BACKEND_URL}/fiche/getFichesByCoproId/${coproId}`)
+        .then(response => {
+          setFiches(response.data);
+        })
+        .catch(error => {
+          console.error('Error fetching fiches:', error);
+        });
+    } else {
+      axios.get(`${process.env.REACT_APP_BACKEND_URL}/fiche/getAllFiches`)
         .then(response => {
           setFiches(response.data);
         })
@@ -104,6 +113,8 @@ const FicheList = () => {
                 <TableCell>Telephone 1</TableCell>
                 <TableCell>Telephone 2</TableCell>
                 <TableCell>Ville</TableCell>
+                <TableCell>Statut</TableCell>
+
               </TableRow>
             </TableHead>
             <TableBody>
@@ -114,10 +125,11 @@ const FicheList = () => {
                   <TableCell>{fiche.nom}</TableCell>
                   <TableCell>{fiche.adresse}</TableCell>
                   <TableCell>{fiche.codepostale}</TableCell>
-                  <TableCell>{fiche.email}</TableCell>
+                  <TableCell>{fiche.email1}</TableCell>
                   <TableCell>{fiche.telephone1}</TableCell>
                   <TableCell>{fiche.telephone2}</TableCell>
                   <TableCell>{fiche.ville}</TableCell>
+                  <TableCell>{fiche.status}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -8,6 +8,7 @@ import Copro from './containers/Copro';
 import AddFiches from './containers/AddFiches';
 import ListeFiches from './containers/ListeFiches.js';
 import Clients from './containers/clients';
+import Script from './containers/script.js';
 import DetailCopro from './containers/DetailCopro';
 import HomePage from './containers/HomePage';
 import './assets/styles/App.css';
@@ -36,6 +37,7 @@ function App() {
             <Route path="/addfiches" element={<AddFiches onSetTitle={setTitle} />} />
             <Route path="/listefiches" element={<ListeFiches onSetTitle={setTitle} />} />
             <Route path="/clients" element={<Clients onSetTitle={setTitle} />} />
+            <Route path="/scripts" element={<Script onSetTitle={setTitle} />} />
             <Route path="/detailcopro/:id" element={<DetailCopro onSetTitle={setTitle} />} />
 
 
