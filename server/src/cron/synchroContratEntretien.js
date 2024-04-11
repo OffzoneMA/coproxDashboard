@@ -24,7 +24,6 @@ const synchroContratEntretien = {
         try {
             let copros = await coproService.listCopropriete();
             let FinalContrat = [];  // Initialize FinalContrat array
-            console.log(await mondayService.getItemsDetails("1455213576"))
             let TotalContrat=0
             for (const copro of copros) {
                 console.log("ID Vilogi:", copro.idCopro);
