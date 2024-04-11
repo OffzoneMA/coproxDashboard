@@ -76,7 +76,7 @@ function cronStart() {
 }
 
 
-cron.schedule('* * * * *', async () => {
+cron.schedule('/5 * * * *', async () => {
   for (const { name, script } of scripts) {
       try {
           // Connect to MongoDB and execute asynchronously
@@ -84,7 +84,6 @@ cron.schedule('* * * * *', async () => {
               const coproprieteCollection = MongoDB.getCollection('ScriptState');
                // Get the current script state
               const scriptState = await coproprieteCollection.findOne({ name });
-              console.log(scriptState)
               if (scriptState && scriptState.status === 1) {
                   // Execute the script
                   console.log(scriptState)
