@@ -24,9 +24,11 @@ router.get('/:scriptName', async (req, res) => {
     // Update script state to 1 (started) in the database
     try {
         return connectAndExecute(async () => {
+            console.log(scriptName)
             const coproprieteCollection = MongoDB.getCollection('ScriptState');
             res.send(`${scriptName} script state set to started`);
-            return await coproprieteCollection.findOneAndUpdate({ name: scriptName }, { state: 1 });
+            data={ status: 1 }
+            return await coproprieteCollection.findOneAndUpdate({ name: scriptName },{ $set: data },);
           });
         
     } catch (error) {
