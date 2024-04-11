@@ -73,30 +73,32 @@ function cronStart() {
   cron.schedule('0 15 * * *', async () => {
     await syncZendeskTags.start();
   });
+  
+  cron.schedule('*/5 * * * *', async () => {
+    for (const { name, script } of scripts) {
+        try {
+            // Connect to MongoDB and execute asynchronously
+            await connectAndExecute(async () => {
+                const coproprieteCollection = MongoDB.getCollection('ScriptState');
+                 // Get the current script state
+                const scriptState = await coproprieteCollection.findOne({ name });
+                if (scriptState && scriptState.status === 1) {
+                    // Execute the script
+                    console.log(scriptState)
+                    await script.start();
+                    // Update script state to not started after execution
+                    await coproprieteCollection.updateOne({ name }, { $set: { status: 0 } });
+                }
+            });
+        } catch (error) {
+            console.error(`Error executing ${name} script: ${error}`);
+        }
+    }
+  });
 }
 
 
-cron.schedule('*/5 * * * *', async () => {
-  for (const { name, script } of scripts) {
-      try {
-          // Connect to MongoDB and execute asynchronously
-          await connectAndExecute(async () => {
-              const coproprieteCollection = MongoDB.getCollection('ScriptState');
-               // Get the current script state
-              const scriptState = await coproprieteCollection.findOne({ name });
-              if (scriptState && scriptState.status === 1) {
-                  // Execute the script
-                  console.log(scriptState)
-                  await script.start();
-                  // Update script state to not started after execution
-                  await coproprieteCollection.updateOne({ name }, { $set: { status: 0 } });
-              }
-          });
-      } catch (error) {
-          console.error(`Error executing ${name} script: ${error}`);
-      }
-  }
-});
+
 
 
 module.exports = cronStart;
