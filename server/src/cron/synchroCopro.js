@@ -40,7 +40,7 @@ async function vilogiToMongodb(){
             dateReprise:copro.dateReprise,
             immatriculation:detailData.site,
             nbLotPrincipaux:detailData.coproInfo.nbLotPrincipaux,
-            //typeChauffage:detailData.typeChauffage,
+            typeChauffage:detailData.typeChauffage,
             //dateConstruction:detailData.anneeConstruction,
           }
           data.idCopro = copro.lot ? copro.lot : "S-Autre";
@@ -56,17 +56,26 @@ async function vilogiToMongodb(){
 }
 
 async function mongodbToZendesk(){
-  const copros= await coproService.listCopropriete();
-  for (const copro of copros) {
-    const orgZendesk = zendeskService.getAllorganizations()
-    if(copro.idCopro){
-      console.log(copro.idCopro)
+  const copros = await coproService.listCopropriete();
+  const orgZendesk = await zendeskService.getAllorganizations(); // Wait for organizations to be fetched
 
-    }else{
-      console.log()
+  for (const copro of copros) {
+    await delay(100)
+    // Check if the copro exists in orgZendesk
+    const existingOrg = orgZendesk.find(org => org.name === copro.idCopro);
+
+    if(existingOrg){
+      console.log("Updating Zendesk copro", copro.idCopro);
+      // Update logic goes here if needed
+    } else {
+      const organizationData = {
+        name: copro.idCopro
+        // Add any other data needed for organization creation
+      };
+      console.log("Adding Zendesk copro", organizationData.name);
+      await zendeskService.addOrganization(organizationData); // Wait for organization to be added
     }
   }
-
 }
 
 
@@ -112,8 +121,14 @@ async function mongodbToMondayCoproMorte(){
 
       }
       const values = await mondayService.getItemInBoardWhereName(copro.idCopro,LesCoprosInfoMorteIDBoard)
-      if(values)
+      console.log(values)
+      if (typeof values !== 'undefined' && values !== null && typeof values === 'object' && Object.keys(values).length > 0) 
         await mondayService.updateItem(LesCoprosInfoMorteIDBoard, values.id, columnValues)
+      else{
+        console.log("adding copro ",copro.idCopro )
+        await mondayService.createItem(LesCoprosInfoMorteIDBoard, copro.idCopro, columnValues)
+      }
+
   }
 
 }

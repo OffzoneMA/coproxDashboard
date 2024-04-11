@@ -106,6 +106,15 @@ async function updateUser(userID,userData) {
 }
 
 
+async function addOrganization(organizationData) {
+  console.log(organizationData)
+  const jsonObject = {"organization": organizationData};
+  const url = '/organizations.json';
+  response = await makeRequest(url, 'Error adding organization', { method: 'post', body: jsonObject });
+  console.log(response.id);
+  return response.id;
+}
+
 async function getCurrentUser() {
   const url = '/users/me.json';
   return makeRequest(url, 'Error fetching current user');
@@ -243,6 +252,7 @@ module.exports = {
   updateUser,
   getCurrentUser,
   addUser,
+  addOrganization,
   getAllUsers,
   getUserFromID,
   getUserFromEmail,
