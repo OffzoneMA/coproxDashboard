@@ -17,6 +17,24 @@ async function connectAndExecute(callback) {
     } 
   }
 
+  router.get('/', async (req, res) => {
+    const scriptName = req.params.scriptName;
+
+    // Update script state to 1 (started) in the database
+    try {
+        return connectAndExecute(async () => {
+            console.log(scriptName)
+            const coproprieteCollection = MongoDB.getCollection('ScriptState');
+            const scripts= await coproprieteCollection.find({}).toArray();
+            res.status(200).json(scripts);
+            return
+          });
+        
+    } catch (error) {
+        res.status(500).send(`Error setting ${scriptName} script state to started: ${error}`);
+    }
+});
+
 // Define routes to start a script
 router.get('/:scriptName', async (req, res) => {
     const scriptName = req.params.scriptName;
