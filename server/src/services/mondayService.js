@@ -132,6 +132,15 @@ async function createSubitem(parentItemId, subitemName) {
   }
 }
 
+async function createGroup(boardId,groupName){
+  try {
+    const response = await monday.api(`mutation {create_group (board_id:  ${boardId}, group_name: "${removeFrenchSpecialCharacters(groupName)}") {id}}`);
+    return response.data.create_subitem;
+  } catch (error) {
+    throw new Error('Error creating subitem:', error.message);
+  }
+}
+
 function removeFrenchSpecialCharacters(inputString) {
   // Define the regular expression pattern to match French special characters
   //const frenchSpecialCharactersRegex = /[ÀÁÂÃÄÅàáâãäåÇçÈÉÊËèéêëÌÍÎÏìíîïÑñÒÓÔÕÖØòóôõöøÙÚÛÜùúûüÝýÿ]/g;
@@ -147,7 +156,8 @@ module.exports = {
   getItems,
   getItemsDetails,
   getItemInBoardWhereName,
+  createGroup,
   createItem,
-  updateItem,
   createSubitem,
+  updateItem,
 };

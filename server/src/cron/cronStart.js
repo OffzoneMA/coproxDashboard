@@ -57,7 +57,7 @@ function cronStart() {
 
   cron.schedule('0 0 * * *', async () => {
     console.log("-------------------------Starting Zendesk Ticket AI--------------------------------------------")
-    await zendeskTicketAI.start();
+    //await zendeskTicketAI.start();
     await synchroTravaux.start();
     await synchroContratEntretien.start();
     await SynchroMondayUserAffected.start();
@@ -73,28 +73,81 @@ function cronStart() {
   cron.schedule('0 15 * * *', async () => {
     await syncZendeskTags.start();
   });
+
   
-  cron.schedule('*/5 * * * *', async () => {
+  cron.schedule('* * * * *', async () => {
     for (const { name, script } of scripts) {
         try {
+            console.log("Starting script:", name);
+            const executionHistory = []; // Local storage for execution history
+            
+            // Log the beginning of execution
+            executionHistory.push({
+                timestamp: new Date(),
+                status: 2, // In progress
+                message: "Script execution started"
+            });
+            
             // Connect to MongoDB and execute asynchronously
             await connectAndExecute(async () => {
                 const coproprieteCollection = MongoDB.getCollection('ScriptState');
-                 // Get the current script state
+                // Get the current script state
                 const scriptState = await coproprieteCollection.findOne({ name });
                 if (scriptState && scriptState.status === 1) {
                     // Execute the script
-                    console.log(scriptState)
+                    console.log("Script state before execution:", scriptState);
                     await script.start();
+                    
                     // Update script state to not started after execution
                     await coproprieteCollection.updateOne({ name }, { $set: { status: 0 } });
+                    
+                    // Log execution history for success
+                    executionHistory.push({
+                        timestamp: new Date(),
+                        status: 0, // Success
+                        message: "Script executed successfully"
+                    });
                 }
+            });
+            
+            // Update execution history in the database
+            await connectAndExecute(async () => {
+                const coproprieteCollection = MongoDB.getCollection('ScriptState');
+                await coproprieteCollection.updateOne(
+                    { name },
+                    {
+                        $push: {
+                            execution_history: { $each: executionHistory } // Update execution history in bulk
+                        }
+                    }
+                );
             });
         } catch (error) {
             console.error(`Error executing ${name} script: ${error}`);
+            // Log execution history for error
+            executionHistory.push({
+                timestamp: new Date(),
+                status: -1, // Error
+                message: `Error executing ${name} script: ${error}`
+            });
+            
+            // Update execution history in the database
+            await connectAndExecute(async () => {
+                const coproprieteCollection = MongoDB.getCollection('ScriptState');
+                await coproprieteCollection.updateOne(
+                    { name },
+                    {
+                        $push: {
+                            execution_history: { $each: executionHistory } // Update execution history in bulk
+                        }
+                    }
+                );
+            });
         }
     }
-  });
+});
+  
+  
 }
 
 
