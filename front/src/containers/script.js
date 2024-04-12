@@ -80,7 +80,7 @@ function TrelloPage({ onSetTitle }) {
                                     <TableCell></TableCell>
                                 )}
                                 <TableCell></TableCell>
-                                <TableCell><Chip color="info" icon={<SyncIcon />} />status</TableCell>
+                                <TableCell><Chip color="info" icon={<SyncIcon />} label="Status" /></TableCell>
                                 <TableCell>
                                     <Button variant="contained" onClick={() => handleButtonClick(row.endpoint)}>Lancer</Button>
                                 </TableCell>
