@@ -1,7 +1,7 @@
 // TrelloPage.js
 import React, { useState, useEffect } from 'react';
 import { fetchDataFromApi } from '@src/utils/api';
-import { Table, Select, MenuItem, TableBody, TableCell, Button, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Table, Select, MenuItem, Chip,TableBody, TableCell, Button, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 
 function TrelloPage({ onSetTitle }) {
