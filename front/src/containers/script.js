@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchDataFromApi } from '@src/utils/api';
 import { Table, Select, MenuItem, TableBody, TableCell, Button, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import SyncIcon from '@mui/icons-material/Sync';
 
 function TrelloPage({ onSetTitle }) {
     const [selectedOptions, setSelectedOptions] = useState({});
@@ -9,7 +10,7 @@ function TrelloPage({ onSetTitle }) {
         { name: "Synchronisation informations copropriété", endpoint: "script/synchroCopro", options: [] },
         { name: "Synchronisation Travaux", endpoint: "script/synchroTravaux", options: [] },
         { name: "Synchronisation Contrat Entretien", endpoint: "script/synchroContratEntretien", options: [] },
-        { name: "Lancement gestion chauffage", endpoint: "script/endpoint2", options: [{ value: "2", label: "Activation" }, { value: "3", label: "Desactivation" }] },
+        { name: "Lancement gestion chauffage", endpoint: "script/campagneChauffage", options: [{ value: "2", label: "Activation" }, { value: "3", label: "Desactivation" }] },
     ];
 
     const handleButtonClick = async (endpoint) => {
@@ -53,6 +54,7 @@ function TrelloPage({ onSetTitle }) {
                             <TableCell>Option</TableCell>
                             <TableCell>Date de lancement </TableCell>
                             <TableCell>Status</TableCell>
+                            <TableCell></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -78,6 +80,7 @@ function TrelloPage({ onSetTitle }) {
                                     <TableCell></TableCell>
                                 )}
                                 <TableCell></TableCell>
+                                <TableCell><Chip color="info" icon={<SyncIcon />} />status</TableCell>
                                 <TableCell>
                                     <Button variant="contained" onClick={() => handleButtonClick(row.endpoint)}>Lancer</Button>
                                 </TableCell>
