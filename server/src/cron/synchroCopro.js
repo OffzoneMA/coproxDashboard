@@ -40,8 +40,6 @@ async function vilogiToMongodb(){
             dateReprise:copro.dateReprise,
             immatriculation:detailData.site,
             nbLotPrincipaux:detailData.coproInfo.nbLotPrincipaux,
-            typeChauffage:detailData.typeChauffage,
-            //dateConstruction:detailData.anneeConstruction,
           }
           data.idCopro = copro.lot ? copro.lot : "S-Autre";
           if (findCopro){
@@ -52,6 +50,17 @@ async function vilogiToMongodb(){
             //console.log(copro.lot, " add info")
           }
           await delay(100)
+        }
+        const copros = await coproService.listCopropriete();
+        for (const copro of copros) {
+          console.log("starting tech data with" ,copro.idCopro)
+          const dataTech= await vilogiService.getCoproDataTech(copro.idVilogi)
+          let data={
+            typeChauffage:dataTech.typeChauffage,
+            dateConstruction:dataTech.anneeConstruction,
+          }
+          await coproService.editCopropriete(copro._id,data)
+          await delay(400)
         }
 }
 
@@ -69,7 +78,8 @@ async function mongodbToZendesk(){
       // Update logic goes here if needed
     } else {
       const organizationData = {
-        name: copro.idCopro
+        name: copro.idCopro,
+        organization_fields:{verif_copro:true}
         // Add any other data needed for organization creation
       };
       console.log("Adding Zendesk copro", organizationData.name);
