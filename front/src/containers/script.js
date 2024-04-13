@@ -1,24 +1,29 @@
-// TrelloPage.js
 import React, { useState, useEffect } from 'react';
 import { fetchDataFromApi } from '@src/utils/api';
-import { Table, Select, MenuItem, Chip,TableBody, TableCell, Button, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Table, Select, MenuItem, Chip, TableBody, TableCell, Button, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 
 function TrelloPage({ onSetTitle }) {
     const [selectedOptions, setSelectedOptions] = useState({});
-    const rows = [
-        { name: "Synchronisation informations copropriété", endpoint: "script/synchroCopro", options: [] },
-        { name: "Synchronisation Travaux", endpoint: "script/synchroTravaux", options: [] },
-        { name: "Synchronisation Contrat Entretien", endpoint: "script/synchroContratEntretien", options: [] },
-        { name: "Lancement gestion chauffage", endpoint: "script/campagneChauffage", options: [{ value: "2", label: "Activation" }, { value: "3", label: "Desactivation" }] },
-    ];
+    const [scriptData, setScriptData] = useState([]);
+
+
+    const fetchData = async () => {
+        try {
+            const response = await fetchDataFromApi('script/');
+                console.log("Response:", response);
+                setScriptData(response);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        }
+    };
 
     const handleButtonClick = async (endpoint) => {
         const selectedOption = selectedOptions[endpoint];
-        const row = rows.find(row => row.endpoint === endpoint);
+        const row = scriptData.find(row => row.endpoint === endpoint);
         if ((selectedOption && row.options.length > 0) || row.options.length === 0) {
             try {
-                const response = await fetchDataFromApi(endpoint, { method: 'POST', body: JSON.stringify({ option: selectedOption }) });
+                const response = await fetchDataFromApi(endpoint, { method: 'POST'});
                 const data = await response.json();
                 console.log("API response:", data);
             } catch (error) {
@@ -36,7 +41,23 @@ function TrelloPage({ onSetTitle }) {
         }));
     };
 
+    const getStatusChip = (status) => {
+        switch (status) {
+            case 0:
+                return <Chip color="success" icon={<SyncIcon />} label="Success" />;
+            case 1:
+                return <Chip color="warning" icon={<SyncIcon />} label="Waiting to start" />;
+            case 2:
+                return <Chip color="info" icon={<SyncIcon />} label="In progress" />;
+            case -1:
+                return <Chip color="error" icon={<SyncIcon />} label="Error" />;
+            default:
+                return <Chip icon={<SyncIcon />} label="Unknown" />;
+        }
+    };
+
     useEffect(() => {
+        fetchData();
         onSetTitle('Les scripts');
         return () => {
             onSetTitle('');
@@ -58,7 +79,7 @@ function TrelloPage({ onSetTitle }) {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {rows.map((row, index) => (
+                        {scriptData.map((row, index) => (
                             <TableRow key={index}>
                                 <TableCell></TableCell>
                                 <TableCell>{row.name}</TableCell>
@@ -79,8 +100,8 @@ function TrelloPage({ onSetTitle }) {
                                 ) : (
                                     <TableCell></TableCell>
                                 )}
-                                <TableCell></TableCell>
-                                <TableCell><Chip color="info" icon={<SyncIcon />} label="Status" /></TableCell>
+                                <TableCell>{row.lastExecution}</TableCell>
+                                <TableCell>{getStatusChip(row.status)}</TableCell>
                                 <TableCell>
                                     <Button variant="contained" onClick={() => handleButtonClick(row.endpoint)}>Lancer</Button>
                                 </TableCell>
