@@ -2,9 +2,11 @@ const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
+const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
 const fs = require('fs');
-
+const boardId = 1436546197;
+const typeData="contratAssurance"
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -18,62 +20,46 @@ const contratAssurance = {
         try {
             let copros = await coproService.listCopropriete();
             let FinalContrat = [];  // Initialize FinalContrat array
+            let TotalContrat=0
+            const data = await mondayService.getItemsDetails(1436590141);
+            console.log(data)
 
             for (const copro of copros) {
                 console.log("ID Vilogi:", copro.idCopro);
                 if (copro.idVilogi !== undefined) {
                     let contrats = await vilogiService.getCoproContratAssurance(copro.idVilogi);
                     //console.log(contrats);
-                    const data = await mondayService.getItemsDetails(1436590141);
-                    console.log(data)
+
+                    let NbContrat=0
                     
                     for (const contrat of contrats) {
-                                     
-                        const selectedData = {
-
-                            copro: copro.idCopro,
-                            typecontrat: contrat.typecontrat,
-                            contrat: contrat.contrat,
-                            description: contrat.description,
-                            dateeffet: contrat.dateeffet,
-                            dateecheance: contrat.dateecheance,
-                            police: contrat.police,
-                            assureur: contrat.assureur,
-                            courtier: contrat.courtier,
-                            compagnie: contrat.compagnie,
-                            prime: contrat.prime,
-                            compteCharge: contrat.compteCharge,
-                            datefin: contrat.datefin,
-                            file: contrat.idFichier
-                            // Add other properties as needed
-                        };
-                    
-                        FinalContrat.push(selectedData);
+                        NbContrat++
+                        TotalContrat++
+                        console.log(` Contrat numero ${TotalContrat}   Sync contrat Number :${contrat.id}   ---- ${copro.idCopro} -  [${NbContrat}   /  ${contrats.length}] `)  
                         const columnValues = {
-                            texte: copro.idCopro,
                             texte5: contrat.typecontrat,
                             //statut_1: contrat.typecontrat,
-                            texte_3: contrat.contrat,
+                            //texte_3: contrat.contrat,
                             texte_4: contrat.description,
-                            texte_5: contrat.dateeffet,
-                            texte_1: contrat.dateecheance,
-                            texte_2: contrat.police,
+                            date__1: {"date" : contrat.dateeffet.split('/').reverse().join('-')},
+                            date_1__1: {"date" : contrat.dateecheance.split('/').reverse().join('-')},
+                            //texte_2: contrat.police,
                             texte_6: contrat.assureur,
-                            texte_7: contrat.courtier,
+                            texte_7: contrat.id,
                             texte_8: contrat.compagnie,
                             chiffres: contrat.prime,
                             texte_10: contrat.compteCharge,
-                            texte_11: contrat.datefin,
-                            texte_12: contrat.idFichier,
-                            ...(copro.idMonday != null && { board_relation: { "item_ids": [copro.idMonday] } }),
+                            //date_2__1: {"date" : contrat.datefin.split('/').reverse().join('-')},
+                            //texte_12: contrat.idFichier,
+                            ...(copro.idMonday != null && { board_relation5: { "item_ids": [copro.idMonday] } }),
                           };
                           
-                          const boardId = 1436546197;
-                          const itemName = `Contrat d'assurance - ${copro.idCopro} - ${contrat.assureur}`;
+                          
+                          const itemName = `Contrat d'assurance - ${copro.idCopro} - ${contrat.assureur}`;//
                           
                           try {
-                            const newItem = await mondayService.createItem(boardId, itemName, columnValues);
-                            console.log("Nouvel élément créé:", newItem);
+                            await saveMonday(itemName,columnValues,contrat.id)
+                            await delay(200)
                           } catch (error) {
                             console.error("Erreur lors de la création de l'élément:", error);
                           }
@@ -118,6 +104,7 @@ async function saveMonday(itemName,data,idVilogi) {
         console.error("Erreur lors de la création de l'élément:", error);
       }
 }
+
 
 
 //extraction des contrat par copro

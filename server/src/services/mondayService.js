@@ -1,5 +1,12 @@
 // mondayService.js
 const mondaySdk = require("monday-sdk-js");
+const fs = require('fs');
+const path = require('path');
+const logFilePath = path.join(__dirname, '../../logs/logsMonday.log');
+const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
+
+
+
 
 // Initialize Monday SDK
 const monday = mondaySdk();
@@ -98,18 +105,22 @@ async function createItem(boardId, itemName, columnValues) {
     const response = await executeGraphQLQuery(query);
     return response.create_item;
   } catch (error) {
-    throw new Error('Error creating item:', error.message);
+    logExecution(`Error creating item ${itemId}`)
+    throw new Error('Error creating item:',itemName, error.message);
   }
 }
 
 // Function to create a new item in a board
-async function updateItem(boardId,itemId, columnValues) {
+async function updateItem(boardId, itemId, columnValues) {
   try {
-    const columnValuesString = JSON.stringify(columnValues).replace(/"/g, '\\"');
+    // Remove occurrences of /r/n from columnValues
+    const cleanedColumnValues = JSON.stringify(columnValues).replace(/\\r\\n/g, '');
+
+    const columnValuesString = cleanedColumnValues.replace(/"/g, '\\"');
     const query = `mutation {
       change_multiple_column_values (
-        item_id: ${itemId},
-        board_id: ${boardId},
+        item_id: "${itemId}",
+        board_id: "${boardId}",
         column_values: "${columnValuesString}"
       ) {
         id
@@ -118,7 +129,8 @@ async function updateItem(boardId,itemId, columnValues) {
     const response = await executeGraphQLQuery(query);
     return response.change_multiple_column_values;
   } catch (error) {
-    throw new Error('Error updating item:', error.message);
+    logExecution(`Error updating item ${itemId}`)
+    throw new Error(`Error updating item ${itemId}: ${error.message}`);
   }
 }
 
@@ -150,6 +162,13 @@ function removeFrenchSpecialCharacters(inputString) {
 
   return cleanedString;
 }
+async function logExecution(...args) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `${timestamp} ${args.join(' ')}\n`;
+  logStream.write(logMessage);
+  process.stdout.write(logMessage); // Optional: Write to the console as well
+}
+
 
 module.exports = {
   executeGraphQLQuery,
