@@ -25,6 +25,7 @@ const campagneChauffage = {
           if(copro.typeChauffage==="COLLECTIF"){
             const itemName = `${action} ${copro.idCopro}`
             const columnValues = {
+              ...(copro.idMonday != null && { board_relation: { "item_ids": [copro.idMonday] } }),
             };
             try {
               const IDItem = await mondayService.createItem(boardID,itemName,columnValues)

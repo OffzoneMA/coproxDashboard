@@ -23,6 +23,7 @@ function TrelloPage({ onSetTitle }) {
         const row = scriptData.find(row => row.endpoint === endpoint);
         if ((selectedOption && row.options.length > 0) || row.options.length === 0) {
             try {
+                await fetchData(); 
                 const response = await fetchDataFromApi(endpoint, { method: 'POST', body: JSON.stringify({ option: selectedOption }) });
                 const data = await response.json();
                 console.log("API response:", data);
@@ -44,13 +45,13 @@ function TrelloPage({ onSetTitle }) {
     const getStatusChip = (status) => {
         switch (status) {
             case 0:
-                return <Chip color="success" icon={<SyncIcon />} label="Success" />;
+                return <Chip color="success"  label="Success" />;
             case 1:
                 return <Chip color="warning" icon={<SyncIcon />} label="Waiting to start" />;
             case 2:
                 return <Chip color="info" icon={<SyncIcon />} label="In progress" />;
             case -1:
-                return <Chip color="error" icon={<SyncIcon />} label="Error" />;
+                return <Chip color="error" label="Error" />;
             default:
                 return <Chip icon={<SyncIcon />} label="Unknown" />;
         }
@@ -59,10 +60,14 @@ function TrelloPage({ onSetTitle }) {
     useEffect(() => {
         fetchData();
         onSetTitle('Les scripts');
+        // Set up interval to fetch data every 5 minutes (adjust as needed)
+        const intervalId = setInterval(fetchData, 5 * 60 * 1000); // 5 minutes in milliseconds
         return () => {
+            clearInterval(intervalId); // Clean up interval on component unmount
             onSetTitle('');
         };
     }, [onSetTitle]);
+
 
     return (
         <div className="container-main">
