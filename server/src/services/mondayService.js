@@ -135,16 +135,10 @@ async function updateItem(boardId, itemId, columnValues) {
 }
 
 // Function to create a subitem under a parent item
-async function createSubitem(parentItemId, subitemName, columnValues) {
+async function createSubitem(parentItemId, subitemName) {
   try {
-    
-    const query = `mutation { 
-      create_subitem (
-        parent_item_id: ${parentItemId},
-         item_name: "${subitemName}",
-        ) { id name } 
-      }`;        //column_values: "${JSON.stringify(columnValues).replace(/"/g, '\\"')}"
-    const response = await executeGraphQLQuery(query);
+    const query = `mutation { create_subitem (parent_item_id: ${parentItemId}, item_name: "${subitemName}") { id name } }`;
+    const response = await monday.api(query);
     return response.data.create_subitem;
   } catch (error) {
     throw new Error('Error creating subitem:', error.message);
