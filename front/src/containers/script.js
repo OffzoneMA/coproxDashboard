@@ -105,7 +105,7 @@ function TrelloPage({ onSetTitle }) {
                                 ) : (
                                     <TableCell></TableCell>
                                 )}
-                                <TableCell>{row.lastExecution}</TableCell>
+                                <TableCell>{row.lastExecution}  </TableCell>
                                 <TableCell>{getStatusChip(row.status)}</TableCell>
                                 <TableCell>
                                     <Button variant="contained" onClick={() => handleButtonClick(row.endpoint)}>Lancer</Button>
