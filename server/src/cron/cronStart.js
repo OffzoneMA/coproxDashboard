@@ -93,6 +93,7 @@ function cronStart() {
                     // Execute the script
                     console.log("Starting script:", name);
                     const executionHistory = []; // Local storage for execution history
+                    await coproprieteCollection.updateOne({ name }, { $set: { status: 2 } });
                     await script.start();
                     
                     // Update script state to not started after execution
