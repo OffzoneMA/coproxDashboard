@@ -76,7 +76,7 @@ function cronStart() {
   });
 
   
-  cron.schedule('*/30 * * * *', async () => {
+  cron.schedule('*/5 * * * *', async () => {
     for (const { name, script } of scripts) {
         try {
 
