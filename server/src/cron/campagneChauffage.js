@@ -16,10 +16,10 @@ const campagneChauffage = {
         
         //const data = await mondayService.getItemsDetails(1469021637);
         //console.log(data)
-        const action="Férmeture"
+        const action="Fermeture"
         const copros = await coproService.listCopropriete();
         const année = new Date().getFullYear();
-        //await mondayService.createGroup(boardID,`${action} saison ${année}`)
+        await mondayService.createGroup(boardID,`${action} saison ${année}`)
         for (const copro of copros) {
           if(copro.typeChauffage==="COLLECTIF"){
             const itemName = `${action} ${copro.idCopro}`
