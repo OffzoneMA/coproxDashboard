@@ -25,8 +25,18 @@ async function connectAndExecute(callback) {
         return connectAndExecute(async () => {
             console.log(scriptName)
             const coproprieteCollection = MongoDB.getCollection('ScriptState');
-            const scripts= await coproprieteCollection.find({}).toArray();
-            res.status(200).json(scripts);
+            const scriptArray= await coproprieteCollection.find({}).toArray();
+
+            scriptArray.forEach(script => {
+              if (script.execution_history && script.execution_history.length > 0) {
+                  const lastExecution = script.execution_history[script.execution_history.length - 1].endTime;
+                  script.lastExecution = lastExecution;
+                  delete script.execution_history;
+              }
+          });
+ 
+            console.log(scriptArray);
+            res.status(200).json(scriptArray);
             return
           });
         
