@@ -35,7 +35,8 @@ const scripts = [
   { name: 'contratAssurance', script: require('../cron/contratAssurance') },
   { name: 'synchroMandats', script: require('../cron/synchroMandats') },
   { name: 'SynchroMondayUserAffected', script: require('../cron/synchroMondayUserAffected') },
-  { name: 'synchroContratEntretien', script: require('../cron/synchroContratEntretien') }
+  { name: 'synchroContratEntretien', script: require('../cron/synchroContratEntretien') },
+  { name: 'campagneChauffage', script: require('../cron/campagneChauffage') }
 ];
 
 
@@ -75,18 +76,12 @@ function cronStart() {
   });
 
   
-  cron.schedule('* * * * *', async () => {
+  cron.schedule('*/30 * * * *', async () => {
     for (const { name, script } of scripts) {
         try {
-            console.log("Starting script:", name);
-            const executionHistory = []; // Local storage for execution history
+
             
-            // Log the beginning of execution
-            executionHistory.push({
-                timestamp: new Date(),
-                status: 2, // In progress
-                message: "Script execution started"
-            });
+
             
             // Connect to MongoDB and execute asynchronously
             await connectAndExecute(async () => {
@@ -94,46 +89,43 @@ function cronStart() {
                 // Get the current script state
                 const scriptState = await coproprieteCollection.findOne({ name });
                 if (scriptState && scriptState.status === 1) {
+                    const startTime=new Date();
                     // Execute the script
-                    console.log("Script state before execution:", scriptState);
+                    console.log("Starting script:", name);
+                    const executionHistory = []; // Local storage for execution history
                     await script.start();
                     
                     // Update script state to not started after execution
                     await coproprieteCollection.updateOne({ name }, { $set: { status: 0 } });
-                    
+                    const endTime=new Date();
                     // Log execution history for success
                     executionHistory.push({
-                        timestamp: new Date(),
+                        endTime: startTime,
+                        endTime: endTime,
                         status: 0, // Success
                         message: "Script executed successfully"
                     });
+                    await coproprieteCollection.updateOne(
+                      { name },
+                      { $push: { execution_history: { $each: executionHistory }}}
+                  );
                 }
             });
             
-            // Update execution history in the database
-            await connectAndExecute(async () => {
-                const coproprieteCollection = MongoDB.getCollection('ScriptState');
-                await coproprieteCollection.updateOne(
-                    { name },
-                    {
-                        $push: {
-                            execution_history: { $each: executionHistory } // Update execution history in bulk
-                        }
-                    }
-                );
-            });
         } catch (error) {
             console.error(`Error executing ${name} script: ${error}`);
-            // Log execution history for error
+            const endTime=new Date();
             executionHistory.push({
-                timestamp: new Date(),
-                status: -1, // Error
-                message: `Error executing ${name} script: ${error}`
-            });
+              endTime: startTime,
+              endTime: endTime,
+              status: -1, // Error
+              message: "Script executed with Error"
+          });
             
             // Update execution history in the database
             await connectAndExecute(async () => {
                 const coproprieteCollection = MongoDB.getCollection('ScriptState');
+                await coproprieteCollection.updateOne({ name }, { $set: { status: -1 } });
                 await coproprieteCollection.updateOne(
                     { name },
                     {
