@@ -23,7 +23,7 @@ function TrelloPage({ onSetTitle }) {
         const row = scriptData.find(row => row.endpoint === endpoint);
         if ((selectedOption && row.options.length > 0) || row.options.length === 0) {
             try {
-                const response = await fetchDataFromApi(endpoint, { method: 'POST'});
+                const response = await fetchDataFromApi(endpoint, { method: 'POST', body: JSON.stringify({ option: selectedOption }) });
                 const data = await response.json();
                 console.log("API response:", data);
             } catch (error) {

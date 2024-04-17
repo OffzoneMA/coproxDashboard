@@ -41,6 +41,7 @@ async function vilogiToMongodb(){
             immatriculation:detailData.site,
             nbLotPrincipaux:detailData.coproInfo.nbLotPrincipaux,
           }
+
           data.idCopro = copro.lot ? copro.lot : "S-Autre";
           if (findCopro){
             let edit= await coproService.editCopropriete(findCopro._id,data)
@@ -53,14 +54,20 @@ async function vilogiToMongodb(){
         }
         const copros = await coproService.listCopropriete();
         for (const copro of copros) {
-          console.log("starting tech data with" ,copro.idCopro)
-          const dataTech= await vilogiService.getCoproDataTech(copro.idVilogi)
-          let data={
-            typeChauffage:dataTech.typeChauffage,
-            dateConstruction:dataTech.anneeConstruction,
+          try {
+            console.log("starting tech data with" ,copro.idCopro)
+            const dataTech= await vilogiService.getCoproDataTech(copro.idVilogi)
+            let data={
+              typeChauffage:dataTech.typeChauffage,
+              dateConstruction:dataTech.anneeConstruction,
+            }
+            console.log(dataTech)
+            await coproService.editCopropriete(copro._id,data)
+            await delay(400)
+          } catch (error) {
+            console.log(error)
           }
-          await coproService.editCopropriete(copro._id,data)
-          await delay(400)
+
         }
 }
 
