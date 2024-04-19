@@ -88,7 +88,7 @@ function TrelloPage({ onSetTitle }) {
                         {scriptData.map((row, index) => (
                             <TableRow key={index}>
                                 <TableCell></TableCell>
-                                <TableCell>{row.name}</TableCell>
+                                <TableCell>{row.label}</TableCell>
                                 {row.options.length > 0 ? (
                                     <TableCell>
                                         <Select
