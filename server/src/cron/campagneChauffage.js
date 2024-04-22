@@ -42,7 +42,7 @@ const campagneChauffage = {
                     //e_mail__1
                     ...(checkValue[0].mondayItenID != null && { board_relation__1: { "item_ids": [checkValue[0].mondayItenID] } }),
                   };
-                  const val = await mondayService.createSubitem(IDItem.id,"Chauffage primaire")
+                  const val = await mondayService.createSubitem(IDItem.id,"Maintenance chauffage primaire")
                   console.log(val.id)
                   await mondayService.updateItem(subItemBoards,val.id,columnValues)
   
@@ -53,7 +53,7 @@ const campagneChauffage = {
                   const columnValues = {
                     ...(checkValue[0].mondayItenID != null && { board_relation__1: { "item_ids": [checkValue[0].mondayItenID] } }),
                   };
-                  const val = await mondayService.createSubitem(IDItem.id,"Chauffage secondaire")
+                  const val = await mondayService.createSubitem(IDItem.id,"Maintenance chauffage secondaire")
                   console.log(val.id)
                   await mondayService.updateItem(subItemBoards,val.id,columnValues)
                   //console.log("MAINTENANCE CHAUFFAGE - P2 - RÉSEAU SECONDAIRE")
