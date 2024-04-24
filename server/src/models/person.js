@@ -5,6 +5,7 @@ const persoSchema = new mongoose.Schema({
   email: String,
   idVilogi: String,
   idZendesk: String,
+  idCompteVilogi: String,
   nom: String,
   prenom: String,
   telephone: String,

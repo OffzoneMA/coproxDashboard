@@ -82,6 +82,7 @@ async function getAllUsersAndManageThem(idVilogi,Copro){
           "idCopro": idcoproVar,
           "email": user.email,
           "idVilogi": user.id,
+          "idCompteVilogi":user.compte,
           "nom": user.nom,  
           "prenom": user.prenom, 
           "telephone": user.telephone,
