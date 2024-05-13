@@ -23,7 +23,7 @@ const subItemBoards=1487007597;
 const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
-        logs.logExecution("BudgetCoproprietaire")
+        logs.logExecution("synchoBudgetCoproprietaire")
         console.log(await mondayService.getItemsDetails("1487595725"))
         try {
             let copros = await coproService.listCopropriete();
