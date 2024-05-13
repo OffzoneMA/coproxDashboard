@@ -35,10 +35,10 @@ const synchroMandats = {
                     //const data = await mondayService.getItemsDetails(1439055076);
                     //console.log(data)
                     let j=0
-                    console.log(exercices)
+                    //console.log(exercices)
                     for (const exercice of exercices.list) {
                         
-                        console.log(exercice)
+                        //console.log(exercice)
                         j++;
                         //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
                     

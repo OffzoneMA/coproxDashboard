@@ -33,6 +33,22 @@ const contratAssurance = {
                     let NbContrat=0
                     
                     for (const contrat of contrats) {
+                        const match = contrat.fournisseur.match(regex);
+                        let infoFournisseur = {};
+                    
+                        if (match) {
+                            // Extract the numbers from the match
+                            const fournisseurID = match[1];
+                            infoFournisseur = await vilogiService.getPrestataireById(fournisseurID, copro.idVilogi);
+                        } else {
+                            //console.log("Invalid format for contrat.fournisseur");
+                        }
+                        if (infoFournisseur === undefined){
+                            console.log("Break");
+                            break;
+                        }else{
+
+                        }
                         NbContrat++
                         TotalContrat++
                         console.log(` Contrat numero ${TotalContrat}   Sync contrat Number :${contrat.id}   ---- ${copro.idCopro} -  [${NbContrat}   /  ${contrats.length}] `)  

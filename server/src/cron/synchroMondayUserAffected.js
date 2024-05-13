@@ -44,7 +44,7 @@ const SynchroMondayUserAffected = {
                                 console.log(item.id,"Culumn null -")
                             }else {
                                 console.log(item.id,"break")
-                                break
+                                //break
                             }
                         }
                         if (column.id === "texte0") {

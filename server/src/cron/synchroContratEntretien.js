@@ -62,6 +62,7 @@ const synchroContratEntretien = {
                         const columnValues = {
                             //copro: copro.idCopro,
                             texte_1: contrat.fournisseur,
+                            texte1__1:contrat.contrat,
                             texte_2: infoFournisseur.societe || "",
                             texte_3: contrat.typecontrat,
                             texte_4: contrat.description,

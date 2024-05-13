@@ -6,12 +6,12 @@ const dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN });
 async function uploadFile(req, res) {
   try {
     //await createFolder('/test1', res);
-    const folderCheck = await listFiles('/coprox', res);
+    const folderCheck = await listFiles(`/${req.foldername}`, res);
     //console.log(folderCheck.fileList)
     
     if (folderCheck.fileList == '[]'){
       console.log("creating new folder")
-      createFolder('/coprox', res);
+      createFolder(`/${req.foldername}`, res);
     }
     if (!req.buffer) {
       let response = { success: false, error: 'File buffer not found in the request object' };
@@ -19,7 +19,7 @@ async function uploadFile(req, res) {
     }
 
     // Determine the Dropbox path based on the file type
-    let dropboxPath = `/coprox`; // Use let instead of const
+    let dropboxPath = `/${req.foldername}`; // Use let instead of const
 
     // Check if the file already exists at the specified path
     const checkResult = await dbx.filesGetMetadata({ path: dropboxPath }).catch((error) => {
@@ -33,7 +33,7 @@ async function uploadFile(req, res) {
     // If the file exists, handle the conflict by appending a timestamp to the filename
     if (checkResult) {
       const timestamp = new Date().toISOString().replace(/[^0-9]/g, '');
-      dropboxPath = `/coprox/zendesk_${timestamp}_${req.filename}`;
+      dropboxPath = `/${req.foldername}/${req.filename}`;
     }
 
     // Upload the file to Dropbox
@@ -60,13 +60,13 @@ async function listFiles(pathVar, res) {
     while (hasMore) {
       // Use the cursor to paginate through the files
       const response = await dbx.filesListFolder({ path: pathVar});
-      console.log(response)
+      //console.log(response)
       allEntries = allEntries.concat(response.result.entries);
       hasMore = response.result.has_more;
       cursor = response.result.cursor;
     }
 
-    console.log('All files and folders:', allEntries);
+    //console.log('All files and folders:', allEntries);
 
 
 
@@ -82,11 +82,11 @@ async function listFiles(pathVar, res) {
 
 async function createFolder(path, res) {
   try {
-    console.log('creating a new folder at :  ', path);
+    //console.log('creating a new folder at :  ', path);
     // Create the folder using the Dropbox API
     const createFolderResult = await dbx.filesCreateFolderV2({ path });
 
-    console.log('Folder created:', createFolderResult);
+    //console.log('Folder created:', createFolderResult);
 
     let responseMessage = { success: true, folderCreatedResult: createFolderResult };
     return res.json(responseMessage);

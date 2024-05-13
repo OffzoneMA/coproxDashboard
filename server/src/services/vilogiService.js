@@ -124,6 +124,27 @@ const getCoproManda = async (coproID) => {
     throw error;
   }
 };
+const getCoproExercice = async (coproID) => {
+  const coproEndpoint = `/exercice?token=${process.env.VILOGI_TOKEN}&copro=${coproID}`;
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getbudgetComptebyDate = async (coproID,compte,date) => {
+  const coproEndpoint = `/andecriture/soldeBalance?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&compte=${compte}&dateSolde=${date}`;
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 
 const getCoproContratAssurance = async (coproID) => {
   const coproEndpoint = `/assurances?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
@@ -211,6 +232,16 @@ const getpayementAdherant = async (idAdh,coproID) => {
     throw error;
   }
 };
+const getRelanceAdherant = async (idAdh,coproID) => {
+  const adherentsEndpoint = `/relances?token=${process.env.VILOGI_TOKEN}&idAdherant=${idAdh}&copro=${coproID}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 
 
 module.exports = {
@@ -221,13 +252,16 @@ module.exports = {
   getCoproData,
   getCoproDataTech,
   getCoproTravaux,
+  getCoproExercice,
   getCoproContratAssurance,
   getCoproContratEntretien,
   getCoproContratEntretienFichier,
+  getbudgetComptebyDate,
   getPrestataireById,
   getCoproAssemblee,
   getCoproManda,
   getAllAdherents,
-  getpayementAdherant
+  getpayementAdherant,
+  getRelanceAdherant
 
 };
