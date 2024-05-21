@@ -30,7 +30,7 @@ const synchroTravaux = {
                 if (copro.idVilogi !== undefined) {
                     let travauxAll = await vilogiService.getCoproTravaux(copro.idVilogi);
 
-                    //const data = await mondayService.getItemsDetails(1439055076);
+                    const data = await mondayService.getItemsDetails(1487186054);
                     //console.log(data)
                     let NbTravaux=0;
                     for (const travaux of travauxAll) {
@@ -45,6 +45,7 @@ const synchroTravaux = {
                             texte_32: travaux.montant,
                             texte_6: travaux.assemblee,
                             texte_8:travaux.nbEcheance,
+
                             ...(copro.idMonday != null && { board_relation: { "item_ids": [copro.idMonday] } }),
                             date:{"date" : travaux.dateDebut.split('/').reverse().join('-')},
                             date_1:{"date" : travaux.dateFin.split('/').reverse().join('-')}
@@ -82,13 +83,13 @@ async function saveMonday(itemName,data,idVilogi) {
             console.log("Already exist")
             const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
         }else{
+            data.status="New"
             const newItem = await mondayService.createItem(boardId, itemName, data);
             //console.log("Nouvel élément créé:", newItem);
             const dataMongo={
                 boardID:boardId,
                 mondayItenID:newItem.id,
                 vilogiEndpoint:typeData,
-                //vilogiEndpointData:mandat,
                 vilogiItemID:idVilogi
 
             }
