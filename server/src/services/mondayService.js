@@ -17,19 +17,41 @@ async function executeGraphQLQuery(queryString) {
   try {
       console.log(queryString)
       const res = await monday.api(queryString);
-      //console.log(res.data);
+      console.log(res);
       return res.data ;
     
 
-  } catch (error) {
-    if (error.response && error.response.data && error.response.data.errors) {
-      const errorMessages = error.response.data.errors.map(err => err.message).join(', ');
-      throw new Error(`Error executing GraphQL query: ${errorMessages}`);
-    } else {
-      throw new Error('Error executing GraphQL query:', error.response ? error.response.data : error.message);
+    } catch (error) {
+      if (error.response && error.response.data && error.response.data.errors) {
+        const errorMessages = error.response.data.errors.map(err => err.message).join(', ');
+        throw new Error(`Error executing GraphQL query: ${errorMessages}`);
+      } else {
+        let errorMessage = 'Error executing GraphQL query:';
+        if (error.response) {
+          errorMessage += ` Status Code: ${error.response.status},`;
+          if (error.response.data && error.response.data.error_message) {
+            errorMessage += ` Error Message: ${error.response.data.error_message},`;
+          }
+          if (error.response.data && error.response.data.error_code) {
+            errorMessage += ` Error Code: ${error.response.data.error_code},`;
+            // Handling specific error codes
+            if (error.response.data.error_code === 'InvalidColumnIdException') {
+              // Handle InvalidColumnIdException here
+              errorMessage += ` Invalid Column ID: ${error.response.data.error_data.column_id},`;
+              errorMessage += ` Error Reason: ${error.response.data.error_data.error_reason},`;
+            }
+            // Add more conditions for other error codes if needed
+          }
+          if (error.response.data && error.response.data.error_data) {
+            errorMessage += ` Error Data: ${JSON.stringify(error.response.data.error_data)},`;
+          }
+        } else {
+          errorMessage += ` ${error.message}`;
+        }
+        throw new Error(errorMessage);
+      }
     }
   }
-}
 let cachedItemFields;
 
 async function fetchItemFields() {
@@ -119,15 +141,16 @@ async function updateItem(boardId, itemId, columnValues) {
     const columnValuesString = cleanedColumnValues.replace(/"/g, '\\"');
     const query = `mutation {
       change_multiple_column_values (
-        item_id: "${itemId}",
-        board_id: "${boardId}",
+        item_id: ${itemId},
+        board_id: ${boardId},
         column_values: "${columnValuesString}"
       ) {
         id
       }
     }`;
     const response = await executeGraphQLQuery(query);
-    return response.change_multiple_column_values;
+    console.log(response)
+    return await response.change_multiple_column_values;
   } catch (error) {
     logExecution(`Error updating item ${itemId}`)
     throw new Error(`Error updating item ${itemId}: ${error.message}`);

@@ -134,8 +134,29 @@ const getCoproExercice = async (coproID) => {
   }
 };
 
+
+const getRapprochemetBancaire = async (coproID) => {
+  const coproEndpoint = `/rapprochements?token=${process.env.VILOGI_TOKEN}&copro=${coproID}`;
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const getbudgetComptebyDate = async (coproID,compte,date) => {
   const coproEndpoint = `/andecriture/soldeBalance?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&compte=${compte}&dateSolde=${date}`;
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getecritureComptableCompte = async (coproID,compte) => {
+  const coproEndpoint = `/andecriture/list?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&withCompte=${compte}`;
   try {
     const response = await axios.get(`${apiUrl}${coproEndpoint}`);
     return response.data;
@@ -253,6 +274,8 @@ module.exports = {
   getCoproDataTech,
   getCoproTravaux,
   getCoproExercice,
+  getecritureComptableCompte,
+  getRapprochemetBancaire,
   getCoproContratAssurance,
   getCoproContratEntretien,
   getCoproContratEntretienFichier,

@@ -21,7 +21,7 @@ const contratAssurance = {
             let copros = await coproService.listCopropriete();
             let FinalContrat = [];  // Initialize FinalContrat array
             let TotalContrat=0
-            const data = await mondayService.getItemsDetails(1436590141);
+            const data = await mondayService.getItemsDetails(1466840974);
             console.log(data)
 
             for (const copro of copros) {
@@ -33,7 +33,10 @@ const contratAssurance = {
                     let NbContrat=0
                     
                     for (const contrat of contrats) {
-                        const match = contrat.fournisseur.match(regex);
+                        // Define a regular expression pattern to match the desired format
+                        const regex = /^(\d+)-(.*)$/;
+                        
+                        const match = contrat.assureur.match(regex);
                         let infoFournisseur = {};
                     
                         if (match) {
@@ -61,10 +64,12 @@ const contratAssurance = {
                             date_1__1: {"date" : contrat.dateecheance.split('/').reverse().join('-')},
                             //texte_2: contrat.police,
                             texte_6: contrat.assureur,
-                            texte_7: contrat.id,
+                            //texte_7: contrat.id,
                             texte_8: contrat.compagnie,
                             chiffres: contrat.prime,
                             texte_10: contrat.compteCharge,
+                            e_mail8__1:infoFournisseur.email,
+                            ...(infoFournisseur.telephone != null && infoFournisseur!== undefined && { t_l_phone__1:  {"phone" :infoFournisseur.telephone, "countryShortName" : "FR"}}),
                             //date_2__1: {"date" : contrat.datefin.split('/').reverse().join('-')},
                             //texte_12: contrat.idFichier,
                             ...(copro.idMonday != null && { board_relation5: { "item_ids": [copro.idMonday] } }),

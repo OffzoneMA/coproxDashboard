@@ -12,6 +12,10 @@ const contratAssurance = require('./contratAssurance');
 const synchroMandats = require('./synchroMandats');
 const SynchroMondayUserAffected = require('./synchroMondayUserAffected');
 
+const synchroComptaRapprochementBancaire = require('./synchroComptaRapprochementBancaire');
+const synchroComptaList = require('./synchroComptaList');
+
+
 const synchoBudgetCoproprietaire = require('./synchoBudgetCoproprietaire');
 const synchroContratEntretien = require('./synchroContratEntretien');
 
@@ -49,6 +53,8 @@ function cronStart() {
     await zendeskService.recoverAllSuspendedTickets();
   });
   cron.schedule('0 5 * * *', async () => {
+    await synchroComptaList.start();
+    await synchroComptaRapprochementBancaire.start();
     await synchoBudgetCoproprietaire.start();
   });
 
