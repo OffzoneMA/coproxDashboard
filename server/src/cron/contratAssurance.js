@@ -59,7 +59,7 @@ const contratAssurance = {
                             texte5: contrat.typecontrat,
                             //statut_1: contrat.typecontrat,
                             //texte_3: contrat.contrat,
-                            texte__1: contrat.description,
+                            //texte__1: contrat.description,
                             date__1: {"date" : contrat.dateeffet.split('/').reverse().join('-')},
                             date_1__1: {"date" : contrat.dateecheance.split('/').reverse().join('-')},
                             //texte_2: contrat.police,

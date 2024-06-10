@@ -65,7 +65,7 @@ const synchroContratEntretien = {
                             texte1__1:contrat.contrat,
                             texte_2: infoFournisseur.societe || "",
                             texte_3: contrat.typecontrat,
-                            texte_4: contrat.description,
+                            //texte_4: contrat.description,
                             date: {"date" : contrat.dateeffet.split('/').reverse().join('-')},
                             date_1: {"date" : contrat.dateecheance.split('/').reverse().join('-')},
                             date_2: {"date" : contrat.datefin.split('/').reverse().join('-')},

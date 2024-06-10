@@ -40,7 +40,7 @@ const synchroTravaux = {
                         //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
                         const columnValues = {
                             
-                            //texte_1: travaux.description,
+                            texte_1: travaux.description,
                             texte_3: travaux.contrat,
                             texte_32: travaux.montant,
                             texte_6: travaux.assemblee,
@@ -83,7 +83,6 @@ async function saveMonday(itemName,data,idVilogi) {
             console.log("Already exist")
             const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
         }else{
-            data.status="New"
             const newItem = await mondayService.createItem(boardId, itemName, data);
             //console.log("Nouvel élément créé:", newItem);
             const dataMongo={

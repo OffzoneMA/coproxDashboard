@@ -155,6 +155,16 @@ const getbudgetComptebyDate = async (coproID,compte,date) => {
   }
 };
 
+const getbudgetCopro = async (coproID,exerciceID) => {
+  const coproEndpoint = `/budgets?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&exercice=${exerciceID}`;
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const getecritureComptableCompte = async (coproID,compte) => {
   const coproEndpoint = `/andecriture/list?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&withCompte=${compte}`;
   try {
@@ -200,6 +210,16 @@ const getCoproContratEntretienFichier = async (fichierID,coproID,outputFileName)
     console.error('Error downloading file:', error.message);
   }
 };
+const getPrestataires = async (coproID) => {
+  const coproEndpoint = `/professionnel?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  try { 
+    //console.log(`${apiUrl}${coproEndpoint}`)
+    const pros = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return pros.data;
+  } catch (error) {
+    throw error;
+  }
+};
 
 const getPrestataireById = async (prestaireID,coproID) => {
   //const coproEndpoint = `/professionnel/idProfessionnel=${prestaireID}?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
@@ -221,6 +241,7 @@ const getPrestataireById = async (prestaireID,coproID) => {
     throw error;
   }
 };
+
 
 const getCoproAssemblee = async (coproID) => {
   const adherentsEndpoint = `/adherant/all?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
@@ -280,6 +301,8 @@ module.exports = {
   getCoproContratEntretien,
   getCoproContratEntretienFichier,
   getbudgetComptebyDate,
+  getbudgetCopro,
+  getPrestataires,
   getPrestataireById,
   getCoproAssemblee,
   getCoproManda,

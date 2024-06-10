@@ -7,7 +7,7 @@ require('dotenv').config();
 
 async function generateAnswerToEmail(emailContent) {
   try {
-    const messageaEnvoyer = `Je suis syndic de copropriété et je gère différentes copropriétés. J'ai reçu un e-mail concernant l'une des copropriétés que j'administre. Pourrais-tu m'aider à rédiger une réponse claire et concise à sa demande ? La réponse devra être sympathique, compréhensive, directe et professionnelle. Dans ta réponse tu devras aussi prévoir une reformulation très courte du problème Voici son e-mail :  ${emailContent}.\n "`
+    const messageaEnvoyer = `Je suis syndic de copropriété et je gère différentes copropriétés. J'ai reçu un e-mail de la part de l'une des copropriétés que j'administre. Pourrait tu savoir si cette personne se plein du service que nous proposant en tant que syndic de coproprieté.la réponse doit etre au format suivant : Oui ou Non. Voici son e-mail :  ${emailContent}.\n "`
     const response = await axios.post('https://api.openai.com/v1/chat/completions', {
       model: 'gpt-3.5-turbo',
       messages: [
@@ -54,8 +54,8 @@ async function HandleTickets(ticket,ticketDetails) {
 
   try {
     const message = await generateAnswerToEmail(emailContent);
-    await updateZendeskTicketCategory(ticket.id, message);
-    console.log(emailContent)
+    //await updateZendeskTicketCategory(ticket.id, message);
+    console.log(message)
     return { ticketId: ticket.id};
   } catch (error) {
     console.error(`Error categorizing Zendesk ticket ${ticket.id}:`, error.message);
@@ -85,7 +85,7 @@ async function updateZendeskTicketCategory(ticketId, message) {
 
 async function answerNewZendeskTickets() {
   try {
-    const tickets = await ZendeskService.getTicketsNewAssigned();
+    const tickets = await ZendeskService.getTicketsNew();
     const delay = async (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 

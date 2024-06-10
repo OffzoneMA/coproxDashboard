@@ -15,65 +15,71 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 let FinalContrat = [];
-const boardId = 1499580809;
-const typeData="synchroComptaRapprochementBancaire"
+const boardId = 1505098640;
+const typeData="synchroComptaList401"
 
 const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
-        logs.logExecution("synchroComptaRapprochementBancaire")
-        console.log(await mondayService.getItemsDetails("1499741576"))
+        logs.logExecution("synchroComptaList401")
+        console.log(await mondayService.getItemsDetails("1508447961"))
         try {
             let copros = await coproService.listCopropriete();
             let FinalManda = [];  // Initialize FinalContrat array
 
             for (const copro of copros) {
                 console.log("ID Vilogi:", copro.idCopro);
-
                 if (copro.idVilogi !== undefined) {
-                        const RBs = await vilogiService.getRapprochemetBancaire(copro.idVilogi)
-                        // Initialize an array to store the values for the previous 12 months
-                        let previousMonthsData = Array(12).fill(null);
 
-                        // Get the current date
-                        let currentDate = new Date();
+                    const today = new Date();
+                    const formatDate = date => {
+                        const d = date.getDate().toString().padStart(2, '0');
+                        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+                        const y = date.getFullYear();
+                        return `${d}/${m}/${y}`;
+                    };
 
-                        // Iterate through RBs array
-                        for (let rb of RBs) {
-                            // Convert rb.dateRapprochement to a Date object
-                            let rbDate = new Date(rb.dateRapprochement);
-
-                            // Calculate the difference in months between current date and rbDate
-                            let monthsDiff = (currentDate.getFullYear() - rbDate.getFullYear()) * 12 + currentDate.getMonth() - rbDate.getMonth();
-
-                            // Check if rbDate falls within the previous 12 months
-                            if (monthsDiff >= 0 && monthsDiff < 12) {
-                                // Calculate the index in previousMonthsData array
-                                let index = 11 - monthsDiff;
-
-                                // Store rb.ecart value in the corresponding month's slot
-                                previousMonthsData[index] = rb.ecart;
-                                console.log(" rapprochements du ",copro.idCopro," - Index : ",index," - Date Rapprochement : ",rb.dateRapprochement," - Ecart de : ",rb.ecart)
-                            }
+                    const datedujour = formatDate(today);
+                    const thirtyDaysAgo = formatDate(new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000));
+                    const listComptes = await vilogiService.getPrestataires(copro.idVilogi)
+                    let j=0
+                    for (compte of listComptes){
+                        await delay(100);
+                        let budgetj30 = await vilogiService.getbudgetComptebyDate(copro.idVilogi,compte.idCompte,thirtyDaysAgo);
+                        let budgetj = await vilogiService.getbudgetComptebyDate(copro.idVilogi,compte.idCompte,datedujour);
+    
+                        //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
+                        //console.log(budgetj)
+                        if (budgetj30 === undefined || budgetj30 === '' || budgetj30.length === 0 )  continue
+                        if (budgetj === undefined || budgetj === '' || budgetj.length === 0 )  continue
+                        if (budgetj[0].solde>0) {
+                            console.log("Compte Numero : ",compte.idCompte," Solde J : ",budgetj[0].solde," Solde J-30 : ",budgetj30[0].solde)
                         }
-                        const columnValues = {
+                        else{
+                            console.log("Compte Numero : ",compte.idCompte," Solde OK ")
+                        }
 
+                        j++;
+                        //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
+                    
+                        const columnValues = {
+                            
                                  ...(copro.idMonday != null && { connecter_les_tableaux__1: { "item_ids": [copro.idMonday] } }),
-                                 chiffres__1:previousMonthsData[11],
-                                 chiffres_1__1:previousMonthsData[10],
-                                 chiffres_2__1:previousMonthsData[9],
-                                 chiffres_3__1:previousMonthsData[8],
-                                 chiffres_4__1:previousMonthsData[7],
-                                 chiffres_5__1:previousMonthsData[6],
-                                 chiffres_6__1:previousMonthsData[5],
-                                 chiffres_7__1:previousMonthsData[4],
-                                 chiffres_8__1:previousMonthsData[3],
-                                 chiffres_9__1:previousMonthsData[2],
-                                 chiffres_10__1:previousMonthsData[1],
-                                 chiffres_11__1:previousMonthsData[0],
+                                 chiffres__1:budgetj[0].solde,
+                                 chiffres6__1:budgetj30[0].solde,
                               };                   
-                              const itemName = `Rapprochement bancaures du - ${copro.idCopro}`;
-                await saveMonday(itemName,columnValues,copro.idVilogi)
+                        const itemName = `Compte 401 - ${compte.societe} - ${copro.idCopro}`;
+                        await saveMonday(itemName,columnValues,compte.id)
+                            
+                    }
+
+
+                    
+                    //console.log(exercices)
+
+                        
+                        
+
 
                                       
                     
