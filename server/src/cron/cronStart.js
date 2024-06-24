@@ -11,6 +11,8 @@ const zendeskService = require('../services/zendeskService');
 const contratAssurance = require('./contratAssurance');
 const synchroMandats = require('./synchroMandats');
 const SynchroMondayUserAffected = require('./synchroMondayUserAffected');
+const synchroFacture = require('./synchroFacture');
+
 
 const synchroComptaList401 = require('./synchroComptaList401');
 
@@ -67,6 +69,7 @@ function cronStart() {
     await synchroUsers.start();
     await contratAssurance.start();
     await synchroTravaux.start();
+    
   });
 
   ///chaque Jour
@@ -77,16 +80,19 @@ function cronStart() {
     await synchroContratEntretien.start();
     await SynchroMondayUserAffected.start();
     await synchroMandats.start();
+    
     console.log("-------------------------Ending Zendesk Ticket AI--------------------------------------------")
   });
 
   cron.schedule('0 11 * * *', async () => {
     await syncZendeskTags.start();
     await zendeskTicket.start();
+    await synchroFacture.start();
   });
 
-  cron.schedule('0 15 * * *', async () => {
+  cron.schedule('0 14 * * *', async () => {
     await syncZendeskTags.start();
+    await synchroFacture.start();
   });
 
   

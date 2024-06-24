@@ -2,6 +2,8 @@
 const mondaySdk = require("monday-sdk-js");
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
+const FormData = require('form-data');
 const logFilePath = path.join(__dirname, '../../logs/logsMonday.log');
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
 
@@ -71,6 +73,17 @@ const introspectionQuery = `query IntrospectionQuery {__schema {types {namefield
 async function getItems(boardId) {
   try {
     const query = `query { boards(ids: ${boardId}) { items_page (limit: 100) { cursor items { id  name  } } } }`;
+    result=await executeGraphQLQuery(query)
+    //console.log(result.boards[0].items_page.items)
+    return result.boards[0].items_page.items
+  } catch (error) {
+    throw new Error('Error fetching items:', error.message);
+  }
+}
+
+async function getItemsGroup(boardId,groupID) {
+  try {
+    const query = `query { boards(ids: ${boardId}) { items_page (limit: 300) { cursor items { id  name group {id title }  } } } }`;
     result=await executeGraphQLQuery(query)
     //console.log(result.boards[0].items_page.items)
     return result.boards[0].items_page.items
@@ -176,6 +189,39 @@ async function createGroup(boardId,groupName){
     throw new Error('Error creating subitem:', error.message);
   }
 }
+async function uploadFileToMonday(filePath,ITEM_ID,COLUMN_ID) {
+  const form = new FormData();
+  const fileStream = fs.createReadStream(filePath);
+  
+  form.append('variables[file]', fileStream);
+  form.append('query', `
+      mutation ($file: File!) {
+          add_file_to_column (
+              file: $file,
+              item_id: ${ITEM_ID},
+              column_id: "${COLUMN_ID}"
+          ) {
+              id
+          }
+      }
+  `);
+
+  try {
+    const response = await axios.post('https://api.monday.com/v2/file', form, {
+      headers: {
+          ...form.getHeaders(),
+          Authorization: process.env.MONDAY_API_KEY
+      },
+      maxContentLength: Infinity, // Allow large content length
+      maxBodyLength: Infinity, // Allow large body length
+      timeout: 300000 // 5 minutes timeout
+  });
+
+  console.log('File uploaded successfully:', response.data);
+  } catch (error) {
+      console.error('Error uploading file:', error.response ? error.response.data : error.message);
+  }
+}
 
 function removeFrenchSpecialCharacters(inputString) {
   // Define the regular expression pattern to match French special characters
@@ -197,10 +243,12 @@ async function logExecution(...args) {
 module.exports = {
   executeGraphQLQuery,
   getItems,
+  getItemsGroup,
   getItemsDetails,
   getItemInBoardWhereName,
   createGroup,
   createItem,
   createSubitem,
   updateItem,
+  uploadFileToMonday,
 };

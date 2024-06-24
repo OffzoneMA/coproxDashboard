@@ -34,7 +34,9 @@ const zendeskTicket = {
                             console.log('Ticket ID in start:',ticket.id)
 
                             if(ticket.custom_fields){
+                                
                                 const targetField = ticket.custom_fields.find(field => field.id === 15261491191197);
+                                console.log("la valeur du champ copro est : ",targetField.value)
                                 if (targetField && targetField.value == null) {
                                     await processUserOrganization(ticket.id,ticket.requester_id, ticket.subject)
                                 }

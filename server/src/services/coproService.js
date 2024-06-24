@@ -34,6 +34,13 @@ async function detailsCoproprieteByidVilogi(id) {
   });
 }
 
+async function detailsCoproprieteByidCopro(id) {
+  return connectAndExecute(async () => {
+    const coproprieteCollection = MongoDB.getCollection('copropriete');
+    return await coproprieteCollection.findOne({ idCopro: id });
+  });
+}
+
 async function addCopropriete(newCoproprieteData) {
   return connectAndExecute(async () => {
     const coproprieteCollection = MongoDB.getCollection('copropriete');
@@ -111,6 +118,7 @@ module.exports = {
   listCopropriete,
   detailsCopropriete,
   detailsCoproprieteByidVilogi,
+  detailsCoproprieteByidCopro,
   addCopropriete,
   editCopropriete,
   countOffers,
