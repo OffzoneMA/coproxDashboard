@@ -52,6 +52,7 @@ const synchroUsers = {
           
           await getAllUsersAndManageThem(copro.idVilogi,copro)
           await fixUserRole(copro.idVilogi,copro)
+          
         }else{
           console.log("------------------------------------ Attention copro",copro._id," - ",copro.Nom ,"Sans IDVilogi ----------------------------------------------")
         } 
@@ -90,8 +91,10 @@ async function getAllUsersAndManageThem(idVilogi,Copro){
           "mobile":user.mobile,
           "mobile2":user.mobile2,
           "typePersonne": user.typePersonne,
-          "active":user.active
+          "active":user.active,
+          "url":"https://copro.vilogi.com/AfficheProprietaire.do?operation=change&copropriete="+idVilogi+"&id="+user.id
         };
+        console.log(userData)
         //console.log(userData);
         await SynchoMongoDB(userData)
         
@@ -189,6 +192,8 @@ async function SynchoZendesk() {
             ...baseUserData.user,
             "tags": [user.typePersonne],
             "phone": user.mobile,
+            "notes":user.url,
+            "url":user.url,
             "organization": { "name": organisationName.idCopro },
             "user_fields": { "role_du_demandeur": user.typePersonne }
           }

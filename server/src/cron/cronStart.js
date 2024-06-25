@@ -46,7 +46,13 @@ const scripts = [
   { name: 'synchroMandats', script: require('../cron/synchroMandats') },
   { name: 'SynchroMondayUserAffected', script: require('../cron/synchroMondayUserAffected') },
   { name: 'synchroContratEntretien', script: require('../cron/synchroContratEntretien') },
-  { name: 'campagneChauffage', script: require('../cron/campagneChauffage') }
+  { name: 'campagneChauffage', script: require('../cron/campagneChauffage') },
+  { name: 'synchoBudgetCoproprietaire', script: require('../cron/synchoBudgetCoproprietaire') },
+  { name: 'synchroComptaList401', script: require('../cron/synchroComptaList401') },
+  { name: 'synchroComptaRapprochementBancaire', script: require('../cron/synchroComptaRapprochementBancaire') },
+  { name: 'synchroFacture', script: require('../cron/synchroFacture') },
+
+
 ];
 
 
