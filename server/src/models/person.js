@@ -9,7 +9,12 @@ const persoSchema = new mongoose.Schema({
   nom: String,
   prenom: String,
   telephone: String,
-  typePersonne: String
+  typePersonne: String,
+  url: String,
+  telephone: String,
+  telephone2:String,
+  mobile:String,
+  mobile2:String,
 });
 
 const person = mongoose.model('person', persoSchema);

@@ -1,6 +1,7 @@
 const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
+const dropboxService = require('../services/dropboxService');
 const ZendeskService = require('../services/zendeskService');
 const zendeskTicket = require('./zendeskTicket');
 const logs = require('../services/logs');
@@ -16,6 +17,7 @@ const extractContratsEntretien = {
     start: async () => {
         console.log('Start Extraction ...');
         logs.logExecution("extractContratsEntretien")
+        let countContratWithFile=0;
         try {
             let copros = await coproService.listCopropriete();
             let FinalContrat = [];  // Initialize FinalContrat array
@@ -52,9 +54,10 @@ const extractContratsEntretien = {
                                        
                         const selectedData = {
                             copro: copro.idCopro,
+                            idVilogi:copro.idVilogi,
                             fournisseur: contrat.fournisseur,
                             societe: infoFournisseur.societe || "",
-                            typecontrat: contrat.typecontrat,
+                            typecontrat: contrat.typecontrat.replace("/", ""),
                             description: contrat.description,
                             dateeffet: contrat.dateeffet,
                             dateecheance: contrat.dateecheance,
@@ -73,13 +76,17 @@ const extractContratsEntretien = {
                         FinalContrat.push(selectedData);
                     
                         if (contrat.idFichier) {
-                            // await saveFileLocally(apiResponse, localFilePath, contrat)
+                            countContratWithFile++;
+                            await saveFileLocally(selectedData, "test")
+                            await delay(500);
+                            //await saveFile(attachment.content_url,ticket.id,attachment.file_name)
+                            await saveFileToDropbox(`downloads/contrats/${copro.idCopro}-Contrat-${contrat.typecontrat}-${infoFournisseur.societe}.pdf`,`${copro.idCopro}-Contrat-${contrat.typecontrat}-${infoFournisseur.societe}.pdf`,`${copro.idCopro}`)
                         }
                     }
                     
                 }
             }
-
+            console.log(countContratWithFile)
             // Now, FinalContrat array contains selected data from contrat
             console.log('FinalContrat:', FinalContrat);
 
@@ -103,13 +110,14 @@ const extractContratsEntretien = {
 
 async function saveFileLocally(apiResponse, localFilePath) {
     try {
-    if (contrat.datefin){
-            let outputFileName = `downloads/contrats/nonactif/${copro.idCopro}-Contrat -${contrat.fournisseur} - ${contrat.fournisseur}.pdf`;
-            const apiResponse = await vilogiService.getCoproContratEntretienFichier(contrat.idFichier, copro.idVilogi,outputFileName);
-        }else{
+    if (true){
+            let outputFileName = `downloads/contrats/${apiResponse.copro}-Contrat-${apiResponse.typecontrat}-${apiResponse.societe}.pdf`;
+            const response = await vilogiService.getCoproContratEntretienFichier(apiResponse.file, apiResponse.idVilogi,outputFileName);
+            console.log(response)
+        }/*else{
             let outputFileName = `downloads/contrats/actif/${copro.idCopro}-Contrat -${contrat.fournisseur} - ${contrat.fournisseur}.pdf`;
             const apiResponse = await vilogiService.getCoproContratEntretienFichier(contrat.idFichier, copro.idVilogi,outputFileName);
-        }
+        }*/
 
         await delay(1000)
         } catch (error) {
@@ -117,6 +125,28 @@ async function saveFileLocally(apiResponse, localFilePath) {
         }
   }
 
+  
+  const saveFileToDropbox = async (filePath,filename,coproID) => {
+    try {
+        const req = {
+            filename: filename,
+            buffer: await fs.promises.readFile(filePath),
+            foldername:`tcp-contrat-copro-vilogi`
+      
+        };
+        
+        const res = {
+          json: (response) => console.log(response),
+          status: (code) => ({ json: (response) => console.log(response) }),
+        };
+      
+        await dropboxService.uploadFile(req, res);
+    } catch (error) {
+        console.log(error)
+    }
+    
+  };
+  
 
 //extraction des contrat par copro
 
