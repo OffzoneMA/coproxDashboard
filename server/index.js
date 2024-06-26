@@ -15,7 +15,7 @@ const scriptRoutes = require('./src/routes/scriptRoutes.js');
 
 const zendeskService = require('./src/services/zendeskService.js');
 const cronStart = require('./src/cron/cronStart.js');
-const synchroCopro = require('./src/cron/synchroCopro.js');
+const synchroCopro = require('./src/cron/synchroTravaux.js');
 
 const app = express();
 const port = 8081;
