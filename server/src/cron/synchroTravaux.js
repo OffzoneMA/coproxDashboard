@@ -30,7 +30,7 @@ const synchroTravaux = {
                 if (copro.idVilogi !== undefined) {
                     let travauxAll = await vilogiService.getCoproTravaux(copro.idVilogi);
 
-                    const data = await mondayService.getItemsDetails(1487186054);
+                    //const data = await mondayService.getItemsDetails(1487186054);
                     //console.log(data)
                     let NbTravaux=0;
                     for (const travaux of travauxAll) {
