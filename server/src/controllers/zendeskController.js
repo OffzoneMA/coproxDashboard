@@ -32,6 +32,9 @@ async function getAllorganizations(req, res) {
 async function getTicketsNew(req, res) {
   await handleRequest(res, zendeskService.getTicketsNew, 'Error fetching current tickets with status');
 }
+async function getTicketsNotClosed(req, res) {
+  await handleRequest(res, zendeskService.getTicketsNotClosed, 'Error fetching current tickets with status');
+}
 async function updateTicket(req, res) {
   const ticketId = req.params.ticket_id; 
   const ticketData = req.params.tagToAdd; 
@@ -56,6 +59,7 @@ module.exports = {
   getUserFromID,
   getAllorganizations,
   getTicketsNew,
+  getTicketsNotClosed,
   updateTicket,
   getNonResolvedTicketCount,
   getNonResolvedTicketCountOrganisation

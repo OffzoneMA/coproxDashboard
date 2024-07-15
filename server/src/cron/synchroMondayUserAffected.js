@@ -118,15 +118,21 @@ async function AffectInMondayPerson(personZendesk,BoardID, ItemID,fieldID) {
         await mondayService.updateItem(BoardID,ItemID,valueData)
         console.log("Pauline ----------------------------");
     }
-    if (personZendesk === "16427900046109") {
+    if (personZendesk === 16427900046109) {
         
         const valueData = {[fieldID] : {"personsAndTeams":[{"id":61788926,"kind":"person"}]}}
         await mondayService.updateItem(BoardID,ItemID,valueData)
         console.log("Radmila ----------------------------");
     }
-    if (personZendesk === "15206663482269") {
+    if (personZendesk === 15206663482269) {
         
         const valueData = {[fieldID] : {"personsAndTeams":[{"id":61951130,"kind":"person"}]}}
+        await mondayService.updateItem(BoardID,ItemID,valueData)
+        console.log("Melanie ----------------------------");
+    }
+    if (personZendesk === 19963936076061) {
+        
+        const valueData = {[fieldID] : {"personsAndTeams":[{"id":62858174,"kind":"person"}]}}
         await mondayService.updateItem(BoardID,ItemID,valueData)
         console.log("Melanie ----------------------------");
     }

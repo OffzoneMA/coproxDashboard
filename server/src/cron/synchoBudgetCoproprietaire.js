@@ -24,7 +24,7 @@ const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
         logs.logExecution("synchoBudgetCoproprietaire")
-        console.log(await mondayService.getItemsDetails("1487595725"))
+        //console.log(await mondayService.getItemsDetails("1487595725"))
         try {
             let copros = await coproService.listCopropriete();
             let FinalManda = [];  // Initialize FinalContrat array

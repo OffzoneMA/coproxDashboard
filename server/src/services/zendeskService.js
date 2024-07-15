@@ -158,6 +158,12 @@ async function getTicketsNew() {
   const url = `/search.json?query=created>=${today}&status:open+status:new&sort_by=created_at&sort_order=desc`;
   return makeRequest(url, 'Error fetching All Ticket with status new');
 }
+
+async function getTicketsNotClosed() {
+  const url = `/search.json?query=status:open+status:new+status:pending+status:resolved&sort_by=created_at&sort_order=desc`;
+  return makeRequest(url, 'Error fetching All Ticket with status not closed');
+}
+
 async function getTicketsNewAssigned() {
   const url = '/search.json?query=assignee%3A*+status%3Aopen&sort_by=created_at&sort_order=desc';
   return makeRequest(url, 'Error fetching All Ticket with status new');
@@ -260,6 +266,7 @@ module.exports = {
   getAllorganizations,
   getOrganizationsById,
   getTicketsNew,
+  getTicketsNotClosed,
   getTicketsNewAssigned,
   getTicketsByUser,
   getTicketsById,
