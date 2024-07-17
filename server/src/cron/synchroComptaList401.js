@@ -22,7 +22,7 @@ const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
         logs.logExecution("synchroComptaList401")
-        console.log(await mondayService.getItemsDetails("1508447961"))
+        //console.log(await mondayService.getItemsDetails("1508447961"))
         try {
             let copros = await coproService.listCopropriete();
             let FinalManda = [];  // Initialize FinalContrat array
@@ -126,3 +126,5 @@ async function saveMonday(itemName,data,idVilogi) {
 //extraction des contrat par copro
 
 module.exports = synchroMandats;
+
+

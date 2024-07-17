@@ -72,7 +72,7 @@ const introspectionQuery = `query IntrospectionQuery {__schema {types {namefield
 // Function to get all items in a board
 async function getItems(boardId) {
   try {
-    const query = `query { boards(ids: ${boardId}) { items_page (limit: 100) { cursor items { id  name  } } } }`;
+    const query = `query { boards(ids: ${boardId}) { items_page (limit: 300) { cursor items { id  name  } } } }`;
     result=await executeGraphQLQuery(query)
     //console.log(result.boards[0].items_page.items)
     return result.boards[0].items_page.items

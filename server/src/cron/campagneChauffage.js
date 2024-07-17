@@ -15,7 +15,7 @@ const campagneChauffage = {
     start: async () => {
         logs.logExecution("campagneChauffage")
         
-        const data = await mondayService.getItemsDetails(1469479876);
+        //const data = await mondayService.getItemsDetails(1469479876);
         console.log(data)
         const action="Fermeture"
         const copros = await coproService.listCopropriete();

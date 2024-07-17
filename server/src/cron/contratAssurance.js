@@ -21,7 +21,7 @@ const contratAssurance = {
             let copros = await coproService.listCopropriete();
             let FinalContrat = [];  // Initialize FinalContrat array
             let TotalContrat=0
-            const data = await mondayService.getItemsDetails(1466840974);
+            //const data = await mondayService.getItemsDetails(1466840974);
             console.log(data)
 
             for (const copro of copros) {
