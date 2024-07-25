@@ -1,4 +1,4 @@
-const vilogiService = require('../services/vilogiService');
+§const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
@@ -114,7 +114,7 @@ async function manageZendeskTicketFacture(idTicket,itemID) {
     };
     
     console.log(tags)
-    if (!tags.includes('monday') && !tags.includes('avis_cs_en_cours')) {
+    if (!tags.includes('avis_cs_en_cours')) {//// !tags.includes('monday') &&  removed if tags include monday
       console.log("-------------------------------------------------------------------------------------------------")
       updateData.ticket.status = "solved";
     }
