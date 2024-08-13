@@ -17,7 +17,7 @@ function delay(ms) {
 }
 let Boards = [];
 
-Boards.push({ "BoardID": 1524894296, "PersonColumn": "person" , "coproColumn": "connecter_les_tableaux__1"}); // Tableau facture
+//Boards.push({ "BoardID": 1524894296, "PersonColumn": "person" , "coproColumn": "connecter_les_tableaux__1"}); // Tableau facture
 
 Boards.push({ "BoardID": 1511021735, "PersonColumn": "personnes__1" , "coproColumn": "board_relation"}); // tableau Tache copro
 Boards.push({ "BoardID": 1511021735, "PersonColumn": "person" , "coproColumn": "board_relation"});// tableau tach copro 

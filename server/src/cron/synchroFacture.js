@@ -1,4 +1,4 @@
-§const vilogiService = require('../services/vilogiService');
+const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
