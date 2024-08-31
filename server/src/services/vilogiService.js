@@ -186,23 +186,32 @@ const getCoproContratAssurance = async (coproID) => {
     throw error;
   }
 };
-const getCoproContratEntretienFichier = async (fichierID,coproID,outputFileName) => {
-
+const getCoproContratEntretienFichier = async (fichierID, coproID, outputFileName) => {
   const coproEndpoint = `/contratEntretien/getFile/${fichierID}?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
   try {
     const response = await axios({
       method: 'get',
       url: `${apiUrl}${coproEndpoint}`,
       responseType: 'stream',
-    });    
+    });
 
+    // Ensure the directory exists
+    const outputDir = path.dirname(outputFileName);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    const writer = fs.createWriteStream(outputFileName);
     // Pipe the response stream to a file
-    response.data.pipe(fs.createWriteStream(outputFileName));
+    response.data.pipe(writer);
 
     // Wait for the file to be fully written
     await new Promise((resolve, reject) => {
-      response.data.on('end', resolve);
-      response.data.on('error', reject);
+      writer.on('finish', resolve); // Resolve the promise when the stream finishes
+      writer.on('error', (err) => {
+        // Delete the file if an error occurs and reject the promise
+        fs.unlink(outputFileName, () => reject(err));
+      });
     });
 
     console.log('File downloaded successfully:', outputFileName);
@@ -210,6 +219,8 @@ const getCoproContratEntretienFichier = async (fichierID,coproID,outputFileName)
     console.error('Error downloading file:', error.message);
   }
 };
+
+
 const getPrestataires = async (coproID) => {
   const coproEndpoint = `/professionnel?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
   try { 
@@ -284,6 +295,27 @@ const getRelanceAdherant = async (idAdh,coproID) => {
     throw error;
   }
 };
+const getUserHasMessage = async (idAdh,coproID) => {
+  const adherentsEndpoint = `/odsmessage?token=${process.env.VILOGI_TOKEN}&idAdh=${idAdh}&idCopro=${coproID}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getUserMessagePushLu = async (idMessage,idAdh,coproID) => {
+  const adherentsEndpoint = `/odsmessage/setLu?token=${process.env.VILOGI_TOKEN}&idAdh=${idAdh}&idCopro=${coproID}&idEvent=${idMessage}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 
 
 module.exports = {
@@ -308,6 +340,7 @@ module.exports = {
   getCoproManda,
   getAllAdherents,
   getpayementAdherant,
-  getRelanceAdherant
-
+  getRelanceAdherant,
+  getUserHasMessage,
+  getUserMessagePushLu  
 };

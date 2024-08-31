@@ -30,12 +30,12 @@ const synchroMandats = {
             let facturesMonday = await mondayService.getItemsGroup(boardId,"topics");
             for (factureMonday of facturesMonday){
                 detailFactureMonday = await mondayService.getItemsDetails(factureMonday.id)
-                console.log()
                 //console.log(detailFactureMonday.column_values)
                 if(factureMonday.group.id=="topics"){
                   for (columns of detailFactureMonday.column_values){
                     if (columns.id =="zendesk_ticket__1"){
                         const data = JSON.parse(columns.value)
+                        if (data == null)continue
                         await manageZendeskTicketFacture(data.entity_id,factureMonday.id)
 
                     }

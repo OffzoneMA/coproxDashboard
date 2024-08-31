@@ -26,12 +26,20 @@ const PersonList = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
-    // Fetch data from your API
+    // Fetch person data from your API
     fetch(`${process.env.REACT_APP_BACKEND_URL}/person/getAllPersons`)
       .then((response) => response.json())
-      .then((data) => {
-        setPersonList(data);
-        setFilteredPersonList(data);
+      .then(async (personData) => {
+        // Fetch and merge copro details for each person
+        const personWithCoproDetails = await Promise.all(
+          personData.map(async (person) => {
+            const coproResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/copro/detailsCopro/${person.idCopro}`);
+            const coproData = await coproResponse.json();
+            return { ...person, coproDetails: coproData };
+          })
+        );
+        setPersonList(personWithCoproDetails);
+        setFilteredPersonList(personWithCoproDetails);
         setLoading(false); // Set loading to false when data fetch is complete
       })
       .catch((error) => {
@@ -113,9 +121,11 @@ const PersonList = () => {
                   <TableCell>Prénom</TableCell>
                   <TableCell>Type</TableCell>
                   <TableCell>Appartement</TableCell>
+                  <TableCell>Copro Details</TableCell> {/* Add a new column for Copro Details */}
                 </TableRow>
               </TableHead>
               <TableBody>
+                
                 {filteredPersonList
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((person) => (
@@ -124,7 +134,11 @@ const PersonList = () => {
                       <TableCell>{person.nom}</TableCell>
                       <TableCell>{person.prenom}</TableCell>
                       <TableCell>{person.typePersonne}</TableCell>
-                      <TableCell>{person.appartement}</TableCell>
+                      <TableCell>{person.idCopro}</TableCell>
+                      <TableCell>
+                        {/* Display Copro details, you can format this as needed */}
+                        {person.coproDetails ? person.coproDetails.someProperty : 'N/A'}
+                      </TableCell>
                     </TableRow>
                   ))}
               </TableBody>

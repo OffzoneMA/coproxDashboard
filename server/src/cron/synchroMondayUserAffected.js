@@ -17,7 +17,7 @@ function delay(ms) {
 }
 let Boards = [];
 
-//Boards.push({ "BoardID": 1524894296, "PersonColumn": "person" , "coproColumn": "connecter_les_tableaux__1"}); // Tableau facture
+Boards.push({ "BoardID": 1524894296, "PersonColumn": "" , "coproColumn": "connecter_les_tableaux__1"}); // Tableau facture
 
 Boards.push({ "BoardID": 1511021735, "PersonColumn": "personnes__1" , "coproColumn": "board_relation"}); // tableau Tache copro
 Boards.push({ "BoardID": 1511021735, "PersonColumn": "person" , "coproColumn": "board_relation"});// tableau tach copro 
@@ -80,8 +80,10 @@ async function managementAffectation(idTicket,board,ItemID,) {
         console.log(board)
         await delay (100)
         let ticketData = await zendeskService.getTicketsById(idTicket)
-        AffectInMondayPerson(ticketData[0].assignee_id,board.BoardID, ItemID,board.PersonColumn)
-        await delay (100)
+        if(board.PersonColumn!=""){
+            AffectInMondayPerson(ticketData[0].assignee_id,board.BoardID, ItemID,board.PersonColumn)
+            await delay (100)
+        }
         const coproField = ticketData[0].custom_fields.find(field => field.id === 15261491191197);
         AffectInMondayCopro(coproField.value,board.BoardID, ItemID,board.coproColumn)
         await delay(100)

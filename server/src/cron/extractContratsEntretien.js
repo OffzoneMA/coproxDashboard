@@ -12,7 +12,7 @@ function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 let FinalContrat = [];
-
+let countNbContrat = 0
 const extractContratsEntretien = {
     start: async () => {
         console.log('Start Extraction ...');
@@ -72,15 +72,25 @@ const extractContratsEntretien = {
                             file: contrat.idFichier
                             // Add other properties as needed
                         };
-                    
+                        
+                        console.log("Contrat Numero : " ,countNbContrat)
                         FinalContrat.push(selectedData);
-                    
+                        console.log(contrat.idFichier)
                         if (contrat.idFichier) {
+                            countNbContrat++
+                            let statut = "Inactif";
+                            //console.log(selectedData.datefin)
+                            if (selectedData.datefin !== null && selectedData.datefin !== '') {
+                                statut = "Actif";
+                            }
                             countContratWithFile++;
-                            await saveFileLocally(selectedData, "test")
-                            await delay(500);
+                            const directory =`downloads/contrats/`
+                            const filename=`${countNbContrat}-${copro.idCopro}-Contrat-${statut}-${contrat.typecontrat.replace("/", "_")}-${infoFournisseur.societe}-${contrat.id}.pdf`
+                            await saveFileLocally(selectedData, directory+filename)
+
+                            //await delay(500);
                             //await saveFile(attachment.content_url,ticket.id,attachment.file_name)
-                            await saveFileToDropbox(`downloads/contrats/${copro.idCopro}-Contrat-${contrat.typecontrat}-${infoFournisseur.societe}.pdf`,`${copro.idCopro}-Contrat-${contrat.typecontrat}-${infoFournisseur.societe}.pdf`,`${copro.idCopro}`)
+                            await saveFileToDropbox(directory,filename,`${copro.idCopro}`)
                         }
                     }
                     
@@ -111,9 +121,8 @@ const extractContratsEntretien = {
 async function saveFileLocally(apiResponse, localFilePath) {
     try {
     if (true){
-            let outputFileName = `downloads/contrats/${apiResponse.copro}-Contrat-${apiResponse.typecontrat}-${apiResponse.societe}.pdf`;
-            const response = await vilogiService.getCoproContratEntretienFichier(apiResponse.file, apiResponse.idVilogi,outputFileName);
-            console.log(response)
+            const response = await vilogiService.getCoproContratEntretienFichier(apiResponse.file, apiResponse.idVilogi,localFilePath);
+            //console.log(response)
         }/*else{
             let outputFileName = `downloads/contrats/actif/${copro.idCopro}-Contrat -${contrat.fournisseur} - ${contrat.fournisseur}.pdf`;
             const apiResponse = await vilogiService.getCoproContratEntretienFichier(contrat.idFichier, copro.idVilogi,outputFileName);
@@ -128,18 +137,19 @@ async function saveFileLocally(apiResponse, localFilePath) {
   
   const saveFileToDropbox = async (filePath,filename,coproID) => {
     try {
+        const buffer = await fs.promises.readFile(filePath+filename);
+        
         const req = {
             filename: filename,
-            buffer: await fs.promises.readFile(filePath),
-            foldername:`tcp-contrat-copro-vilogi`
-      
+            buffer: buffer,
+            foldername:`TCP-CONTRAT-COPRO-VILOGI`
+            
         };
         
         const res = {
           json: (response) => console.log(response),
           status: (code) => ({ json: (response) => console.log(response) }),
         };
-      
         await dropboxService.uploadFile(req, res);
     } catch (error) {
         console.log(error)

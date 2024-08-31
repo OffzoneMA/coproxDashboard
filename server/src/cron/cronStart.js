@@ -12,6 +12,8 @@ const contratAssurance = require('./contratAssurance');
 const synchroMandats = require('./synchroMandats');
 const SynchroMondayUserAffected = require('./synchroMondayUserAffected');
 const synchroFacture = require('./synchroFacture');
+const extractContratsEntretien = require('./extractContratsEntretien');
+
 
 
 const synchroComptaList401 = require('./synchroComptaList401');
@@ -51,6 +53,7 @@ const scripts = [
   { name: 'synchroComptaList401', script: require('../cron/synchroComptaList401') },
   { name: 'synchroComptaRapprochementBancaire', script: require('../cron/synchroComptaRapprochementBancaire') },
   { name: 'synchroFacture', script: require('../cron/synchroFacture') },
+  { name: 'extractContratsEntretien', script: require('../cron/extractContratsEntretien') }
 
 
 ];
