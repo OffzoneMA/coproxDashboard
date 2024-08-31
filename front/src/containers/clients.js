@@ -16,7 +16,6 @@ import {
   TextField,
 } from '@mui/material';
 
-
 const PersonList = () => {
   const [personList, setPersonList] = useState([]);
   const [filteredPersonList, setFilteredPersonList] = useState([]);
@@ -41,25 +40,25 @@ const PersonList = () => {
       });
   }, []);
 
-  const handleFilter = (field, value) => {
-    if (field === 'type') {
-      setFilterType(value);
-    }
-
-    const filteredData = personList.filter(
-      (item) =>
-        (field === 'type' && (value === '' || item.type === value)) ||
-        (field === 'search' &&
-          (value === '' ||
-            Object.values(item).some(
-              (property) =>
-                typeof property === 'string' &&
-                property.toLowerCase().includes(value.toLowerCase())
-            )))
-    );
+  const handleFilter = () => {
+    const filteredData = personList.filter((item) => {
+      const matchesType = filterType === '' || item.typePersonne === filterType;
+      const matchesSearch =
+        filterText === '' ||
+        Object.values(item).some(
+          (property) =>
+            typeof property === 'string' &&
+            property.toLowerCase().includes(filterText.toLowerCase())
+        );
+      return matchesType && matchesSearch;
+    });
 
     setFilteredPersonList(filteredData);
   };
+
+  useEffect(() => {
+    handleFilter();
+  }, [filterType, filterText]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -73,39 +72,33 @@ const PersonList = () => {
   return (
     <div className="container-main">
       <div>
-      <FormControl variant="outlined" style={{ marginBottom: '16px',width: '200opx' }}>
-        <InputLabel id="filter-type-label">Filter by Type</InputLabel>
-        <Select
-          labelId="filter-type-label"
-          id="filter-type"
-          value={filterType}
-          onChange={(e) => handleFilter('type', e.target.value)}
-          label="Filter by Type"
-        >
-          <MenuItem value="">
-            <em>Tous</em>
-          </MenuItem>
-          <MenuItem value="PROPRIETAIRE">Propriétaire</MenuItem>
-          <MenuItem value="LOCATAIRE">Locataire</MenuItem>
-          <MenuItem value="CS">Conseil Syndical</MenuItem>
-          
-          {/* Add more types as needed */}
-        </Select>
-      </FormControl>
+        <FormControl variant="outlined" style={{ marginBottom: '16px', width: '200px' }}>
+          <InputLabel id="filter-type-label">Filter by Type</InputLabel>
+          <Select
+            labelId="filter-type-label"
+            id="filter-type"
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            label="Filter by Type"
+          >
+            <MenuItem value="">
+              <em>Tous</em>
+            </MenuItem>
+            <MenuItem value="PROPRIETAIRE">Propriétaire</MenuItem>
+            <MenuItem value="LOCATAIRE">Locataire</MenuItem>
+            <MenuItem value="CS">Conseil Syndical</MenuItem>
+          </Select>
+        </FormControl>
 
-      <TextField
-        id="search-input"
-        label="Search"
-        variant="outlined"
-        value={filterText}
-        onChange={(e) => {
-          setFilterText(e.target.value);
-          handleFilter('search', e.target.value);
-        }}
-        style={{ marginBottom: '16px' }}
-      />
+        <TextField
+          id="search-input"
+          label="Search"
+          variant="outlined"
+          value={filterText}
+          onChange={(e) => setFilterText(e.target.value)}
+          style={{ marginBottom: '16px' }}
+        />
       </div>
-      
 
       {loading ? (
         <CircularProgress style={{ margin: '20px' }} />
@@ -120,7 +113,6 @@ const PersonList = () => {
                   <TableCell>Prénom</TableCell>
                   <TableCell>Type</TableCell>
                   <TableCell>Appartement</TableCell>
-                  {/* Add more headers as needed */}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -133,7 +125,6 @@ const PersonList = () => {
                       <TableCell>{person.prenom}</TableCell>
                       <TableCell>{person.typePersonne}</TableCell>
                       <TableCell>{person.appartement}</TableCell>
-                      {/* Add more cells as needed */}
                     </TableRow>
                   ))}
               </TableBody>
