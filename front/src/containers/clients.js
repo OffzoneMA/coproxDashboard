@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -26,20 +27,12 @@ const PersonList = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
-    // Fetch person data from your API
-    fetch(`${process.env.REACT_APP_BACKEND_URL}/person/getAllPersons`)
+    // Fetch data from your API
+    fetch(`${process.env.REACT_APP_BACKEND_URL}/person/getAllPersonsWithCoppro`)
       .then((response) => response.json())
-      .then(async (personData) => {
-        // Fetch and merge copro details for each person
-        const personWithCoproDetails = await Promise.all(
-          personData.map(async (person) => {
-            const coproResponse = await fetch(`${process.env.REACT_APP_BACKEND_URL}/copro/detailsCopro/${person.idCopro}`);
-            const coproData = await coproResponse.json();
-            return { ...person, coproDetails: coproData };
-          })
-        );
-        setPersonList(personWithCoproDetails);
-        setFilteredPersonList(personWithCoproDetails);
+      .then((data) => {
+        setPersonList(data);
+        setFilteredPersonList(data);
         setLoading(false); // Set loading to false when data fetch is complete
       })
       .catch((error) => {
@@ -120,8 +113,8 @@ const PersonList = () => {
                   <TableCell>Nom</TableCell>
                   <TableCell>Prénom</TableCell>
                   <TableCell>Type</TableCell>
-                  <TableCell>Appartement</TableCell>
-                  <TableCell>Copro Details</TableCell> {/* Add a new column for Copro Details */}
+                  <TableCell>Copro</TableCell>
+                  <TableCell>Lien Vilogi</TableCell> {/* Add a new column for Copro Details */}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -134,11 +127,11 @@ const PersonList = () => {
                       <TableCell>{person.nom}</TableCell>
                       <TableCell>{person.prenom}</TableCell>
                       <TableCell>{person.typePersonne}</TableCell>
-                      <TableCell>{person.idCopro}</TableCell>
+                      <TableCell>{person.coproDetails.idCopro}</TableCell>
                       <TableCell>
-                        {/* Display Copro details, you can format this as needed */}
-                        {person.coproDetails ? person.coproDetails.someProperty : 'N/A'}
+                        <Link to={`${person.url}`}>Voir plus</Link>
                       </TableCell>
+
                     </TableRow>
                   ))}
               </TableBody>
