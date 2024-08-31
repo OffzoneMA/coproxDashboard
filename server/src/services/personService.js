@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
+const { ObjectId } = require('mongodb');
 
 mongoose.set('useFindAndModify', false);
 
@@ -61,6 +62,31 @@ async function getAllPersons() {
   });
 }
 
+async function getAllPersonsWithCoppro() {
+  return connectAndExecute(async () => {
+    const personCollection = MongoDB.getCollection('person');
+
+    const personsWithCoppro = await personCollection.aggregate([
+      {
+        $lookup: {
+          from: 'copropriete',
+          localField: 'idCopro',
+          foreignField: '_id',
+          as: 'coproDetails',
+        },
+      },
+      {
+        $unwind: {
+          path: '$coproDetails',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ]).toArray();
+
+    return personsWithCoppro;
+  });
+}
+
 async function countAllPersons() {
   return connectAndExecute(async () => {
     const personCollection = MongoDB.getCollection('person');
@@ -77,6 +103,7 @@ module.exports = {
   getPersonsByInfo,
   getPersonsByCoproId,
   getAllPersons,
-  countAllPersons
+  countAllPersons,
+  getAllPersonsWithCoppro
   // Add your new functions here
 };
