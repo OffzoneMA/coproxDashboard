@@ -81,6 +81,8 @@ const PersonList = () => {
         person.idVilogi,
         person.nom,
         person.prenom,
+        person.mail,
+        person.mobile,
         person.typePersonne,
         person.coproDetails.idCopro,
         `${window.location.origin}${person.url}`, // Assuming person.url is a relative path
