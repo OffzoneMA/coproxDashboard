@@ -73,7 +73,7 @@ const PersonList = () => {
 
   const exportToCSV = () => {
     const csvRows = [];
-    const headers = ['ID', 'Nom', 'Prénom', 'Type', 'Copro', 'Lien Vilogi'];
+    const headers = ['ID', 'Nom', 'Prénom','email','telephone', 'Type', 'Copro', 'Lien Vilogi'];
     csvRows.push(headers.join(','));
 
     filteredPersonList.forEach(person => {
