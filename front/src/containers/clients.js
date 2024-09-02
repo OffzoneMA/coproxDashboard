@@ -148,6 +148,7 @@ const PersonList = () => {
                   <TableCell>ID</TableCell>
                   <TableCell>Nom</TableCell>
                   <TableCell>Prénom</TableCell>
+                  <TableCell>Mail</TableCell>
                   <TableCell>Type</TableCell>
                   <TableCell>Copro</TableCell>
                   <TableCell>Lien Vilogi</TableCell> {/* Add a new column for Copro Details */}
@@ -161,6 +162,7 @@ const PersonList = () => {
                       <TableCell>{person.idVilogi}</TableCell>
                       <TableCell>{person.nom}</TableCell>
                       <TableCell>{person.prenom}</TableCell>
+                      <TableCell>{person.email}</TableCell>
                       <TableCell>{person.typePersonne}</TableCell>
                       <TableCell>{person.coproDetails.idCopro}</TableCell>
                       <TableCell>
