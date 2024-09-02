@@ -15,6 +15,7 @@ import {
   CircularProgress,
   TablePagination,
   TextField,
+  Button,
 } from '@mui/material';
 
 const PersonList = () => {
@@ -70,6 +71,33 @@ const PersonList = () => {
     setPage(0);
   };
 
+  const exportToCSV = () => {
+    const csvRows = [];
+    const headers = ['ID', 'Nom', 'Prénom', 'Type', 'Copro', 'Lien Vilogi'];
+    csvRows.push(headers.join(','));
+
+    filteredPersonList.forEach(person => {
+      const row = [
+        person.idVilogi,
+        person.nom,
+        person.prenom,
+        person.typePersonne,
+        person.coproDetails.idCopro,
+        `${window.location.origin}${person.url}`, // Assuming person.url is a relative path
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = `data:text/csv;charset=utf-8,${csvRows.join('\n')}`;
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'person_list.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="container-main">
       <div>
@@ -99,6 +127,14 @@ const PersonList = () => {
           onChange={(e) => setFilterText(e.target.value)}
           style={{ marginBottom: '16px' }}
         />
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={exportToCSV}
+          style={{ marginBottom: '16px', marginLeft: '16px' }}
+        >
+          Export to CSV
+        </Button>
       </div>
 
       {loading ? (
@@ -118,7 +154,6 @@ const PersonList = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                
                 {filteredPersonList
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((person) => (
@@ -131,7 +166,6 @@ const PersonList = () => {
                       <TableCell>
                         <Link to={`${person.url}`}>Voir plus</Link>
                       </TableCell>
-
                     </TableRow>
                   ))}
               </TableBody>
