@@ -81,7 +81,7 @@ const PersonList = () => {
         person.idVilogi,
         person.nom,
         person.prenom,
-        person.mail,
+        person.email,
         person.mobile,
         person.typePersonne,
         person.coproDetails.idCopro,
