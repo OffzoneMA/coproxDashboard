@@ -142,6 +142,7 @@ async function fixUserRole(coproId,Copro) {
     // Iterate through each user in the array
     for (const user of users) {
       i++;
+      await delay(200)
       console.log("Charging from Copro : [",Copro.idCopro, " - " , Copro.Nom,"]"+` fixing roles in MongoDB: [${i}/${users.length + 1}]` )
       // Check if the user object has an 'email' property
       if (user && user.idCoproprietaire) {
@@ -158,8 +159,36 @@ async function fixUserRole(coproId,Copro) {
           delete newDataObject._id
           await PersonService.editPerson(result[0]._id,newDataObject );
         }else{
+            try{
+              const userCS = await vilogiService.getAdherent(Copro.idVilogi,user.idCoproprietaire);
+              await delay(200)
+              if (userCS && userCS.email) {
+                const idcoproVar = mongoose.Types.ObjectId(Copro._id);
+                const userData = {
+                  "idCopro": idcoproVar,
+                  "email": userCS.email,
+                  "idVilogi": userCS.id,
+                  "idCompteVilogi":userCS.compte,
+                  "nom": userCS.nom,  
+                  "prenom": userCS.prenom, 
+                  "telephone": userCS.telephone,
+                  "telephone2":userCS.telephone2,
+                  "mobile":userCS.mobile,
+                  "mobile2":userCS.mobile2,
+                  "typePersonne": "CS",
+                  "active":userCS.active,
+                  "url":"https://copro.vilogi.com/AfficheProprietaire.do?operation=change&copropriete="+user.idCoproprietaire+"&id="+userCS.id
+                };
+                console.log(userData)
+                //console.log(userData);
+                await SynchoMongoDB(userData)
+              }
+            }catch (error) {
+              console.error('Error in SynchoMongoDB:', error);
+              FileLog('| SyncUsers | fixUserRole | User with IdVilogi :',user.idCoproprietaire,'  --- not found for a user.');
+            }
+
           
-          FileLog('| SyncUsers | fixUserRole | User with IdVilogi :',user.idCoproprietaire,'  --- not found for a user.');
         }
       }
     }
@@ -191,7 +220,8 @@ async function SynchoZendesk() {
           "user": {
             ...baseUserData.user,
             "tags": [user.typePersonne],
-            "phone": user.mobile,
+            "phone":  user.telephone || user.telephone2 || user.mobile || user.mobile2 ,
+            "mobile":user.mobile || user.mobile2,
             "notes":user.url,
             "url":user.url,
             "organization": { "name": organisationName.idCopro },
@@ -201,8 +231,9 @@ async function SynchoZendesk() {
         try {
           const zendeskUser = user.idZendesk ? { id: user.idZendesk } : await ZendeskService.getUserFromEmail(user.email);
           console.log(zendeskUser)
+          await delay(300);
           if (zendeskUser && zendeskUser.id) {
-            console.log("Edit User " ,zendeskUser.id)
+            console.log("Edit User " ,zendeskUser.id, " from copro: ",organisationName.idCopro )
             await ZendeskService.updateUser(zendeskUser.id, UserData);
             user.idZendesk = zendeskUser.id;
             await PersonService.editPerson(user._id, user);
@@ -210,7 +241,7 @@ async function SynchoZendesk() {
           } else {
             console.log(UserData)
             const idzendeskAfterAdd = await ZendeskService.addUser(baseUserData);
-            console.log("   Zendesk ID to Mongo db : ", idzendeskAfterAdd, " - " , user._id)
+            console.log("Zendesk ID to Mongo db : ", idzendeskAfterAdd, " - " , user._id  ," From copro : ",organisationName.idCopro)
             user.idZendesk = idzendeskAfterAdd
             await PersonService.editPerson(user._id, user);
             await delay(100);
