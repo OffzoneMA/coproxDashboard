@@ -1,6 +1,7 @@
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
 const vilogiService = require('../services/vilogiService');
+const scriptService = require('../services/ScriptService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 
 const logs = require('../services/logs');
@@ -14,7 +15,7 @@ function delay(ms) {
 const campagneChauffage = {
     start: async () => {
         logs.logExecution("campagneChauffage")
-        
+        const LogId = await scriptService.logScriptStart('campagneChauffage');
         //const data = await mondayService.getItemsDetails(1469479876);
         console.log(data)
         const action="Fermeture"
@@ -61,6 +62,7 @@ const campagneChauffage = {
                 
               }
               await delay(300)
+              await scriptService.updateLogStatus('campagneChauffage',LogId ,2 ,"Script executed successfully");
             } catch (error) {
               console.log(error)
             }

@@ -3,6 +3,7 @@ const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const dropboxService = require('../services/dropboxService');
 const ZendeskService = require('../services/zendeskService');
+const scriptService = require('../services/ScriptService');
 const zendeskTicket = require('./zendeskTicket');
 const logs = require('../services/logs');
 const fs = require('fs');
@@ -16,6 +17,7 @@ let countNbContrat = 0
 const extractContratsEntretien = {
     start: async () => {
         console.log('Start Extraction ...');
+        const LogId = await scriptService.logScriptStart('extractContratsEntretien');
         logs.logExecution("extractContratsEntretien")
         let countContratWithFile=0;
         try {
@@ -109,6 +111,7 @@ const extractContratsEntretien = {
                 if (err) throw err;
                 console.log('CSV file saved as output.csv');
             });
+            await scriptService.updateLogStatus('extractContratsEntretien',LogId ,2 ,"Script executed successfully");
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
             console.error('An error occurred:', error.message);
