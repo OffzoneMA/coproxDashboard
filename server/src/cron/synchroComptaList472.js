@@ -2,6 +2,7 @@ const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
+const scriptService = require('../services/ScriptService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
 const fs = require('fs');
@@ -21,7 +22,9 @@ const typeData="synchroComptaList"
 const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
-        logs.logExecution("synchroComptaList")
+        logs.logExecution("synchroComptaList472")
+        
+        const LogId = await scriptService.logScriptStart('synchroComptaList472');
         //console.log(await mondayService.getItemsDetails("1499568922"))
         try {
             let copros = await coproService.listCopropriete();
@@ -45,7 +48,8 @@ const synchroMandats = {
 
                     let budgetj30 = await vilogiService.getbudgetComptebyDate(copro.idVilogi,"47200000",thirtyDaysAgo);
                     let budgetj = await vilogiService.getbudgetComptebyDate(copro.idVilogi,"47200000",datedujour);
-
+                    console.log(budgetj30)
+                    console.log(budgetj)
                     //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
                     //console.log(budgetj)
                     if (budgetj30 === undefined || budgetj30 === '' || budgetj30.length === 0 )  continue
@@ -73,6 +77,8 @@ const synchroMandats = {
                 }
             }            
             //console.log(FinalContrat)
+            await scriptService.updateLogStatus('synchroComptaList472',LogId ,2 ,"Script executed successfully");
+            
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
             console.error('An error occurred:', error.message);

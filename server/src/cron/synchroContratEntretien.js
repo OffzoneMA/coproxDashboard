@@ -2,6 +2,7 @@ const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
+const scriptService = require('../services/ScriptService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
 const fs = require('fs');
@@ -20,7 +21,11 @@ const typeData="contratEntretien"
 const synchroContratEntretien = {
     start: async () => {
         logs.logExecution("synchroContratEntretien")
+        const LogId = await scriptService.logScriptStart('synchroContratEntretien');
         console.log('Start Extraction ...');
+
+        //const data = await mondayService.getItemsDetails(1455274203);
+        //console.log(data)
         try {
             let copros = await coproService.listCopropriete();
             let FinalContrat = [];  // Initialize FinalContrat array
@@ -58,6 +63,8 @@ const synchroContratEntretien = {
                         }else{
 
                         }
+                        urlContrat=`https://copro.vilogi.com/rest/contratEntretien/getFile/${contrat.idFichier}?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&idCopro=44378&idAdh=749799`
+                        
                         console.log(` Contrat numero ${TotalContrat}   Sync contrat Number :${contrat.id}   ---- ${copro.idCopro} -  [${NbContrat}   /  ${contrats.length}] `)                   
                         const columnValues = {
                             //copro: copro.idCopro,
@@ -77,6 +84,7 @@ const synchroContratEntretien = {
                             t_lephone:  {"phone" :infoFournisseur.telephone, "countryShortName" : "FR"},
                             ...(copro.idMonday != null && { board_relation: { "item_ids": [copro.idMonday] } }),
                             texte_15: infoFournisseur.secteur,
+                            lien_internet_1__1 : {"url" : urlContrat, "text":"Lien vers contrat"},
                             //dup__of_texte_155:infoFournisseur.secteur,
                             texte_14: contrat.idFichier
                             // Add other properties as needed
@@ -95,6 +103,8 @@ const synchroContratEntretien = {
                 }
             }
             console.log(TotalContrat)
+            await scriptService.updateLogStatus('synchroContratEntretien',LogId ,2 ,"Script executed successfully");
+            
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
             console.error('An error occurred:', error.message);

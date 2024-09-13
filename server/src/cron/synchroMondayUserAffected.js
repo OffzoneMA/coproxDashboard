@@ -2,6 +2,7 @@ const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
+const scriptService = require('../services/ScriptService');
 const zendeskService = require('../services/zendeskService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
@@ -33,6 +34,7 @@ const SynchroMondayUserAffected = {
         console.log(Boards)
         console.log('Start Extraction ...');
         logs.logExecution("synchroMondayUserAffected")
+        const LogId = await scriptService.logScriptStart('synchroMondayUserAffected');
         try {
             for(board of Boards){
                 await delay(500)
@@ -70,7 +72,7 @@ const SynchroMondayUserAffected = {
     
                 }
             }
-
+            await scriptService.updateLogStatus('synchroMondayUserAffected',LogId ,2 ,"Script executed successfully");
         } catch (error) {
             console.error('An error occurred:', error.message);
         }

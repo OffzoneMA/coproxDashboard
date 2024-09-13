@@ -3,6 +3,7 @@ const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const personService = require('../services/personService');
 const mondayService = require('../services/mondayService');
+const scriptService = require('../services/ScriptService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
 const fs = require('fs');

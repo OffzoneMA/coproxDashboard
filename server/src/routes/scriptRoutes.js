@@ -1,37 +1,17 @@
-// Import required modules
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
-const MongoDB = require('../utils/mongodb');
-mongoose.set('useFindAndModify', false);
-require('dotenv').config(); // Import dotenv to load environment variables from .env file
+const scriptController = require('../controllers/scriptController');
 
-async function connectAndExecute(callback) {
-    try {
-      await MongoDB.connectToDatabase();
-      const result = await callback();
-      return result;
-    } catch (error) {
-      console.error('Error connecting and executing:', error.message);
-      throw error;
-    } 
-  }
+// Route to update script status
+router.post('/update-status', scriptController.updateScriptStatus);
 
-// Define routes to start a script
-router.get('/:scriptName', async (req, res) => {
-    const scriptName = req.params.scriptName;
+// Route to get all script logs
+router.get('/logs', scriptController.getScriptStateLogs);
 
-    // Update script state to 1 (started) in the database
-    try {
-        return connectAndExecute(async () => {
-            const coproprieteCollection = MongoDB.getCollection('ScriptState');
-            res.send(`${scriptName} script state set to started`);
-            return await coproprieteCollection.findOneAndUpdate({ name: scriptName }, { state: 1 });
-          });
-        
-    } catch (error) {
-        res.status(500).send(`Error setting ${scriptName} script state to started: ${error}`);
-    }
-});
+// Route to log script start
+router.post('/log-start', scriptController.logScriptStart);
+
+// Route to update log status
+router.post('/update-log-status', scriptController.updateLogStatus);
 
 module.exports = router;

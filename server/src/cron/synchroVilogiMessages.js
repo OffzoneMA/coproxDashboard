@@ -1,7 +1,9 @@
 const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
-const mondayService = require('../services/mondayService');
+const zendeskService = require('../services/zendeskService');
+
+const scriptService = require('../services/ScriptService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
 const fs = require('fs');
@@ -43,14 +45,18 @@ const synchroMandats = {
                             const comparisonDate = new Date('2024-01-01');
 
                             // Compare the dates
-                            if (envoiDate > comparisonDate) {
+                            //if (envoiDate > comparisonDate) {
+ 
+                            if(true){
                             console.log("The date is after 01/01/2024");
+                            createTicketZendesk(hasMessage[message])
                             } else {
-                                console.log(hasMessage[message].id,"   ",person.id,"   ",copro.idVilogi)
+                                
+                               //console.log(hasMessage[message].id,"   ",person.id,"   ",copro.idVilogi)
                                //await vilogiService.getUserMessagePushLu(hasMessage[message].id,person.id,copro.idVilogi)
                             }
                             if(hasMessage[message].lu==0){
-                                console.log(hasMessage[message])
+                                //console.log(hasMessage[message])
                             }
                         }
 
@@ -63,6 +69,7 @@ const synchroMandats = {
             }
                     
             //console.log(FinalContrat)
+            await scriptService.updateLogStatus('synchroVilogiMessages',LogId ,2 ,"Script executed successfully");
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
             console.error('An error occurred:', error.message);
@@ -71,29 +78,49 @@ const synchroMandats = {
 };
 
 
-async function createTicketZendesk(itemName,data,idVilogi) {
+async function createTicketZendesk(message) {
     try {
-        const checkValue= await mondayVilogiSyncService.getItemsByInfo(boardId,idVilogi)
-        console.log(checkValue)
-        if(checkValue.length > 0){
-            console.log("Already exist")
-            const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
-        }else{
-            const newItem = await mondayService.createItem(boardId, itemName, data);
-            //console.log("Nouvel élément créé:", newItem);
-            const dataMongo={
-                boardID:boardId,
-                mondayItenID:newItem.id,
-                vilogiEndpoint:typeData,
-                //vilogiEndpointData:mandat,
-                vilogiItemID:idVilogi
+        const newTicket = {
+            ticket: {
+              subject: message.titre,
+              description: `🚨⚠️ L'équipe de gestion des signalements n'a pas accès à cette messagerie. 🚨⚠️
 
+                    Bonjour à vous,
+
+                    Vous recevez ce message automatique 🧑‍💻 qui vous informe que votre message a bien été réceptionné et ne s'est pas égaré 📬 !
+
+                    Si votre question concerne une demande portant sur les charges, une demande d'accès, une question d'ordre privative de manière générale vous êtes au bon endroit 📍, une réponse vous sera apportée.
+
+                    En revanche, si votre demande concerne un dossier lié à la copropriété, vous devez réorienter votre demande ou votre signalement ici =>  https://macopro.coprox.immo
+
+                    En effet, à des fins d'efficacité, aucune demande de signalement ou de suivi de dossiers impactant les parties communes ne sera traitée par courriel. Cette boîte e-mail est exclusivement réservée à répondre aux questions privatives des copropriétaires et à recevoir les factures des prestataires.
+
+                    Chez Coprox, nous offrons à chaque copropriété un espace réservé aux copropriétés accessible à chaque copropriétaire et locataire avec son e-mail enregistré chez Coprox. Votre participation sur le réseau contribue à conserver l'historique de votre copropriété et à favoriser la communication entre les voisins🤝. En utilisant ce réseau, vous nous aidez à être réactifs dans le traitement des demandes 🏃‍♀️.
+
+                    En cas de difficultés de connexion, il vous suffit de nous demander votre code immeuble. Notre équipe de gestion est constamment connectée 👩‍💻pour vous fournir une réponse rapide en fonction de l'urgence de votre demande ⏱.
+
+                    En attendant d'échanger sur le bon canal nous vous souhaitons une belle journée ☀️ ou fin de journée 🌙.`,
+              requester: {
+                name: "Youssef DIOURI",
+                email: "contact@youssefdiouri.net"
+              },
             }
-            mondayVilogiSyncService.addItem(dataMongo)
-        }
-        await delay(300);
-        //monday.api(`mutation {change_multiple_column_values(item_id:${newItem.id},board_id:${boardId}, column_values: \"{\\\"board_relation\\\" : {\\\"item_ids\\\" : [${copro.idMonday}]}}\") {id}}` )
-      } catch (error) {
+          };
+        
+        const newTicketData = await zendeskService.createTicket(newTicket)
+        await delay(300)
+        console.log('Ticket ID:', newTicketData[0].id);
+        const messageData = {
+            ticket: {
+              comment: {
+                body: message.description,
+                public: false  //private note
+              }
+            }
+          };
+          console.log('Ticket 2  ID:', newTicketData[0].id);
+        await zendeskService.updateTicket(newTicketData[0].id,messageData)
+    } catch (error) {
         console.error("Erreur lors de la création de l'élément:", error);
       }
 }

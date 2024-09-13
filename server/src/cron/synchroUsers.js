@@ -2,6 +2,8 @@
 const vilogiService = require('../services/vilogiService');
 const coproService = require('../services/coproService');
 const PersonService = require('../services/personService');
+
+const scriptService = require('../services/ScriptService');
 const ZendeskService = require('../services/zendeskService');
 const mongoose = require('mongoose');
 const personModel = require('../models/person');
@@ -37,6 +39,7 @@ function delay(ms) {
 const synchroUsers = {
   start: async () => {
       logs.logExecution("synchroUsers")
+      const LogId = await scriptService.logScriptStart('synchroUsers');
       console.log('Synchronizing users...');
 
       // TODO: Fetch the list of all copros
@@ -60,7 +63,7 @@ const synchroUsers = {
         
       }
       await SynchoZendesk();
-
+      await scriptService.updateLogStatus('synchroUsers',LogId ,2 ,"Script executed successfully");
 
 
   },

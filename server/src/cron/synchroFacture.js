@@ -2,6 +2,7 @@ const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
+const scriptService = require('../services/ScriptService');
 const zendeskService = require('../services/zendeskService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
@@ -25,6 +26,7 @@ const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
         logs.logExecution("synchroFacture")
+        const LogId = await scriptService.logScriptStart('synchroFacture');
         //console.log(await mondayService.getItemsDetails("1431956408"))
         try {
             let facturesMonday = await mondayService.getItemsGroup(boardId,"topics");
@@ -46,6 +48,8 @@ const synchroMandats = {
             
 
             //console.log(FinalContrat)
+            await scriptService.updateLogStatus('synchroFacture',LogId ,2 ,"Script executed successfully");
+  
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
             console.error('An error occurred:', error.message);

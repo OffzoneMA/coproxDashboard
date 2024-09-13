@@ -2,6 +2,8 @@ const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
+
+const scriptService = require('../services/ScriptService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
 const fs = require('fs');
@@ -20,6 +22,7 @@ const typeData="travaux"
 const synchroTravaux = {
     start: async () => {
         logs.logExecution("synchroTravaux")
+        const LogId = await scriptService.logScriptStart('synchroTravaux');
         console.log('Start Extraction ...');
         try {
             let copros = await coproService.listCopropriete();
@@ -68,6 +71,7 @@ const synchroTravaux = {
                 }
             }
             console.log(totalTravaux)
+            await scriptService.updateLogStatus('synchroTravaux',LogId ,2 ,"Script executed successfully");
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
             console.error('An error occurred:', error.message);

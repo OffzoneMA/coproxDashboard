@@ -2,6 +2,7 @@ const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
+const scriptService = require('../services/ScriptService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
 const fs = require('fs');
@@ -16,13 +17,14 @@ function delay(ms) {
 }
 let FinalContrat = [];
 const boardId = 1437344331;
-const typeData="manda"
+const typeData="mandat"
 
 const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
         logs.logExecution("synchroMandats")
-        //console.log(await mondayService.getItemsDetails("1455188129"))
+        const LogId = await scriptService.logScriptStart('synchroMandats');
+        console.log(await mondayService.getItemsDetails("1620337632"))
         try {
             let copros = await coproService.listCopropriete();
             let FinalManda = [];  // Initialize FinalContrat array
@@ -32,11 +34,11 @@ const synchroMandats = {
                 if (copro.idVilogi !== undefined) {
                     let madats = await vilogiService.getCoproManda(copro.idVilogi);
                     
-                    //const data = await mondayService.getItemsDetails(1439055076);
+                    //const data = await mondayService.getItemsDetails(1455188069);
                     //console.log(data)
                     let j=0
                     for (const mandat of madats) {
-                        console.log(mandat.idFichier)
+                        console.log(mandat.idFichier, mandat.honoraire)
                         j++;
                         //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
                         urlMandat=`https://copro.vilogi.com/rest/mandatSyndic/getFile/${mandat.idFichier}?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&idCopro=44378&idAdh=749799`
@@ -56,7 +58,9 @@ const synchroMandats = {
                                  idFichier : `https://copro.vilogi.com/rest/mandatSyndic/getFile/${mandat.idFichier}?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&idCopro=44378&idAdh=749799`,
                                  ville : mandat.ville,
                                  codepostal : mandat.codepostal,*/
+                                 numMandat : mandat.numMandat,
                                  chiffres:mandat.idFichier,
+                                 chiffres__1:mandat.honoraire,
                                  lien_internet : {"url" : urlMandat, "text":"Lien vers mandat"},
                                  id:mandat.id,
                                  orderDate:mandat.dateDebut,
@@ -85,8 +89,9 @@ const synchroMandats = {
                 const date =  new Date(item.orderDate.split('/').reverse().join('/'));
                 const year =  date.getFullYear();
                 const paddedIndex =   String(i).padStart(3, '0'); // Ensure i is always 3 digits
-                const itemName = `${year} - ${paddedIndex} (${item.number})`;
+                const itemName = `${item.numMandat}`;
                 delete item.number
+                delete item.numMandat
                 delete item.orderDate;
                 const itemID=item.id
                 delete item.id;
@@ -95,6 +100,7 @@ const synchroMandats = {
                 await delay(300);
               });
 
+              await scriptService.updateLogStatus('synchroMandats',LogId ,2 ,"Script executed successfully");
             
             //console.log(FinalContrat)
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
@@ -119,7 +125,6 @@ async function saveMonday(itemName,data,idVilogi) {
                 boardID:boardId,
                 mondayItenID:newItem.id,
                 vilogiEndpoint:typeData,
-                //vilogiEndpointData:mandat,
                 vilogiItemID:idVilogi
 
             }

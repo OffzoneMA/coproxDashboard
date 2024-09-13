@@ -265,6 +265,16 @@ const getCoproAssemblee = async (coproID) => {
   }
 };
 
+const getAdherent = async (coproID,adherantID) => {
+  const adherentsEndpoint = `/adherant/${adherantID}?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 const getAllAdherents = async (coproID) => {
   const adherentsEndpoint = `/adherant/all?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
 
@@ -338,6 +348,7 @@ module.exports = {
   getPrestataireById,
   getCoproAssemblee,
   getCoproManda,
+  getAdherent,
   getAllAdherents,
   getpayementAdherant,
   getRelanceAdherant,

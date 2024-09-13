@@ -2,6 +2,7 @@ const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
+const scriptService = require('../services/ScriptService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
 const fs = require('fs');
@@ -22,6 +23,8 @@ const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
         logs.logExecution("synchroComptaRapprochementBancaire")
+        
+        const LogId = await scriptService.logScriptStart('synchroComptaList472');
         //console.log(await mondayService.getItemsDetails("1499741576"))
         try {
             let copros = await coproService.listCopropriete();

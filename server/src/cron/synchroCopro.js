@@ -1,6 +1,7 @@
 const vilogiService = require('../services/vilogiService');
 const coproService = require('../services/coproService');
-const zendeskService =require('../services/zendeskService')
+const zendeskService =require('../services/zendeskService');
+const scriptService = require('../services/ScriptService');
 const mondayService = require('../services/mondayService');
 const logs = require('../services/logs');
 const LesCoprosIDBoard=1404452123
@@ -14,10 +15,13 @@ const synchroCopro = {
     start: async () => {
         
         logs.logExecution("synchroCopro")
+        const LogId = await scriptService.logScriptStart('synchroCopro');
         await vilogiToMongodb()
         await mongodbToZendesk()
         await mongodbToMonday()
         await mongodbToMondayCoproMorte()
+        await scriptService.updateLogStatus('synchroCopro',LogId ,2 ,"Script executed successfully");
+            
     }
 
 }

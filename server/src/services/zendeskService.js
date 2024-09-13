@@ -159,6 +159,24 @@ async function getTicketsNew() {
   return makeRequest(url, 'Error fetching All Ticket with status new');
 }
 
+async function createTicket(ticketData) {
+  const url = `/tickets.json`;
+  const errorMessage = 'Error creating new ticket';
+  const method = 'post';
+
+  return makeRequest(url, errorMessage, {
+    method,
+    body: ticketData,
+  });
+}
+async function addMessageToTicket(ticketId, ticket) {
+  const url = `/tickets/${ticketId}/comments.json`;
+  const errorMessage = 'Error adding message to ticket';
+  const method = 'post';
+
+  return makeRequest(url, errorMessage, { method,body: ticket});
+}
+
 async function getTicketsNotClosed() {
   const url = `/search.json?query=status:open+status:new+status:pending+status:resolved&sort_by=created_at&sort_order=desc`;
   return makeRequest(url, 'Error fetching All Ticket with status not closed');
@@ -265,6 +283,8 @@ module.exports = {
   getUsersByOrg,
   getAllorganizations,
   getOrganizationsById,
+  createTicket,
+  addMessageToTicket,
   getTicketsNew,
   getTicketsNotClosed,
   getTicketsNewAssigned,

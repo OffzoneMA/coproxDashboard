@@ -148,6 +148,7 @@ async function createItem(boardId, itemName, columnValues) {
 // Function to create a new item in a board
 async function updateItem(boardId, itemId, columnValues) {
   try {
+    console.log(columnValues)
     // Remove occurrences of /r/n from columnValues
     const cleanedColumnValues = JSON.stringify(columnValues).replace(/\\r\\n/g, '');
 
@@ -163,7 +164,7 @@ async function updateItem(boardId, itemId, columnValues) {
     }`;
     const response = await executeGraphQLQuery(query);
     console.log(response)
-    return await response.change_multiple_column_values;
+    return await response;
   } catch (error) {
     logExecution(`Error updating item ${itemId}`)
     throw new Error(`Error updating item ${itemId}: ${error.message}`);
