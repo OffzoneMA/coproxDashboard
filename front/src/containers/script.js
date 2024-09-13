@@ -84,12 +84,12 @@ function TrelloPage({ onSetTitle }) {
                             <TableCell></TableCell>
                         </TableRow>
                     </TableHead>
-                    <TableBody>
+                        <TableBody>
                         {scriptData.map((row, index) => (
                             <TableRow key={index}>
                                 <TableCell></TableCell>
                                 <TableCell>{row.label}</TableCell>
-                                {row.options.length > 0 ? (
+                                {row.options && row.options.length > 0 ? (
                                     <TableCell>
                                         <Select
                                             labelId={`demo-simple-select-label-${index}`}
@@ -106,7 +106,7 @@ function TrelloPage({ onSetTitle }) {
                                 ) : (
                                     <TableCell></TableCell>
                                 )}
-                                <TableCell>{row.lastExecution}  </TableCell>
+                                <TableCell>{row.lastExecution}</TableCell>
                                 <TableCell>{getStatusChip(row.status)}</TableCell>
                                 <TableCell>
                                     <Button variant="contained" onClick={() => handleButtonClick(row.endpoint)}>Lancer</Button>
