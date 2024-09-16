@@ -1,52 +1,20 @@
 // cronJobs/cronStart.js
-const MongoDB = require('../utils/mongodb');
 const cron = require('node-cron');
-const synchroCopro = require('./synchroCopro');
-const synchroUsers = require('./synchroUsers');
-const zendeskTicket = require('./zendeskTicket');
-const zendeskTicketAI = require('./zendeskTicketAI');
-const syncZendeskTags = require('./syncZendeskTags');
-const synchroTravaux = require('./synchroTravaux');
-const zendeskService = require('../services/zendeskService');
-const contratAssurance = require('./contratAssurance');
-const synchroMandats = require('./synchroMandats');
-const SynchroMondayUserAffected = require('./synchroMondayUserAffected');
-const synchroFacture = require('./synchroFacture');
-const extractContratsEntretien = require('./extractContratsEntretien');
+const MongoDB = require('../utils/mongodb');
+const ScriptService = require('../services/ScriptService');
+const scripts = require('../models/script');
 
-
-
-const synchroComptaList401 = require('./synchroComptaList401');
-
-const synchroComptaRapprochementBancaire = require('./synchroComptaRapprochementBancaire');
-const synchroComptaList = require('./synchroComptaList');
-
-
-const synchoBudgetCoproprietaire = require('./synchoBudgetCoproprietaire');
-const synchroContratEntretien = require('./synchroContratEntretien');
-
-async function connectAndExecute(callback) {
-  try {
-    await MongoDB.connectToDatabase();
-    const result = await callback();
-    return result;
-  } catch (error) {
-    console.error('Error connecting and executing:', error.message);
-    throw error;
-  } 
-}
-
-const scripts = [
+const scriptsList = [
   { name: 'synchroCopro', script: require('../cron/synchroCopro') },
   { name: 'synchroUsers', script: require('../cron/synchroUsers') },
-  { name: 'zendeskTicket', script: require('../cron/zendeskTicket') },
-  { name: 'zendeskTicketAI', script: require('../cron/zendeskTicketAI') },
-  { name: 'syncZendeskTags', script: require('../cron/syncZendeskTags') },
+  //{ name: 'zendeskTicket', script: require('../cron/zendeskTicket') },
+  //{ name: 'zendeskTicketAI', script: require('../cron/zendeskTicketAI') },
+  //{ name: 'syncZendeskTags', script: require('../cron/syncZendeskTags') },
   { name: 'synchroTravaux', script: require('../cron/synchroTravaux') },
-  { name: 'zendeskService', script: require('../services/zendeskService') },
-  { name: 'contratAssurance', script: require('../cron/contratAssurance') },
+  //{ name: 'zendeskService', script: require('../services/zendeskService') },
+  { name: 'synchroContratAssurance', script: require('../cron/synchroContratAssurance') },
   { name: 'synchroMandats', script: require('../cron/synchroMandats') },
-  { name: 'SynchroMondayUserAffected', script: require('../cron/synchroMondayUserAffected') },
+  //{ name: 'SynchroMondayUserAffected', script: require('../cron/synchroMondayUserAffected') },
   { name: 'synchroContratEntretien', script: require('../cron/synchroContratEntretien') },
   { name: 'campagneChauffage', script: require('../cron/campagneChauffage') },
   { name: 'synchoBudgetCoproprietaire', script: require('../cron/synchoBudgetCoproprietaire') },
@@ -54,126 +22,79 @@ const scripts = [
   { name: 'synchroComptaRapprochementBancaire', script: require('../cron/synchroComptaRapprochementBancaire') },
   { name: 'synchroFacture', script: require('../cron/synchroFacture') },
   { name: 'extractContratsEntretien', script: require('../cron/extractContratsEntretien') }
-
-
 ];
 
 
-
-function cronStart() {
-  cron.schedule('0 4 * * *', async () => {
-    await zendeskTicket.start();
-    await zendeskService.recoverAllSuspendedTickets();
-  });
-  cron.schedule('0 5 * * *', async () => {
-    await synchroComptaList401.start();
-    await synchroComptaList.start();
-    await synchroComptaRapprochementBancaire.start();
-    await synchoBudgetCoproprietaire.start();
-  });
-
-  /// Chaque semaine
-  cron.schedule('0 0 * * 0', async () => {
-    await synchroCopro.start();
-    await synchroUsers.start();
-    await contratAssurance.start();
-    await synchroTravaux.start();
-    
-  });
-
-  ///chaque Jour
-  cron.schedule('0 0 * * *', async () => {
-    console.log("-------------------------Starting Zendesk Ticket AI--------------------------------------------")
-    //await zendeskTicketAI.start();
-    await synchroTravaux.start();
-    await synchroContratEntretien.start();
-    await SynchroMondayUserAffected.start();
-    await synchroMandats.start();
-    
-    console.log("-------------------------Ending Zendesk Ticket AI--------------------------------------------")
-  });
-
-  cron.schedule('0 11 * * *', async () => {
-    await syncZendeskTags.start();
-    await zendeskTicket.start();
-    await synchroFacture.start();
-  });
-
-  cron.schedule('0 14 * * *', async () => {
-    await syncZendeskTags.start();
-    await synchroFacture.start();
-  });
-
-  
-  cron.schedule('*/5 * * * *', async () => {
-    for (const { name, script } of scripts) {
-        try {
-
-            
-
-            
-            // Connect to MongoDB and execute asynchronously
-            await connectAndExecute(async () => {
-                const coproprieteCollection = MongoDB.getCollection('ScriptState');
-                // Get the current script state
-                const scriptState = await coproprieteCollection.findOne({ name });
-                if (scriptState && scriptState.status === 1) {
-                    const startTime=new Date();
-                    // Execute the script
-                    console.log("Starting script:", name);
-                    const executionHistory = []; // Local storage for execution history
-                    await coproprieteCollection.updateOne({ name }, { $set: { status: 2 } });
-                    await script.start();
-                    
-                    // Update script state to not started after execution
-                    await coproprieteCollection.updateOne({ name }, { $set: { status: 0 } });
-                    const endTime=new Date();
-                    // Log execution history for success
-                    executionHistory.push({
-                        endTime: startTime,
-                        endTime: endTime,
-                        status: 0, // Success
-                        message: "Script executed successfully"
-                    });
-                    await coproprieteCollection.updateOne(
-                      { name },
-                      { $push: { execution_history: { $each: executionHistory }}}
-                  );
-                }
-            });
-            
-        } catch (error) {
-            console.error(`Error executing ${name} script: ${error}`);
-            const endTime=new Date();
-            executionHistory.push({
-              endTime: startTime,
-              endTime: endTime,
-              status: -1, // Error
-              message: "Script executed with Error"
-          });
-            
-            // Update execution history in the database
-            await connectAndExecute(async () => {
-                const coproprieteCollection = MongoDB.getCollection('ScriptState');
-                await coproprieteCollection.updateOne({ name }, { $set: { status: -1 } });
-                await coproprieteCollection.updateOne(
-                    { name },
-                    {
-                        $push: {
-                            execution_history: { $each: executionHistory } // Update execution history in bulk
-                        }
-                    }
-                );
-            });
-        }
-    }
-});
-  
-  
+async function connectAndExecute(callback) {
+  try {
+    await MongoDB.connectToDatabase();
+    return await callback();
+  } catch (error) {
+    console.error('Error connecting and executing:', error.message);
+    throw error;
+  }
 }
 
 
 
+async function executeScript(name, script) {
+  const startTime = new Date(); // Moved startTime to ensure it is always initialized
+  try {
+    const scriptState = await ScriptService.getScriptState(name);
+    console.log(name, " --- " ,scriptState.status)
+    if (scriptState && scriptState.status === 1) {
+      console.log(`Starting script: ${name}`);
 
+      await ScriptService.updateScriptStatus(name, 2); // Status 2 for "Running"
+      await script.start(); // Assume script has a 'start' function
 
-module.exports = cronStart;
+      const endTime = new Date();
+      await ScriptService.updateScriptStatus(name, 0); // Status 0 for "Completed"
+      await ScriptService.logExecutionHistory(name, startTime, endTime, 0, "Script executed successfully");
+    }
+  } catch (error) {
+    console.error(`Error executing ${name} script: ${error}`);
+    const endTime = new Date(); // Initialize endTime in case of error
+    await ScriptService.logExecutionHistory(name, startTime, endTime, -1, `Script executed with Error: ${error.message}`);
+    await ScriptService.updateScriptStatus(name, -1); // Status -1 for "Failed"
+  }
+}
+
+function scheduleCronJobs() {
+  cron.schedule('0 4 * * *', async () => {
+    await executeScript('zendeskTicket', require('../cron/zendeskTicket'));
+    await require('../services/zendeskService').recoverAllSuspendedTickets();
+  });
+
+  cron.schedule('0 5 * * *', async () => {
+    await executeScript('synchroComptaList401', require('../cron/synchroComptaList401'));
+    await executeScript('synchroComptaList472', require('../cron/synchroComptaList472'));
+    await executeScript('synchroComptaRapprochementBancaire', require('../cron/synchroComptaRapprochementBancaire'));
+    await executeScript('synchoBudgetCoproprietaire', require('../cron/synchoBudgetCoproprietaire'));
+  });
+
+  cron.schedule('0 0 * * 0', async () => {
+    await executeScript('synchroCopro', require('../cron/synchroCopro'));
+    await executeScript('synchroUsers', require('../cron/synchroUsers'));
+    await executeScript('contratAssurance', require('./synchroContratAssurance'));
+    await executeScript('synchroTravaux', require('../cron/synchroTravaux'));
+  });
+
+  cron.schedule('0 0 * * *', async () => {
+    await executeScript('zendeskTicketAI', require('../cron/zendeskTicketAI'));
+    await executeScript('synchroTravaux', require('../cron/synchroTravaux'));
+    await executeScript('synchroContratEntretien', require('../cron/synchroContratEntretien'));
+    await executeScript('SynchroMondayUserAffected', require('../cron/SynchroMondayUserAffected'));
+    await executeScript('synchroMandats', require('../cron/synchroMandats'));
+  });
+
+  cron.schedule('*/5 * * * *', async () => {
+    console.log('Starting cron 5 minutes')
+    for (const { name, script } of scriptsList) {
+      console.log(`Executing via batch script: ${name}`);
+      await executeScript(name, script);
+    }
+  });
+}
+
+module.exports = scheduleCronJobs;
