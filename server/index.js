@@ -14,8 +14,8 @@ const zendeskRoutes = require('./src/routes/zendeskRoutes.js');
 const scriptRoutes = require('./src/routes/scriptRoutes.js');
 
 const zendeskService = require('./src/services/zendeskService.js');
-const cronStart = require('./src/cron/cronStart.js');
-const BudgetCoproprietaire = require('./src/cron/synchroVilogiMessages.js');
+const scheduleCronJobs = require('./src/cron/cronStart.js');
+const BudgetCoproprietaire = require('./src/cron/synchroMandats.js');
 
 const app = express();
 const port = 8081;
@@ -40,7 +40,7 @@ app.get('/batch', (req, res) => {
   res.send('Cron test is running!');
 });
 
-cronStart();
+scheduleCronJobs();
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
