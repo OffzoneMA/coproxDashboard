@@ -3,6 +3,7 @@ const cron = require('node-cron');
 const MongoDB = require('../utils/mongodb');
 const ScriptService = require('../services/ScriptService');
 const scripts = require('../models/script');
+const logs = require('../services/logs');
 
 const scriptsList = [
   { name: 'synchroCopro', script: require('../cron/synchroCopro') },
@@ -36,14 +37,20 @@ async function connectAndExecute(callback) {
 }
 
 
+async function startScriptCron(name,script) {
+  console.log("startCrontab from script cont start ")
+  await script.start();
+}
 
 async function executeScript(name, script) {
+  //console.log("startExecuteScript")
   const startTime = new Date(); // Moved startTime to ensure it is always initialized
   try {
     const scriptState = await ScriptService.getScriptState(name);
-    console.log(name, " --- " ,scriptState.status)
+    //console.log(name, " --- " ,scriptState.status)
     if (scriptState && scriptState.status === 1) {
-      console.log(`Starting script: ${name}`);
+      console.log(`Starting script from Dashbaord: ${name}`);
+      logs.logExecution(name)
 
       await ScriptService.updateScriptStatus(name, 2); // Status 2 for "Running"
       await script.start(); // Assume script has a 'start' function
@@ -61,37 +68,40 @@ async function executeScript(name, script) {
 }
 
 function scheduleCronJobs() {
+  
   cron.schedule('0 4 * * *', async () => {
-    await executeScript('zendeskTicket', require('../cron/zendeskTicket'));
+    console.log("startCrontab")
+    await startScriptCron('zendeskTicket', require('../cron/zendeskTicket'));
     await require('../services/zendeskService').recoverAllSuspendedTickets();
   });
 
-  cron.schedule('0 5 * * *', async () => {
-    await executeScript('synchroComptaList401', require('../cron/synchroComptaList401'));
-    await executeScript('synchroComptaList472', require('../cron/synchroComptaList472'));
-    await executeScript('synchroComptaRapprochementBancaire', require('../cron/synchroComptaRapprochementBancaire'));
-    await executeScript('synchoBudgetCoproprietaire', require('../cron/synchoBudgetCoproprietaire'));
+  cron.schedule('0 5 * * * *', async () => {
+    console.log("startCrontab")
+    await startScriptCron(require('../cron/synchroComptaList401'));
+    await startScriptCron('synchroComptaList472', require('../cron/synchroComptaList472'));
+    await startScriptCron('synchroComptaRapprochementBancaire', require('../cron/synchroComptaRapprochementBancaire'));
+    await startScriptCron('synchoBudgetCoproprietaire', require('../cron/synchoBudgetCoproprietaire'));
   });
 
   cron.schedule('0 0 * * 0', async () => {
-    await executeScript('synchroCopro', require('../cron/synchroCopro'));
-    await executeScript('synchroUsers', require('../cron/synchroUsers'));
-    await executeScript('contratAssurance', require('./synchroContratAssurance'));
-    await executeScript('synchroTravaux', require('../cron/synchroTravaux'));
+    await startScriptCron('synchroCopro', require('../cron/synchroCopro'));
+    await startScriptCron('synchroUsers', require('../cron/synchroUsers'));
+    await startScriptCron('contratAssurance', require('./synchroContratAssurance'));
+    await startScriptCron('synchroTravaux', require('../cron/synchroTravaux'));
   });
 
   cron.schedule('0 0 * * *', async () => {
-    await executeScript('zendeskTicketAI', require('../cron/zendeskTicketAI'));
-    await executeScript('synchroTravaux', require('../cron/synchroTravaux'));
-    await executeScript('synchroContratEntretien', require('../cron/synchroContratEntretien'));
-    await executeScript('SynchroMondayUserAffected', require('../cron/SynchroMondayUserAffected'));
-    await executeScript('synchroMandats', require('../cron/synchroMandats'));
+    await startScriptCron('zendeskTicketAI', require('../cron/zendeskTicketAI'));
+    await startScriptCron('synchroTravaux', require('../cron/synchroTravaux'));
+    await startScriptCron('synchroContratEntretien', require('../cron/synchroContratEntretien'));
+    await startScriptCron('SynchroMondayUserAffected', require('../cron/SynchroMondayUserAffected'));
+    await startScriptCron('synchroMandats', require('../cron/synchroMandats'));
   });
 
   cron.schedule('*/5 * * * *', async () => {
-    console.log('Starting cron 5 minutes')
+    //console.log('Starting cron 5 minutes')
     for (const { name, script } of scriptsList) {
-      console.log(`Executing via batch script: ${name}`);
+      //console.log(`Executing via batch script: ${name}`);
       await executeScript(name, script);
     }
   });

@@ -56,25 +56,28 @@ async function getScriptStateLogs() {
         throw new Error('No scripts found');
       }
       
-      // Flatten logs from all scripts, sort by startTime, and map to the desired format
+      // Flatten logs from all scripts, map to the desired format, and sort by Start time
       const allLogs = scripts.flatMap(script => 
-        Array.isArray(script.logs) ? // Check if logs is an array
+        Array.isArray(script.logs) ? 
           script.logs
-            .sort((a, b) => new Date(a.startTime) - new Date(b.startTime)) // Sort logs by startTime
             .map(log => {
               const startTime = new Date(log.startTime);
               const endTime = new Date(log.endTime);
-              const duration = endTime - startTime; // Calculate duration in milliseconds
+              const durationMillis = endTime - startTime;
+              const durationMinutes = durationMillis > 0 ? durationMillis / 60000 : 0; // Convert to minutes
 
               return {
                 ScriptName: script.name,
                 Start: startTime,
                 End: endTime,
-                Duration: duration > 0 ? duration : 0, // Ensure non-negative duration
+                Duration: durationMinutes, // Duration in minutes
                 Status: log.status,
               };
             }) : [] // Return empty array if logs is not an array
       );
+
+      // Sort the final logs by start time
+      allLogs.sort((a, b) => new Date(a.Start) - new Date(b.Start));
 
       return allLogs;
     });
