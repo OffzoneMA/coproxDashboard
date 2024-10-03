@@ -45,7 +45,7 @@ async function vilogiToMongodb(){
             immatriculation:detailData.site,
             nbLotPrincipaux:detailData.coproInfo.nbLotPrincipaux,
           }
-
+          
           data.idCopro = copro.lot ? copro.lot : "S-Autre";
           if (findCopro){
             let edit= await coproService.editCopropriete(findCopro._id,data)

@@ -77,8 +77,9 @@ function scheduleCronJobs() {
 
   cron.schedule('0 5 * * * *', async () => {
     console.log("startCrontab")
-    await startScriptCron(require('../cron/synchroComptaList401'));
+    await startScriptCron('synchroComptaList401',require('../cron/synchroComptaList401'));
     await startScriptCron('synchroComptaList472', require('../cron/synchroComptaList472'));
+    await startScriptCron('synchroFacture', require('../cron/synchroFacture'));
     await startScriptCron('synchroComptaRapprochementBancaire', require('../cron/synchroComptaRapprochementBancaire'));
     await startScriptCron('synchoBudgetCoproprietaire', require('../cron/synchoBudgetCoproprietaire'));
   });

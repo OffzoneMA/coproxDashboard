@@ -89,10 +89,10 @@ async function getAllUsersAndManageThem(idVilogi,Copro){
           "idCompteVilogi":user.compte,
           "nom": user.nom,  
           "prenom": user.prenom, 
-          "telephone": user.telephone,
-          "telephone2":user.telephone2,
-          "mobile":user.mobile,
-          "mobile2":user.mobile2,
+          "telephone": formatPhoneNumber(user.telephone),
+          "telephone2":formatPhoneNumber(user.telephone2),
+          "mobile":formatPhoneNumber(user.mobile),
+          "mobile2":formatPhoneNumber(user.mobile2),
           "typePersonne": user.typePersonne,
           "active":user.active,
           "url":"https://copro.vilogi.com/AfficheProprietaire.do?operation=change&copropriete="+idVilogi+"&id="+user.id
@@ -107,6 +107,29 @@ async function getAllUsersAndManageThem(idVilogi,Copro){
       }
     }
   }
+}
+
+function formatPhoneNumber(phoneNumber) {
+  // If the input is empty or only whitespace
+  if (!phoneNumber || phoneNumber.trim() === '') {
+    return "";
+  }
+
+  // Remove all characters except digits and the leading plus sign
+  let cleanedNumber = phoneNumber.trim().replace(/(?!^\+)[^0-9]/g, '');
+  
+  // Check if after cleaning it's still a valid number
+  if (!cleanedNumber || (!cleanedNumber.startsWith('0') && !cleanedNumber.startsWith('+'))) {
+      return "";
+  }
+
+  // If the number starts with '0' and doesn't already have a country code, replace it with '+33'
+  if (cleanedNumber.startsWith('0')) {
+      cleanedNumber = '+33' + cleanedNumber.slice(1);
+  }
+
+  // Return the cleaned number
+  return cleanedNumber;
 }
 
 async function SynchoMongoDB(userData) {
