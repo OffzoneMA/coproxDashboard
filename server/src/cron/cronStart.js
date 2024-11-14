@@ -1,7 +1,7 @@
 // cronJobs/cronStart.js
 const cron = require('node-cron');
 const MongoDB = require('../utils/mongodb');
-const ScriptService = require('../services/ScriptService');
+const ScriptService = require('../services/scriptService');
 const scripts = require('../models/script');
 const logs = require('../services/logs');
 
