@@ -3,7 +3,7 @@ const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
 const personService = require('../services/personService');
 const mondayService = require('../services/mondayService');
-const scriptService = require('../services/ScriptService');
+const scriptService = require('../services/scriptService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 const logs = require('../services/logs');
 const fs = require('fs');
@@ -138,6 +138,7 @@ const synchroMandats = {
                                  
                         } catch (error) {
                             console.error('An error occurred:', error.message);
+                            logs.logExecutionError(`Copro : ${copro.idVilogi} - Compte : ${personne.compte} - Relance ID : ${relance.id} - Type relance : ${relance.typeRelance} - Nom : ${personne.nom}` )
                         } 
                     }
                     

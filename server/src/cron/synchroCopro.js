@@ -1,7 +1,7 @@
 const vilogiService = require('../services/vilogiService');
 const coproService = require('../services/coproService');
 const zendeskService =require('../services/zendeskService');
-const scriptService = require('../services/ScriptService');
+const scriptService = require('../services/scriptService');
 const mondayService = require('../services/mondayService');
 const logs = require('../services/logs');
 const LesCoprosIDBoard=1404452123

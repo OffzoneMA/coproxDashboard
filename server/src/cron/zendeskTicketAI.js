@@ -1,7 +1,7 @@
 
 const ZendeskService = require('../services/zendeskService');
 const axios = require('axios');
-const scriptService = require('../services/ScriptService');
+const scriptService = require('../services/scriptService');
 const logs = require('../services/logs');
 require('dotenv').config();
 

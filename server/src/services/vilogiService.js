@@ -329,7 +329,7 @@ const getUserMessagePushLu = async (idMessage,idAdh,coproID) => {
   }
 };
 
-
+/*
 axios.interceptors.request.use(request => {
   console.log('Request Details:');
   console.log(`URL: ${request.url}`);
@@ -339,7 +339,7 @@ axios.interceptors.request.use(request => {
     console.log(`Data:`, request.data); // For FormData, this may not be fully visible
   }
   return request; // Important to return the request so Axios can continue with it
-});
+});*/
 
 const sendFactureToOCR = async (coproID, filePath) => {
   // Construct the endpoint

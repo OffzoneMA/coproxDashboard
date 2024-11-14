@@ -1,7 +1,7 @@
 const coproService = require('../services/coproService');
 const mondayService = require('../services/mondayService');
 const vilogiService = require('../services/vilogiService');
-const scriptService = require('../services/ScriptService');
+const scriptService = require('../services/scriptService');
 const mondayVilogiSyncService = require('../services/mondayVilogiSyncService');
 
 const logs = require('../services/logs');

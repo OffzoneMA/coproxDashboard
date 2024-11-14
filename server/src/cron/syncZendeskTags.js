@@ -1,7 +1,7 @@
 const fs = require('fs');
 const zendeskController = require('../controllers/zendeskController');
 
-const scriptService = require('../services/ScriptService');
+const scriptService = require('../services/scriptService');
 const zendeskService = require('../services/zendeskService');
 const path = require('path');
 const logs = require('../services/logs');

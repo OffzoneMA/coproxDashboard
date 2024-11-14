@@ -3,7 +3,7 @@ const vilogiService = require('../services/vilogiService');
 const coproService = require('../services/coproService');
 const PersonService = require('../services/personService');
 
-const scriptService = require('../services/ScriptService');
+const scriptService = require('../services/scriptService');
 const ZendeskService = require('../services/zendeskService');
 const mongoose = require('mongoose');
 const personModel = require('../models/person');
