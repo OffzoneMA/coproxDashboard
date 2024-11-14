@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
+const download = require('download');
 const logFilePath = path.join(__dirname, '../../logs/logsMonday.log');
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
 
@@ -83,7 +84,8 @@ async function getItems(boardId) {
 
 async function getItemsGroup(boardId,groupID) {
   try {
-    const query = `query { boards(ids: ${boardId}) { items_page (limit: 300) { cursor items { id  name group {id title }  } } } }`;
+    const query = `query { boards(ids: ${boardId}) { items_page (limit: 500) { cursor items { id  name group {id title }  } } } }`;
+    //const query = `query { boards(ids: ${boardId}) { groups(ids: ["${groupID}"]) { id title items_page(limit: 300) { items { id name group { id title } } cursor } } } }`;
     result=await executeGraphQLQuery(query)
     //console.log(result.boards[0].items_page.items)
     return result.boards[0].items_page.items
@@ -91,6 +93,25 @@ async function getItemsGroup(boardId,groupID) {
     throw new Error('Error fetching items:', error.message);
   }
 }
+
+async function moveItemToGroup(itemId, targetGroupId) {
+  try {
+    const mutation = `mutation {
+      move_item_to_group (item_id: ${itemId}, group_id: "${targetGroupId}") {
+        id
+      }
+    }`;
+
+    const response = await executeGraphQLQuery(mutation);
+    console.log(`Item ${itemId} successfully moved to group ${targetGroupId}`);
+    return response.move_item_to_group;
+  } catch (error) {
+    logExecution(`Error moving item ${itemId} to group ${targetGroupId}`);
+    throw new Error(`Error moving item ${itemId} to group ${targetGroupId}: ${error.message}`);
+  }
+}
+
+
 async function getItemsDetails(itemID) {
   try {
     //await fetchItemFields()
@@ -144,7 +165,27 @@ async function createItem(boardId, itemName, columnValues) {
     throw new Error('Error creating item:',itemName, error.message);
   }
 }
-
+// Function to create a new item in a board
+async function updateItemName(boardId, itemId, newItemName) {
+  try {
+    const query = `
+      mutation {
+        change_multiple_column_values(
+          board_id: ${boardId},
+          item_id: ${itemId},
+          column_values: 
+            {name : ${newItemName} }
+        ) {
+          name
+        }
+      }
+    `;
+    const response = await executeGraphQLQuery(query);
+    return response.data.change_multiple_column_values;
+  } catch (error) {
+    throw new Error('Error updating item name:', error.message);
+  }
+}
 // Function to create a new item in a board
 async function updateItem(boardId, itemId, columnValues) {
   try {
@@ -223,6 +264,26 @@ async function uploadFileToMonday(filePath,ITEM_ID,COLUMN_ID) {
       console.error('Error uploading file:', error.response ? error.response.data : error.message);
   }
 }
+async function downloadFileFromMonday(assetId, downloadPath,fileName) {
+  try {
+    const query = `query { assets(ids: ${assetId}) { public_url } }`;
+    const response = await executeGraphQLQuery(query);
+
+    if (response.assets && response.assets[0].public_url) {
+      const fileUrl = response.assets[0].public_url;
+
+      // Download the file to the specified downloadPath
+      const filePath = `${downloadPath}/${fileName}`;
+      await download(fileUrl, downloadPath, { filename: fileName });
+      console.log('File downloaded successfully.');
+    } else {
+      throw new Error('No file found for the provided asset ID.');
+    }
+  } catch (error) {
+    logExecution(`Error downloading file ${assetId}`);
+    throw new Error(`Error downloading file ${assetId}: ${error.message}`);
+  }
+}
 
 function removeFrenchSpecialCharacters(inputString) {
   // Define the regular expression pattern to match French special characters
@@ -245,11 +306,14 @@ module.exports = {
   executeGraphQLQuery,
   getItems,
   getItemsGroup,
+  moveItemToGroup,
   getItemsDetails,
   getItemInBoardWhereName,
   createGroup,
   createItem,
   createSubitem,
+  updateItemName,
   updateItem,
   uploadFileToMonday,
+  downloadFileFromMonday,
 };

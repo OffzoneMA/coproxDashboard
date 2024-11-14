@@ -16,11 +16,11 @@ const synchroCopro = {
         
         logs.logExecution("synchroCopro")
         const LogId = await scriptService.logScriptStart('synchroCopro');
-        await vilogiToMongodb()
-        await mongodbToZendesk()
-        await mongodbToMonday()
+        //await vilogiToMongodb()
+        //await mongodbToZendesk()
+        //await mongodbToMonday()
         await mongodbToMondayCoproMorte()
-        await scriptService.updateLogStatus('synchroCopro',LogId ,2 ,"Script executed successfully");
+        //await scriptService.updateLogStatus('synchroCopro',LogId ,2 ,"Script executed successfully");
             
     }
 
@@ -51,6 +51,9 @@ async function vilogiToMongodb(){
             let edit= await coproService.editCopropriete(findCopro._id,data)
             //console.log(copro.lot, " Edit info")
           }else{
+            data = {
+              ...data, 
+              status:"Actif"}
             let add= await coproService.addCopropriete(data)
             //console.log(copro.lot, " add info")
           }
@@ -90,7 +93,7 @@ async function mongodbToZendesk(){
     } else {
       const organizationData = {
         name: copro.idCopro,
-        organization_fields:{verif_copro:true}
+        organization_fields:{verif_copro:true,ArriveCopro:true}
         // Add any other data needed for organization creation
       };
       console.log("Adding Zendesk copro", organizationData.name);
@@ -105,7 +108,7 @@ async function mongodbToMonday(){
     for (const copro of copros) {
         // Fetch data for the current copro
           if(copro.idMonday){
-            //console.log(copro)
+            console.log(copro.idCopro)
             const data = await mondayService.getItemsDetails(copro.idMonday);
             //console.log(data)
             delay(200)
@@ -124,32 +127,50 @@ async function mongodbToMonday(){
         }
 }
 async function mongodbToMondayCoproMorte(){
-  //const data = await mondayService.getItemsDetails(1436164818);
+  
   const copros= await coproService.listCopropriete();
   for (const copro of copros) {
+      console.log(await mondayService.getItemsDetails(1436164829));
       // Fetch data for the current copro
       console.log(copro)
-      const columnValues={
-        texte:copro.idCopro,
-        text:copro.ville,
-        text83:copro.Nom,
-        dup__of___n__et_rue:copro.codepostal,
-        dup__of___ville:copro.immatriculation,
-        text0:copro.dateConstruction,
-        date3:{"date" : copro.dateReprise.split('/').reverse().join('-')},
-        chiffres:copro.nbLotPrincipaux,
-        dup__of___nom:copro.address
+      try {
+        const data= await vilogiService.getCoproData(copro.idVilogi)
+        const dataTech= await vilogiService.getCoproDataTech(copro.idVilogi)
+        console.log(data)
+        const columnValues={
+          texte:copro.idCopro,
+          text:copro.ville,
+          text83:copro.Nom,
+          dup__of___n__et_rue:copro.codepostal,
+          dup__of___ville:copro.immatriculation,
+          text0:copro.dateConstruction,
+          date3:{"date" : copro.dateReprise.split('/').reverse().join('-')},
+          chiffres:copro.nbLotPrincipaux,
+          dup__of___nom:copro.address,
+          texte_12__1:dataTech.eauChaude,
+          texte41__1:dataTech.eauFroide,
+          chiffres__1:dataTech.nbAscenseur,
+          texte_2__1:dataTech.energieChauffage,
+          texte_3__1:dataTech.chauffageUrbain,
+          texte_4__1:dataTech.typeChauffage,
+          chiffres_1__1:data.coproInfo.nbStationnement,
+          chiffres_2__1:data.coproInfo.nbCave,
+          
+          
+
+        }
+        const values = await mondayService.getItemInBoardWhereName(copro.idCopro,LesCoprosInfoMorteIDBoard)
+        await delay(200)
+        console.log(values)
+        if (typeof values !== 'undefined' && values !== null && typeof values === 'object' && Object.keys(values).length > 0) 
+          await mondayService.updateItem(LesCoprosInfoMorteIDBoard, values.id, columnValues)
+        else{
+          console.log("adding copro ",copro.idCopro )
+          await mondayService.createItem(LesCoprosInfoMorteIDBoard, copro.idCopro, columnValues)
+        }
+      }catch{
 
       }
-      const values = await mondayService.getItemInBoardWhereName(copro.idCopro,LesCoprosInfoMorteIDBoard)
-      console.log(values)
-      if (typeof values !== 'undefined' && values !== null && typeof values === 'object' && Object.keys(values).length > 0) 
-        await mondayService.updateItem(LesCoprosInfoMorteIDBoard, values.id, columnValues)
-      else{
-        console.log("adding copro ",copro.idCopro )
-        await mondayService.createItem(LesCoprosInfoMorteIDBoard, copro.idCopro, columnValues)
-      }
-
   }
 
 }

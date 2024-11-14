@@ -1,6 +1,8 @@
 const axios = require('axios');
 require('dotenv').config();
 const fs = require('fs');
+const FormData = require('form-data');
+const mime = require('mime-types');
 const path = require('path');
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -328,6 +330,43 @@ const getUserMessagePushLu = async (idMessage,idAdh,coproID) => {
 };
 
 
+axios.interceptors.request.use(request => {
+  console.log('Request Details:');
+  console.log(`URL: ${request.url}`);
+  console.log(`Method: ${request.method}`);
+  console.log(`Headers:`, request.headers);
+  if (request.data) {
+    console.log(`Data:`, request.data); // For FormData, this may not be fully visible
+  }
+  return request; // Important to return the request so Axios can continue with it
+});
+
+const sendFactureToOCR = async (coproID, filePath) => {
+  // Construct the endpoint
+  const adherentsEndpoint = `/FichierOCR?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.Vilogi_test_IDAUTH}&copro=${process.env.VILOGI_test_IDCOPROEXEMPLE}&idSyndic=${process.env.VILOGI_TOKEN}`;
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found at path: ${filePath}`);
+  }
+
+  const formData = new FormData();
+  formData.append('fichier', fs.createReadStream(filePath));
+  
+  console.log(`Sending request to: ${apiUrl}${adherentsEndpoint}`);
+
+  try {
+    const response = await axios.put(`${apiUrl}${adherentsEndpoint}`, formData, {
+      headers: formData.getHeaders(),
+    });
+
+    console.log('OCR Response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error sending file to OCR:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+};
+
 module.exports = {
   authenticateUser,
   postAdherant,
@@ -353,5 +392,6 @@ module.exports = {
   getpayementAdherant,
   getRelanceAdherant,
   getUserHasMessage,
-  getUserMessagePushLu  
+  getUserMessagePushLu,
+  sendFactureToOCR
 };

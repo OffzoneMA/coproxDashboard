@@ -17,8 +17,8 @@ const campagneChauffage = {
         logs.logExecution("campagneChauffage")
         const LogId = await scriptService.logScriptStart('campagneChauffage');
         //const data = await mondayService.getItemsDetails(1469479876);
-        console.log(data)
-        const action="Fermeture"
+        //console.log(data)
+        const action="Ouverture"
         const copros = await coproService.listCopropriete();
         const année = new Date().getFullYear();
         await mondayService.createGroup(boardID,`${action} saison ${année}`)

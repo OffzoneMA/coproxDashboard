@@ -31,6 +31,7 @@ const synchroContratEntretien = {
             let FinalContrat = [];  // Initialize FinalContrat array
             let TotalContrat=0
             for (const copro of copros) {
+                if(copro.idCopro!="S065")continue
                 console.log("ID Vilogi:", copro.idCopro);
                 if (copro.idVilogi !== undefined) {
                     let contrats = await vilogiService.getCoproContratEntretien(copro.idVilogi);
@@ -90,7 +91,7 @@ const synchroContratEntretien = {
                             // Add other properties as needed
                         };
                         
-                        const itemName = `${contrat.id}`;
+                        const itemName = `${copro.idCopro}`;
                           
                           await saveMonday(itemName,columnValues,contrat.id)
                           await delay(100);
@@ -118,6 +119,7 @@ async function saveMonday(itemName,data,idVilogi) {
         console.log(checkValue)
         if(checkValue.length > 0){
             console.log("Already exist")
+            const changename = await mondayService.updateItemName(boardId,checkValue[0].mondayItenID, itemName)
             const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
         }else{
             const newItem = await mondayService.createItem(boardId, itemName, data);

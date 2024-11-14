@@ -18,11 +18,11 @@ const scriptsList = [
   //{ name: 'SynchroMondayUserAffected', script: require('../cron/synchroMondayUserAffected') },
   { name: 'synchroContratEntretien', script: require('../cron/synchroContratEntretien') },
   { name: 'campagneChauffage', script: require('../cron/campagneChauffage') },
-  { name: 'synchoBudgetCoproprietaire', script: require('../cron/synchoBudgetCoproprietaire') },
-  { name: 'synchroComptaList401', script: require('../cron/synchroComptaList401') },
-  { name: 'synchroComptaRapprochementBancaire', script: require('../cron/synchroComptaRapprochementBancaire') },
+  //{ name: 'synchoBudgetCoproprietaire', script: require('../cron/synchoBudgetCoproprietaire') },
+ // { name: 'synchroComptaList401', script: require('../cron/synchroComptaList401') },
+  //{ name: 'synchroComptaRapprochementBancaire', script: require('../cron/synchroComptaRapprochementBancaire') },
   { name: 'synchroFacture', script: require('../cron/synchroFacture') },
-  { name: 'extractContratsEntretien', script: require('../cron/extractContratsEntretien') }
+  //{ name: 'extractContratsEntretien', script: require('../cron/extractContratsEntretien') }
 ];
 
 
@@ -80,6 +80,7 @@ function scheduleCronJobs() {
     await startScriptCron('synchroComptaList401',require('../cron/synchroComptaList401'));
     await startScriptCron('synchroComptaList472', require('../cron/synchroComptaList472'));
     await startScriptCron('synchroFacture', require('../cron/synchroFacture'));
+    await startScriptCron('synchoBudgetCoproprietaire', require('../cron/synchoBudgetCoproprietaire'));
     await startScriptCron('synchroComptaRapprochementBancaire', require('../cron/synchroComptaRapprochementBancaire'));
     await startScriptCron('synchoBudgetCoproprietaire', require('../cron/synchoBudgetCoproprietaire'));
   });

@@ -18,7 +18,7 @@ function delay(ms) {
 }
 let FinalContrat = [];
 const boardId = 1479667897;
-const typeData="BudgetCoproprietaire"
+const typeData="synchoBudgetCoproprietaire"
 const subItemBoards=1487007597;
 
 const synchroMandats = {
@@ -33,16 +33,18 @@ const synchroMandats = {
             for (const copro of copros) {
                 console.log("ID Vilogi:", copro.idCopro);
                 if (copro.idVilogi !== undefined) {
-                    let personnes = await personService.getPersonsByCoproId(copro._id);
                     
-                    const data = await mondayService.getItemsDetails(1487165988);
+                    let personnes = await vilogiService.getAllAdherents(copro.idVilogi);
+                    
+                    //const data = await mondayService.getItemsDetails(1487165988);
                     //console.log(data)
                     let j=0
                     for (const personne of personnes) {
                         
-                        console.log(personne.idCompteVilogi)
-                        if (personne.idCompteVilogi === undefined || personne.idCompteVilogi === '')  continue
-                        console.log("compte :" , personne.idCompteVilogi)
+                        
+                        
+                        if (personne.compte === undefined || personne.compte === '')  continue
+                        console.log("compte :" , personne.compte , " - User : ",personne.id)
                         const today = new Date();
                         const formatDate = date => {
                             const d = date.getDate().toString().padStart(2, '0');
@@ -56,10 +58,10 @@ const synchroMandats = {
                         const sixtyDaysAgo = formatDate(new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000));
                         const ninetyDaysAgo = formatDate(new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000));
 
-                        let budgetj90 = await vilogiService.getbudgetComptebyDate(copro.idVilogi,personne.idCompteVilogi,ninetyDaysAgo);
-                        let budgetj60 = await vilogiService.getbudgetComptebyDate(copro.idVilogi,personne.idCompteVilogi,sixtyDaysAgo);
-                        let budgetj30 = await vilogiService.getbudgetComptebyDate(copro.idVilogi,personne.idCompteVilogi,thirtyDaysAgo);
-                        let budgetj = await vilogiService.getbudgetComptebyDate(copro.idVilogi,personne.idCompteVilogi,datedujour);
+                        let budgetj90 = await vilogiService.getbudgetComptebyDate(copro.idVilogi,personne.compte,ninetyDaysAgo);
+                        let budgetj60 = await vilogiService.getbudgetComptebyDate(copro.idVilogi,personne.compte,sixtyDaysAgo);
+                        let budgetj30 = await vilogiService.getbudgetComptebyDate(copro.idVilogi,personne.compte,thirtyDaysAgo);
+                        let budgetj = await vilogiService.getbudgetComptebyDate(copro.idVilogi,personne.compte,datedujour);
                         j++;
                         //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
                         //console.log(budgetj)
@@ -83,13 +85,18 @@ const synchroMandats = {
                           };
 
                           
-                          const itemName = `${personne.idVilogi} - ${personne.nom} - ${personne.prenom}`;
-                          const IDLine= `${copro.idCopro} - ${personne.idCompteVilogi}`
+                          const itemName = `${personne.id} - ${personne.nom} - ${personne.prenom}`;
+                          const IDLine= `${copro.idCopro} - ${personne.compte}`
                           const newItemData=await saveMonday(itemName,columnValues,IDLine,boardId)
                           await delay(100);
-                          const relances = await vilogiService.getRelanceAdherant(personne.idVilogi,copro.idVilogi)
+                          const relances = await vilogiService.getRelanceAdherant(personne.id,copro.idVilogi)
 
                           for (relance of relances){
+                            try {
+                                
+                            } catch (error) {
+                                
+                            }
                             // Split the date string into its components
                             let [datePart, timePart] = relance.dateRelance.split(" ");
                             let [day, month, year] = datePart.split("/");
@@ -122,11 +129,11 @@ const synchroMandats = {
                                 vilogiEndpoint:typeData,
                                 //vilogiEndpointData:mandat,
                                 vilogiItemID:relance.id
-                            }
+                                }   
 
-                            await mondayVilogiSyncService.addItem(dataMongo)
-                            await saveMonday(`${relance.typeRelance}-${dateCreation}`,columnValues,relance.id,subItemBoards)
-                            console.log(relance.typeRelance)
+                                await mondayVilogiSyncService.addItem(dataMongo)
+                                await saveMonday(`${relance.typeRelance}-${dateCreation}`,columnValues,relance.id,subItemBoards)
+                                console.log(relance.typeRelance)
                           }
                                  
                         } catch (error) {

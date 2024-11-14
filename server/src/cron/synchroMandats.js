@@ -24,7 +24,7 @@ const synchroMandats = {
         console.log('Start Extraction ...');
         logs.logExecution("synchroMandats")
         const LogId = await scriptService.logScriptStart('synchroMandats');
-        console.log(await mondayService.getItemsDetails("1620337632"))
+        //console.log(await mondayService.getItemsDetails("1620337632"))
         try {
             let copros = await coproService.listCopropriete();
             let FinalManda = [];  // Initialize FinalContrat array
@@ -35,7 +35,7 @@ const synchroMandats = {
                     let madats = await vilogiService.getCoproManda(copro.idVilogi);
                     
                     //const data = await mondayService.getItemsDetails(1455188069);
-                    //console.log(data)
+                    console.log(madats)
                     let j=0
                     for (const mandat of madats) {
                         console.log(mandat.idFichier, mandat.honoraire)

@@ -49,7 +49,7 @@ const synchroUsers = {
       // Iterate through each copro
       for (const copro of copros) {
       // Fetch data for the current copro
-        
+        if(copro.idCopro!="S028") continue
         if(copro.idVilogi){
           //console.log(copro)
           
@@ -229,8 +229,8 @@ async function SynchoZendesk() {
     if (users && users.length > 0) {
       // Iterate through each user in the array
       for (const user of users) {
-        i++;
 
+        i++;
         console.log(`Charging to Zendesk: [${i}/${users.length}]`);
         const organisationName = await coproService.detailsCopropriete(user.idCopro);
         const baseUserData = {
@@ -246,7 +246,7 @@ async function SynchoZendesk() {
           "user": {
             ...baseUserData.user,
             "tags": [user.typePersonne],
-            "phone":  user.telephone || user.telephone2 || user.mobile || user.mobile2 ,
+            "phone":  user.telephone ||  user.mobile || user.telephone2 || user.mobile2 ,
             "mobile":user.mobile || user.mobile2,
             "notes":user.url,
             "url":user.url,
@@ -255,8 +255,10 @@ async function SynchoZendesk() {
           }
         };
         try {
+          
+
           const zendeskUser = user.idZendesk ? { id: user.idZendesk } : await ZendeskService.getUserFromEmail(user.email);
-          console.log(zendeskUser)
+          console.log(zendeskUser.id, " - " , user.email," - " , )
           await delay(300);
           if (zendeskUser && zendeskUser.id) {
             console.log("Edit User " ,zendeskUser.id, " from copro: ",organisationName.idCopro )

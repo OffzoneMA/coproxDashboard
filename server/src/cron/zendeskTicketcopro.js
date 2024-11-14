@@ -1,5 +1,6 @@
 const zendeskController = require('../controllers/zendeskController');
 const ZendeskService = require('../services/zendeskService');
+const scriptService = require('../services/ScriptService');
 const logs = require('../services/logs');
 
 function delay(ms) {
