@@ -70,13 +70,13 @@ async function executeScript(name, script) {
 function scheduleCronJobs() {
   
   cron.schedule('0 4 * * *', async () => {
-    console.log("startCrontab")
+    logs.logExecution("Lancement script 4h")
     await startScriptCron('zendeskTicket', require('../cron/zendeskTicket'));
     await require('../services/zendeskService').recoverAllSuspendedTickets();
   });
 
-  cron.schedule('0 5 * * * *', async () => {
-    console.log("startCrontab")
+  cron.schedule('0 5 * * *', async () => {
+    logs.logExecution("Lancement script 5h")
     await startScriptCron('synchroComptaList401',require('../cron/synchroComptaList401'));
     await startScriptCron('synchroComptaList472', require('../cron/synchroComptaList472'));
     await startScriptCron('synchroFacture', require('../cron/synchroFacture'));
@@ -86,6 +86,7 @@ function scheduleCronJobs() {
   });
 
   cron.schedule('0 0 * * 0', async () => {
+    logs.logExecution("Lancement script 0h")
     await startScriptCron('synchroCopro', require('../cron/synchroCopro'));
     await startScriptCron('synchroUsers', require('../cron/synchroUsers'));
     await startScriptCron('contratAssurance', require('./synchroContratAssurance'));
