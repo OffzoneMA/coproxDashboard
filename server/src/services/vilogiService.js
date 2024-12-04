@@ -343,7 +343,7 @@ axios.interceptors.request.use(request => {
 
 const sendFactureToOCR = async (coproID, filePath) => {
   // Construct the endpoint
-  const adherentsEndpoint = `/FichierOCR?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.Vilogi_test_IDAUTH}&copro=${process.env.VILOGI_test_IDCOPROEXEMPLE}&idSyndic=${process.env.VILOGI_TOKEN}`;
+  const adherentsEndpoint = `/FichierOCR?token=${process.env.VILOGI_TOKEN}&id=${process.env.Vilogi_test_IDAUTH}&copro=${process.env.VILOGI_test_IDCOPROEXEMPLE}&idSyndic=${process.env.VILOGI_idSyndic}`;
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found at path: ${filePath}`);
@@ -355,6 +355,7 @@ const sendFactureToOCR = async (coproID, filePath) => {
   console.log(`Sending request to: ${apiUrl}${adherentsEndpoint}`);
 
   try {
+    console.log(`${apiUrl}${adherentsEndpoint}`)
     const response = await axios.put(`${apiUrl}${adherentsEndpoint}`, formData, {
       headers: formData.getHeaders(),
     });
