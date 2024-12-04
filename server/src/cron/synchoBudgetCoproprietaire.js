@@ -19,6 +19,7 @@ function delay(ms) {
 let FinalContrat = [];
 const boardId = 1479667897;
 const typeData="synchoBudgetCoproprietaire"
+const typedataSub="SubsynchoBudgetCoproprietaire"
 const subItemBoards=1487007597;
 
 const synchroMandats = {
@@ -92,11 +93,6 @@ const synchroMandats = {
                           const relances = await vilogiService.getRelanceAdherant(personne.id,copro.idVilogi)
 
                           for (relance of relances){
-                            try {
-                                
-                            } catch (error) {
-                                
-                            }
                             // Split the date string into its components
                             let [datePart, timePart] = relance.dateRelance.split(" ");
                             let [day, month, year] = datePart.split("/");
@@ -122,6 +118,13 @@ const synchroMandats = {
                                 await saveMonday(`${relance.typeRelance}-${dateCreation}-${personne.nom} ${personne.prenom}`,columnValues,relance.id,subItemBoards)
                                 continue
                               }
+                              console.log(`ceci est un test : ${newItemData} `)
+                              if(newItemData == null){
+                                console.log(personne.compte)
+                                newItemData = await mondayService.getItemInBoardWhereName(itemName,boardId)
+                              }
+                              
+                              
                               const val = await mondayService.createSubitem(newItemData,`${relance.typeRelance}-${dateCreation}-${personne.nom} ${personne.prenom}`)
                               const dataMongo={
                                 boardID:subItemBoards,
@@ -158,13 +161,21 @@ async function saveMonday(itemName,data,idVilogi,boardIDFunction) {
         let returnID;
         const checkValue= await mondayVilogiSyncService.getItemsByInfo(boardIDFunction,idVilogi)
         //console.log(checkValue)
+
         if(checkValue.length > 0){
             //console.log("Already exist")
-            const newItem = await mondayService.updateItem(boardIDFunction, checkValue[0].mondayItenID, data);
+            let newItem
+            if (checkValue[0]?.mondayItenID === null || checkValue[0]?.mondayItenID === undefined){
+                newItem= await mondayService.getItemInBoardWhereName(itemName,boardIDFunction) 
+            }else {
+                newItem = await mondayService.updateItem(boardIDFunction, checkValue[0].mondayItenID, data);
+            }
+
+
             returnID=newItem.id
         }else{
             const newItem = await mondayService.createItem(boardIDFunction, itemName, data);
-            //console.log("Nouvel élément créé:", newItem);
+            //console.log("Nouvel élément créé:", newItem);s
             const dataMongo={
                 boardID:boardIDFunction,
                 mondayItenID:newItem.id,
@@ -177,7 +188,12 @@ async function saveMonday(itemName,data,idVilogi,boardIDFunction) {
             //console.log("check before send " ,newItem.id)
             
         }
-        
+
+        if (checkValue[0].mondayItenID!=returnID && boardIDFunction == boardId)
+            await mondayVilogiSyncService.editItem(checkValue[0]._id,{ boardID:boardIDFunction,mondayItenID:returnID,vilogiEndpoint:typeData,vilogiItemID:idVilogi})
+/*        if (checkValue[0].mondayItenID!= idVilogi && boardIDFunction == subItemBoards)
+            await mondayVilogiSyncService.editItem(checkValue[0]._id,{ boardID:boardIDFunction,mondayItenID:checkValue[0].mondayItenID,vilogiEndpoint:typedataSub,vilogiItemID:idVilogi})*/
+        //console.log(`ceci est un test : ${returnID} `)
         await delay(300);
         return returnID
         //monday.api(`mutation {change_multiple_column_values(item_id:${newItem.id},board_id:${boardId}, column_values: \"{\\\"board_relation\\\" : {\\\"item_ids\\\" : [${copro.idMonday}]}}\") {id}}` )

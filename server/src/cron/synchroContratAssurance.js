@@ -70,7 +70,7 @@ const contratAssurance = {
                             //texte_7: contrat.id,
                             texte_8: contrat.compagnie,
                             chiffres: contrat.prime,
-                            texte_10: contrat.compteCharge,
+                            //texte_10: contrat.compteCharge,
                             e_mail8__1:infoFournisseur.email,
                             ...(infoFournisseur.telephone != null && infoFournisseur!== undefined && { t_l_phone__1:  {"phone" :infoFournisseur.telephone, "countryShortName" : "FR"}}),
                             //date_2__1: {"date" : contrat.datefin.split('/').reverse().join('-')},
@@ -109,6 +109,7 @@ async function saveMonday(itemName,data,idVilogi) {
         const checkValue= await mondayVilogiSyncService.getItemsByInfo(boardId,idVilogi)
         console.log(checkValue)
         if(checkValue.length > 0){
+            console.log(boardId, checkValue[0].mondayItenID, data)
             console.log("Already exist")
             const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
         }else{

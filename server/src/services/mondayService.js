@@ -204,8 +204,8 @@ async function updateItem(boardId, itemId, columnValues) {
       }
     }`;
     const response = await executeGraphQLQuery(query);
-    console.log(response)
-    return await response;
+    console.log(response.change_multiple_column_values)
+    return await response.change_multiple_column_values;
   } catch (error) {
     logExecution(`Error updating item ${itemId}`)
     throw new Error(`Error updating item ${itemId}: ${error.message}`);
