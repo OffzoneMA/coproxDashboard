@@ -79,6 +79,7 @@ function scheduleCronJobs() {
     logs.logExecution("Lancement script 5h")
     await startScriptCron('synchroComptaList401',require('../cron/synchroComptaList401'));
     await startScriptCron('synchroComptaList472', require('../cron/synchroComptaList472'));
+    await startScriptCron('SynchroMondayUserAffected', require('../cron/SynchroMondayUserAffected'));
     await startScriptCron('synchroFacture', require('../cron/synchroFacture'));
     await startScriptCron('synchoBudgetCoproprietaire', require('../cron/synchoBudgetCoproprietaire'));
     await startScriptCron('synchroComptaRapprochementBancaire', require('../cron/synchroComptaRapprochementBancaire'));
