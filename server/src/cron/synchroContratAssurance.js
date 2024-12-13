@@ -73,13 +73,13 @@ const contratAssurance = {
                             //texte_10: contrat.compteCharge,
                             e_mail8__1:infoFournisseur.email,
                             ...(infoFournisseur.telephone != null && infoFournisseur!== undefined && { t_l_phone__1:  {"phone" :infoFournisseur.telephone, "countryShortName" : "FR"}}),
-                            //date_2__1: {"date" : contrat.datefin.split('/').reverse().join('-')},
+                            date_2__1: contrat.datefin ? { "date": contrat.datefin.split('/').reverse().join('-') }: null,
                             //texte_12: contrat.idFichier,
                             ...(copro.idMonday != null && { board_relation5: { "item_ids": [copro.idMonday] } }),
                           };
                           
                           
-                          const itemName = `Contrat d'assurance - ${copro.idCopro} - ${contrat.assureur}`;//
+                          const itemName = `Contrat d'assurance - ${copro.idCopro} - ${contrat.typecontrat} - ${contrat.assureur}`;//
                           
                           try {
                             await saveMonday(itemName,columnValues,contrat.id)
@@ -112,6 +112,7 @@ async function saveMonday(itemName,data,idVilogi) {
             console.log(boardId, checkValue[0].mondayItenID, data)
             console.log("Already exist")
             const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
+            await mondayService.updateItemName(boardId, checkValue[0].mondayItenID, itemName)
         }else{
             const newItem = await mondayService.createItem(boardId, itemName, data);
             //console.log("Nouvel élément créé:", newItem);

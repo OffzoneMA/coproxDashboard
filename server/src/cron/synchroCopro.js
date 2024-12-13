@@ -16,11 +16,11 @@ const synchroCopro = {
         
         logs.logExecution("synchroCopro")
         const LogId = await scriptService.logScriptStart('synchroCopro');
-        //await vilogiToMongodb()
-        //await mongodbToZendesk()
-        //await mongodbToMonday()
+        await vilogiToMongodb()
+        await mongodbToZendesk()
+        await mongodbToMonday()
         await mongodbToMondayCoproMorte()
-        //await scriptService.updateLogStatus('synchroCopro',LogId ,2 ,"Script executed successfully");
+        await scriptService.updateLogStatus('synchroCopro',LogId ,2 ,"Script executed successfully");
             
     }
 

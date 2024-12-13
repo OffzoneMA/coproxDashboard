@@ -168,22 +168,26 @@ async function createItem(boardId, itemName, columnValues) {
 // Function to create a new item in a board
 async function updateItemName(boardId, itemId, newItemName) {
   try {
+    // Escape special characters in the newItemName string
+    const sanitizedItemName = JSON.stringify({ name: newItemName }).replace(/"/g, '\\"');
+
     const query = `
       mutation {
         change_multiple_column_values(
           board_id: ${boardId},
           item_id: ${itemId},
-          column_values: 
-            {name : ${newItemName} }
+          column_values: "${sanitizedItemName}"
         ) {
+          id
           name
         }
       }
     `;
+
     const response = await executeGraphQLQuery(query);
-    return response.data.change_multiple_column_values;
+    return response.change_multiple_column_values;
   } catch (error) {
-    throw new Error('Error updating item name:', error.message);
+    throw new Error(`Error updating item name for item ${itemId}: ${error.message}`);
   }
 }
 // Function to create a new item in a board
