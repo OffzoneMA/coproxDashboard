@@ -1,7 +1,10 @@
-// src/app.js
 const cors = require('cors');
 const express = require('express');
 const bodyParser = require('body-parser');
+const client = require('prom-client');
+const fs = require('fs');
+const path = require('path');
+
 const trelloRoutes = require('./src/routes/trelloRoutes.js');
 const mondayRoutes = require('./src/routes/mondayRoutes.js');
 const coproRoutes = require('./src/routes/coproRoutes.js');
@@ -13,7 +16,6 @@ const suiviFicheRoutes = require('./src/routes/suiviFicheRoutes.js');
 const zendeskRoutes = require('./src/routes/zendeskRoutes.js');
 const scriptRoutes = require('./src/routes/scriptRoutes.js');
 
-const zendeskService = require('./src/services/zendeskService.js');
 const scheduleCronJobs = require('./src/cron/cronStart.js');
 const BudgetCoproprietaire = require('./src/cron/synchroFactureOCR.js');
 
@@ -23,6 +25,36 @@ const port = 8081;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Prometheus Metrics
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
+
+const httpRequestDurationMicroseconds = new client.Histogram({
+  name: 'http_request_duration_seconds',
+  help: "Durée des requêtes HTTP en secondes",
+  labelNames: ['method', 'route', 'status_code'],
+  buckets: [0.1, 0.5, 1, 2, 5]
+});
+register.registerMetric(httpRequestDurationMicroseconds);
+
+// Middleware de mesure des requêtes
+app.use((req, res, next) => {
+  const start = process.hrtime();
+  res.on('finish', () => {
+    const duration = process.hrtime(start);
+    const durationInSeconds = duration[0] + duration[1] / 1e9;
+    httpRequestDurationMicroseconds.labels(req.method, req.path, res.statusCode).observe(durationInSeconds);
+  });
+  next();
+});
+
+// Exposer les métriques Prometheus
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
+
+// Routes API
 app.use('/trello', trelloRoutes);
 app.use('/zendesk', zendeskRoutes);
 app.use('/copro', coproRoutes);
@@ -34,6 +66,34 @@ app.use('/vilogi', vilogiRoutes);
 app.use('/mongodb', trelloRoutes);
 app.use('/monday', mondayRoutes);
 app.use('/script', scriptRoutes);
+
+// Chargement dynamique des services
+const services = fs.readdirSync(path.join(__dirname, 'src/services'))
+  .filter(file => file.endsWith('.js'))
+  .map(file => require(`./src/services/${file}`));
+
+// Instrumentation générique des services
+const serviceRequestCounter = new client.Counter({
+  name: 'service_api_calls_total',
+  help: "Nombre total d'appels aux services",
+  labelNames: ['service', 'method', 'function']
+});
+register.registerMetric(serviceRequestCounter);
+
+function trackServiceFunction(serviceName, fn, method, functionName) {
+  return async function (...args) {
+    serviceRequestCounter.labels(serviceName, method, functionName).inc();
+    return fn(...args);
+  };
+}
+
+services.forEach(service => {
+  Object.keys(service).forEach(fnName => {
+    if (typeof service[fnName] === 'function') {
+      service[fnName] = trackServiceFunction(service.constructor.name || 'unknown_service', service[fnName], 'CALL', fnName);
+    }
+  });
+});
 
 app.get('/batch', (req, res) => {
   BudgetCoproprietaire.start();
