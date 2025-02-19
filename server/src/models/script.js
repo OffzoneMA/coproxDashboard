@@ -31,6 +31,9 @@ const LogSchema = new mongoose.Schema({
     enum: [1, 2, -1], // 1: In Progress, 2: Success, -1: Error
     default: 1, // Default is 'In Progress'
   },
+  apicalls: {
+    type: Number,
+  },
   startTime: {
     type: Date,
     required: true,

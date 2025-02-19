@@ -82,6 +82,16 @@ const getCoproData = async (coproID) => {
     throw error;
   }
 };
+const countConenction = async () => {
+  const coproEndpoint = `/callApi?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}`;
+
+  try {
+    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 const getCoproDataTech = async (coproID) => {
   const mergedData = {};
   const coproEndpoint3= `/copro/donneeTechnique?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
@@ -370,6 +380,7 @@ const sendFactureToOCR = async (coproID, filePath) => {
 
 module.exports = {
   authenticateUser,
+  countConenction,
   postAdherant,
   putAdherant,
   getAllCopros,
