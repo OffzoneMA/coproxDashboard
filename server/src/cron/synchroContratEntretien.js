@@ -31,7 +31,6 @@ const synchroContratEntretien = {
             let FinalContrat = [];  // Initialize FinalContrat array
             let TotalContrat=0
             for (const copro of copros) {
-                if(copro.idCopro!="S065")continue
                 console.log("ID Vilogi:", copro.idCopro);
                 if (copro.idVilogi !== undefined) {
                     let contrats = await vilogiService.getCoproContratEntretien(copro.idVilogi);
@@ -91,7 +90,7 @@ const synchroContratEntretien = {
                             // Add other properties as needed
                         };
                         
-                        const itemName = `${copro.idCopro}`;
+                        const itemName = `${copro.idCopro} - ${infoFournisseur.societe}  `;
                           
                           await saveMonday(itemName,columnValues,contrat.id)
                           await delay(100);
@@ -104,7 +103,14 @@ const synchroContratEntretien = {
                 }
             }
             console.log(TotalContrat)
-            await scriptService.updateLogStatus('synchroContratEntretien',LogId ,2 ,"Script executed successfully");
+
+            
+            let counterEnd =await vilogiService.countConenction();
+            
+        let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('synchroContratEntretien',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+
+
             
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
@@ -119,8 +125,8 @@ async function saveMonday(itemName,data,idVilogi) {
         console.log(checkValue)
         if(checkValue.length > 0){
             console.log("Already exist")
-            const changename = await mondayService.updateItemName(boardId,checkValue[0].mondayItenID, itemName)
             const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
+            await mondayService.updateItemName(boardId, checkValue[0].mondayItenID, itemName)
         }else{
             const newItem = await mondayService.createItem(boardId, itemName, data);
             //console.log("Nouvel élément créé:", newItem);

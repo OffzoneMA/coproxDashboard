@@ -15,12 +15,19 @@ const synchroCopro = {
     start: async () => {
         
         logs.logExecution("synchroCopro")
+        let counterStart =await vilogiService.countConenction();
         const LogId = await scriptService.logScriptStart('synchroCopro');
-        await vilogiToMongodb()
-        await mongodbToZendesk()
-        await mongodbToMonday()
-        await mongodbToMondayCoproMorte()
-        await scriptService.updateLogStatus('synchroCopro',LogId ,2 ,"Script executed successfully");
+        console.log(LogId)
+        //await vilogiToMongodb()
+        //await mongodbToZendesk()
+        //await mongodbToMonday()
+        //await mongodbToMondayCoproMorte()
+        //await scriptService.updateLogStatus('synchroCopro',LogId ,2 ,"Script executed successfully");
+        let counterEnd =await vilogiService.countConenction();
+        let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel
+        console.log(VolumeCalls)
+        await scriptService.updateLogStatus('synchroCopro',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+                                   
             
     }
 
@@ -35,6 +42,7 @@ async function vilogiToMongodb(){
           //console.log(detailData)
           console.log(copro.lot, " Managing Data")
           let findCopro = await coproService.detailsCoproprieteByidVilogi(copro.id)
+          //console.log(copro)
           let data={
             Nom:copro.nom.replace(/'/g, ' '),
             ville:copro.ville,
@@ -93,7 +101,7 @@ async function mongodbToZendesk(){
     } else {
       const organizationData = {
         name: copro.idCopro,
-        organization_fields:{verif_copro:true,ArriveCopro:true}
+        organization_fields:{verif_copro:true,ArriveCopro:true,arriv_copro_compta:true}
         // Add any other data needed for organization creation
       };
       console.log("Adding Zendesk copro", organizationData.name);
@@ -130,13 +138,19 @@ async function mongodbToMondayCoproMorte(){
   
   const copros= await coproService.listCopropriete();
   for (const copro of copros) {
-      console.log(await mondayService.getItemsDetails(1436164829));
+      if(copro.idCopro!="S070")continue
+      const values = await mondayService.getItemInBoardWhereName(copro.idCopro,LesCoprosInfoMorteIDBoard)
+      console.log(values)
+      //console.log(await mondayService.getItemsDetails(1436164829));
       // Fetch data for the current copro
       console.log(copro)
       try {
         const data= await vilogiService.getCoproData(copro.idVilogi)
-        const dataTech= await vilogiService.getCoproDataTech(copro.idVilogi)
-        console.log(data)
+        try {
+          const dataTech= await vilogiService.getCoproDataTech(copro.idVilogi)
+        } catch (error) {
+          console.error("Une erreur est survenue :", error);
+        }
         const columnValues={
           texte:copro.idCopro,
           text:copro.ville,
@@ -155,21 +169,19 @@ async function mongodbToMondayCoproMorte(){
           texte_4__1:dataTech.typeChauffage,
           chiffres_1__1:data.coproInfo.nbStationnement,
           chiffres_2__1:data.coproInfo.nbCave,
-          
-          
-
         }
-        const values = await mondayService.getItemInBoardWhereName(copro.idCopro,LesCoprosInfoMorteIDBoard)
-        await delay(200)
-        console.log(values)
+        console.log(data)
+       
+
         if (typeof values !== 'undefined' && values !== null && typeof values === 'object' && Object.keys(values).length > 0) 
           await mondayService.updateItem(LesCoprosInfoMorteIDBoard, values.id, columnValues)
         else{
           console.log("adding copro ",copro.idCopro )
           await mondayService.createItem(LesCoprosInfoMorteIDBoard, copro.idCopro, columnValues)
         }
-      }catch{
-
+        await delay(200)
+      } catch (error) {
+        console.error("Une erreur est survenue :", error);
       }
   }
 

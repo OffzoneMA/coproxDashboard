@@ -18,6 +18,7 @@ const contratAssurance = {
     start: async () => {
         logs.logExecution("synchroContratAssurance")
         console.log('Start Extraction ...');
+        let counterStart =await vilogiService.countConenction();
         
         const LogId = await scriptService.logScriptStart('synchroContratAssurance');
         try {
@@ -32,7 +33,7 @@ const contratAssurance = {
                 if (copro.idVilogi !== undefined) {
                     let contrats = await vilogiService.getCoproContratAssurance(copro.idVilogi);
                     //console.log(contrats);
-
+                     
                     let NbContrat=0
                     
                     for (const contrat of contrats) {
@@ -61,15 +62,16 @@ const contratAssurance = {
                         const columnValues = {
                             texte5: contrat.typecontrat,
                             //statut_1: contrat.typecontrat,
-                            //texte_3: contrat.contrat,
+                            texte_3: contrat.contrat,
                             //texte__1: contrat.description,
                             date__1: {"date" : contrat.dateeffet.split('/').reverse().join('-')},
                             date_1__1: {"date" : contrat.dateecheance.split('/').reverse().join('-')},
-                            //texte_2: contrat.police,
-                            texte_6: contrat.assureur,
+                            texte_2: contrat.police,
+                            texte_6: contrat.assureur.replace(/^\d+-/, ''), // Removes leading digits and hyphen,
                             //texte_7: contrat.id,
                             texte_8: contrat.compagnie,
                             chiffres: contrat.prime,
+                            texte_mkkty1xq:`${infoFournisseur.adresse} ${infoFournisseur.complement} - ${infoFournisseur.codepostal} - ${infoFournisseur.ville}`,
                             //texte_10: contrat.compteCharge,
                             e_mail8__1:infoFournisseur.email,
                             ...(infoFournisseur.telephone != null && infoFournisseur!== undefined && { t_l_phone__1:  {"phone" :infoFournisseur.telephone, "countryShortName" : "FR"}}),
@@ -93,7 +95,12 @@ const contratAssurance = {
                 }
             }
             //console.log(FinalContrat)
-            await scriptService.updateLogStatus('synchroContratAssurance',LogId ,2 ,"Script executed successfully");
+
+        let counterEnd =await vilogiService.countConenction();
+                   
+        let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+        await scriptService.updateLogStatus('synchroContratAssurance',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+                     
             
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
