@@ -20,15 +20,14 @@ async function connectAndExecute(callback) {
 async function updateScriptStatus(scriptName, status) {
   try {
     return connectAndExecute(async () => {
-    const scriptCollection = MongoDB.getCollection('ScriptState');
-    const result = await scriptCollection.updateOne({ name: scriptName }, { $set: { status } });
-    return result;
-  });}
-  catch (error) {
+      const scriptCollection = MongoDB.getCollection('ScriptState');
+      const result = await scriptCollection.updateOne({ name: scriptName }, { $set: { status } });
+      return result;
+    });
+  } catch (error) {
     console.error('Error connecting and executing:', error.message);
     throw error;
   }
-  
 }
 
 async function getScriptState(scriptName) {
@@ -159,7 +158,34 @@ async function logExecutionHistory(name, startTime, endTime, status, message){
     console.error('Error updating log status:', error.message);
     throw error;
   }
+}
 
+// Sync function
+async function getListScripts(req, res) {
+  const scriptName = req.params.scriptName;
+
+  // Update script state to 1 (started) in the database
+  try {
+    return connectAndExecute(async () => {
+      console.log(scriptName);
+      const coproprieteCollection = MongoDB.getCollection('ScriptState');
+      const scriptArray = await coproprieteCollection.find({}).toArray();
+
+      scriptArray.forEach(script => {
+        if (script.execution_history && script.execution_history.length > 0) {
+          const lastExecution = script.execution_history[script.execution_history.length - 1].endTime;
+          script.lastExecution = lastExecution;
+          delete script.execution_history;
+        }
+      });
+
+      console.log(scriptArray);
+      res.status(200).json(scriptArray);
+      return;
+    });
+  } catch (error) {
+    res.status(500).send(`Error setting ${scriptName} script state to started: ${error}`);
+  }
 }
 
 module.exports = {
@@ -168,5 +194,6 @@ module.exports = {
   getScriptStateLogs,
   logScriptStart,
   updateLogStatus,
-  logExecutionHistory
+  logExecutionHistory,
+  getListScripts
 };

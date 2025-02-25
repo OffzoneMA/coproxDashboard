@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const scriptController = require('../controllers/scriptController');
 
+
+router.get('/',scriptController.getListScripts);
+
 // Route to update script status
 router.post('/update-status', scriptController.updateScriptStatus);
 
