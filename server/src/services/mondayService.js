@@ -5,10 +5,22 @@ const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
 const download = require('download');
-const logFilePath = path.join(__dirname, '../../logs/logsMonday.log');
-const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
 
+// Ensure logs are written to /tmp on Vercel
+const LOG_DIR = process.env.LOG_DIR || '/tmp';
+const logFilePath = path.join(LOG_DIR, 'logsMonday.log');
 
+async function logExecution(...args) {
+    const timestamp = new Date().toISOString();
+    const logMessage = `${timestamp} ${args.join(' ')}\n`;
+
+    // Append to log file
+    fs.appendFile(logFilePath, logMessage, (err) => {
+        if (err) console.error(`Error writing to ${logFilePath}:`, err);
+    });
+
+    process.stdout.write(logMessage); // Optional: Write to console
+}
 
 
 // Initialize Monday SDK
@@ -298,12 +310,7 @@ function removeFrenchSpecialCharacters(inputString) {
 
   return cleanedString;
 }
-async function logExecution(...args) {
-  const timestamp = new Date().toISOString();
-  const logMessage = `${timestamp} ${args.join(' ')}\n`;
-  logStream.write(logMessage);
-  process.stdout.write(logMessage); // Optional: Write to the console as well
-}
+
 
 
 module.exports = {

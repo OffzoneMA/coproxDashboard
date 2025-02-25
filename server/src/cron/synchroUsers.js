@@ -11,25 +11,34 @@ const logs = require('../services/logs');
 const fs = require('fs');
 const path = require('path');
 
-const logFilePath = path.join(__dirname, '../../logs/cron.txt');
-const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
+// Ensure logs are written to /tmp on Vercel
+const LOG_DIR = process.env.LOG_DIR || '/tmp';
 
+// Define log file paths
+const logFilePath = path.join(LOG_DIR, 'cron.log');
+const logFilePath2 = path.join(LOG_DIR, 'stats.log');
+
+// Generic logging function
+function writeLog(filePath, ...args) {
+    const timestamp = new Date().toISOString();
+    const logMessage = `${timestamp} ${args.join(' ')}\n`;
+
+    // Append to log file
+    fs.appendFile(filePath, logMessage, (err) => {
+        if (err) console.error(`Error writing to ${filePath}:`, err);
+    });
+
+    process.stdout.write(logMessage); // Optional: Write to console
+}
+
+// Logging functions
 function FileLog(...args) {
-  const timestamp = new Date().toISOString();
-  const logMessage = `${timestamp} ${args.join(' ')}\n`;
-  logStream.write(logMessage);
-  process.stdout.write(logMessage); // Optional: Write to the console as well
+  writeLog(logFilePath, ...args);
 }
 
-const logFilePath2 = path.join(__dirname, '../../logs/stats.txt');
-const logStream2 = fs.createWriteStream(logFilePath2, { flags: 'a' }); // 'a' means append
 function FileStatLog(...args) {
-  const timestamp = new Date().toISOString();
-  const logMessage = `${timestamp} ${args.join(' ')}\n`;
-  logStream2.write(logMessage);
-  process.stdout.write(logMessage); // Optional: Write to the console as well
+  writeLog(logFilePath2, ...args);
 }
-
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));

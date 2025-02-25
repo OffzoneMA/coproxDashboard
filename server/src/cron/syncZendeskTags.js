@@ -6,14 +6,21 @@ const zendeskService = require('../services/zendeskService');
 const path = require('path');
 const logs = require('../services/logs');
 
-const logFilePath = path.join(__dirname, '../../logs/cron.txt');
-const logStream = fs.createWriteStream(logFilePath, { flags: 'a' }); // 'a' means append
+// Ensure logs are written to /tmp on Vercel
+const LOG_DIR = process.env.LOG_DIR || '/tmp';
+const logFilePath = path.join(LOG_DIR, 'cron.log');
 
+// Function to log messages
 function FileLog(...args) {
-  const timestamp = new Date().toISOString();
-  const logMessage = `${timestamp} ${args.join(' ')}\n`;
-  logStream.write(logMessage);
-  process.stdout.write(logMessage); // Optional: Write to the console as well
+    const timestamp = new Date().toISOString();
+    const logMessage = `${timestamp} ${args.join(' ')}\n`;
+
+    // Append to log file
+    fs.appendFile(logFilePath, logMessage, (err) => {
+        if (err) console.error(`Error writing to ${logFilePath}:`, err);
+    });
+
+    process.stdout.write(logMessage); // Optional: Write to console
 }
 
 function delay(ms) {
