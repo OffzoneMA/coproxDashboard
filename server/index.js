@@ -17,7 +17,7 @@ const zendeskRoutes = require('./src/routes/zendeskRoutes.js');
 const scriptRoutes = require('./src/routes/scriptRoutes.js');
 
 const scheduleCronJobs = require('./src/cron/cronStart.js');
-const BudgetCoproprietaire = require('./src/cron/synchroFactureOCR.js');
+const batch = require('./src/cron/synchroVilogiMessages.js');
 
 const app = express();
 const port = 8081;
@@ -67,36 +67,54 @@ app.use('/mongodb', trelloRoutes);
 app.use('/monday', mondayRoutes);
 app.use('/script', scriptRoutes);
 
-// Chargement dynamique des services
+/// Chargement dynamique des services
 const services = fs.readdirSync(path.join(__dirname, 'src/services'))
-  .filter(file => file.endsWith('.js'))
-  .map(file => require(`./src/services/${file}`));
+.filter(file => file.endsWith('.js'))
+.map(file => require(`./src/services/${file}`));
 
 // Instrumentation générique des services
 const serviceRequestCounter = new client.Counter({
-  name: 'service_api_calls_total',
-  help: "Nombre total d'appels aux services",
-  labelNames: ['service', 'method', 'function']
+name: 'service_api_calls_total',
+help: "Nombre total d'appels aux services",
+labelNames: ['service', 'method', 'function']
 });
 register.registerMetric(serviceRequestCounter);
 
+// Histogram for execution time
+const serviceExecutionTime = new client.Histogram({
+name: 'service_execution_time_seconds',
+help: "Temps d'exécution des services en secondes",
+labelNames: ['service', 'method', 'function'],
+buckets: [0.1, 0.5, 1, 2, 5, 10] // Define buckets based on expected durations
+});
+register.registerMetric(serviceExecutionTime);
+
 function trackServiceFunction(serviceName, fn, method, functionName) {
-  return async function (...args) {
-    serviceRequestCounter.labels(serviceName, method, functionName).inc();
-    return fn(...args);
-  };
+return async function (...args) {
+  const start = process.hrtime(); // Start timing
+  serviceRequestCounter.labels(serviceName, method, functionName).inc();
+
+  try {
+    return await fn(...args);
+  } finally {
+    const [seconds, nanoseconds] = process.hrtime(start);
+    const durationInSeconds = seconds + nanoseconds / 1e9;
+    serviceExecutionTime.labels(serviceName, method, functionName).observe(durationInSeconds);
+  }
+};
 }
 
-services.forEach(service => {
-  Object.keys(service).forEach(fnName => {
-    if (typeof service[fnName] === 'function') {
-      service[fnName] = trackServiceFunction(service.constructor.name || 'unknown_service', service[fnName], 'CALL', fnName);
-    }
-  });
-});
+services.forEach((service, index) => {
+const serviceName = path.basename(fs.readdirSync(path.join(__dirname, 'src/services'))[index], '.js'); // Get file name as service name
 
+Object.keys(service).forEach(fnName => {
+  if (typeof service[fnName] === 'function') {
+    service[fnName] = trackServiceFunction(serviceName, service[fnName], 'CALL', fnName);
+  }
+});
+});
 app.get('/batch', (req, res) => {
-  BudgetCoproprietaire.start();
+  batch.start();
   res.send('Cron test is running!');
 });
 
