@@ -18,21 +18,25 @@ function TrelloPage({ onSetTitle }) {
         }
     };
 
-    const handleButtonClick = async (endpoint) => {
-        const selectedOption = selectedOptions[endpoint];
-        const row = scriptData.find(row => row.endpoint === endpoint);
-        if ((selectedOption && row.options.length > 0) || row.options.length === 0) {
+    const handleButtonClick = async (scriptName) => {
+        const row = scriptData.find(row => row.endpoint === scriptName);
+    
+        if (row) {
             try {
-
-                const response = await fetchDataFromApi(endpoint, { method: 'POST', body: JSON.stringify({ option: selectedOption }) });
+                const response = await fetchDataFromApi('/update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scriptName, status: 1 }), // Set status to 1 (started)
+                });
+    
                 const data = await response.json();
-                await fetchData(); 
+                await fetchData(); // Refresh the UI if needed
                 console.log("API response:", data);
             } catch (error) {
-                console.error("Error fetching data:", error);
+                console.error("Error updating script status:", error);
             }
         } else {
-            alert("Please select an option first!");
+            alert("Invalid script selected!");
         }
     };
 
