@@ -66,3 +66,15 @@ exports.updateLogStatus = async (req, res) => {
     });
   }
 };
+
+// Sync function
+exports.getListScripts = async (req, res) => {
+  try {
+    await scriptService.getListScripts(req, res);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to getListScripts scripts',
+      error: error.message,
+    });
+  }
+};
