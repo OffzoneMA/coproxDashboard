@@ -20,14 +20,15 @@ async function connectAndExecute(callback) {
 async function updateScriptStatus(scriptName, status) {
   try {
     return connectAndExecute(async () => {
-      const scriptCollection = MongoDB.getCollection('ScriptState');
-      const result = await scriptCollection.updateOne({ name: scriptName }, { $set: { status } });
-      return result;
-    });
-  } catch (error) {
+    const scriptCollection = MongoDB.getCollection('ScriptState');
+    const result = await scriptCollection.updateOne({ name: scriptName }, { $set: { status } });
+    return result;
+  });}
+  catch (error) {
     console.error('Error connecting and executing:', error.message);
     throw error;
   }
+  
 }
 
 async function getScriptState(scriptName) {
@@ -71,6 +72,7 @@ async function getScriptStateLogs() {
                 End: endTime,
                 Duration: durationMinutes, // Duration in minutes
                 Status: log.status,
+                APICalls: log?.apicalls || 0,
               };
             }) : [] // Return empty array if logs is not an array
       );
@@ -111,8 +113,9 @@ async function logScriptStart(scriptName) {
 }
 
 // Update log entry for script success or failure
-async function updateLogStatus(scriptName, logId, status, message) {
+async function updateLogStatus(scriptName, logId, status, message,apiCalls) {
   try {
+    console.log(apiCalls)
     const endTime = new Date();
     return await connectAndExecute(async () => {
       const scriptCollection = MongoDB.getCollection('ScriptState');
@@ -123,6 +126,7 @@ async function updateLogStatus(scriptName, logId, status, message) {
             'logs.$.status': status,
             'logs.$.endTime': endTime,
             'logs.$.message': message,
+            'logs.$.apicalls': apiCalls,
           },
         }
       );
@@ -158,6 +162,7 @@ async function logExecutionHistory(name, startTime, endTime, status, message){
     console.error('Error updating log status:', error.message);
     throw error;
   }
+
 }
 
 // Sync function
