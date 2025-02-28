@@ -10,16 +10,16 @@ function delay(ms) {
 
 const apiUrl = 'https://copro.vilogi.com/rest'; // Update with the correct base URL
 
-const authenticateUser = async () => {
+const authenticateUser = async (loginData,pwdData) => {
   const loginEndpoint = '/connexionMulti'; // Update with the correct login endpoint
-
   try {
     const response = await axios.post(`${apiUrl}${loginEndpoint}?token=${process.env.VILOGI_TOKEN}`, {
-      login: process.env.VILOGI_USERNAME,
-      pwd: process.env.VILOGI_PASSWORD,
+      login: loginData,
+      pwd: pwdData,
     });
     return response.data;
   } catch (error) {
+    console.error('Error authenticating user:', error.message);
     throw error;
   }
 };
@@ -330,7 +330,6 @@ const getUserHasMessage = async (idAdh,coproID) => {
 
 const getUserMessagePushLu = async (idMessage,idAdh,coproID) => {
   const adherentsEndpoint = `/odsmessage/setLu?token=${process.env.VILOGI_TOKEN}&idAdh=${idAdh}&idCopro=${coproID}&idEvent=${idMessage}`;
-
   try {
     const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
     return response.data;
@@ -353,7 +352,7 @@ axios.interceptors.request.use(request => {
 
 const sendFactureToOCR = async (coproID, filePath) => {
   // Construct the endpoint
-  const adherentsEndpoint = `/FichierOCR?token=${process.env.VILOGI_TOKEN}&id=${process.env.Vilogi_test_IDAUTH}&copro=${process.env.VILOGI_test_IDCOPROEXEMPLE}&idSyndic=${process.env.VILOGI_idSyndic}`;
+  const adherentsEndpoint = `/FichierOCR?token=${process.env.VILOGI_TOKEN}&id=${process.env.VILOGI_IDAUTH}&copro=${coproID}&idSyndic=${process.env.VILOGI_idSyndic}`;
 
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found at path: ${filePath}`);

@@ -3,7 +3,7 @@ const vilogiService = require('../services/vilogiService');
 
 const login = async (req, res) => {
   try {
-    const result = await vilogiService.authenticateUser();
+    const result = await vilogiService.authenticateUser(req.body.login,req.body.pass);
     res.json(result);
   } catch (error) {
     console.error(error);
