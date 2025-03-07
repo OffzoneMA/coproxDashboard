@@ -24,6 +24,20 @@ async function editPerson(req, res) {
   }
 }
 
+async function getPerson(req, res) {
+  try {
+    const person = await PersonService.getPerson(req.params.id);
+    if (person) {
+      res.status(200).json(person);
+    } else {
+      res.status(404).json({ error: 'Person not found' });
+    }
+  } catch (error) {
+    console.error('Error getting person:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
 async function getPersonsByCoproId(req, res) {
   try {
     const persons = await PersonService.getPersonsByCoproId(req.params.idCopro);
@@ -74,4 +88,4 @@ async function countAllPersons(req, res) {
 }
 
 
-module.exports = { addPerson, editPerson,getPersonsByInfo, getPersonsByCoproId, getAllPersons,countAllPersons,getAllPersonsWithCoppro };
+module.exports = { addPerson, editPerson,getPerson,getPersonsByInfo, getPersonsByCoproId, getAllPersons,countAllPersons,getAllPersonsWithCoppro };

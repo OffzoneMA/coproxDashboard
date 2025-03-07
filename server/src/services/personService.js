@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
 
-mongoose.set('useFindAndModify', false);
-
 async function connectAndExecute(callback) {
   try {
     await MongoDB.connectToDatabase();
@@ -30,17 +28,35 @@ async function addPerson(newPersonData) {
 async function editPerson(id, updatedPersonData) {
   return connectAndExecute(async () => {
     const personCollection = MongoDB.getCollection('person');
-    const result = await personCollection.updateOne({ _id: mongoose.Types.ObjectId(id) }, { $set: updatedPersonData });
+    const result = await personCollection.updateOne(
+      { _id: new mongoose.Types.ObjectId(id) }, 
+      { $set: updatedPersonData }
+    );
     return result;
   });
 }
 
-
-async function getPersonsByInfo(infoName,infoValue) {
+async function getPerson(id) {
   return connectAndExecute(async () => {
     const personCollection = MongoDB.getCollection('person');
-    const query = {[infoName]: infoValue };
+    const person = await personCollection.findOne({ _id: new mongoose.Types.ObjectId(id) });
+    return person;
+  });
+}
+
+async function getPersonsByInfo(infoName, infoValue) {
+  return connectAndExecute(async () => {
+    const personCollection = MongoDB.getCollection('person');
+    const query = { [infoName]: infoValue };
     const persons = await personCollection.find(query).toArray();
+    return persons;
+  });
+}
+
+async function getPersonsById(idPerson) {
+  return connectAndExecute(async () => {
+    const personCollection = MongoDB.getCollection('person');
+    const persons = await personCollection.find({ _id: new mongoose.Types.ObjectId(idPerson) }).toArray();
     return persons;
   });
 }
@@ -48,7 +64,7 @@ async function getPersonsByInfo(infoName,infoValue) {
 async function getPersonsByCoproId(idCopro) {
   return connectAndExecute(async () => {
     const personCollection = MongoDB.getCollection('person');
-    const persons = await personCollection.find({ idCopro: mongoose.Types.ObjectId(idCopro) }).toArray();
+    const persons = await personCollection.find({ idCopro: new mongoose.Types.ObjectId(idCopro) }).toArray();
     return persons;
   });
 }
@@ -77,15 +93,14 @@ async function countAllPersons() {
   });
 }
 
-// Add your new functions here
-
 module.exports = {
   addPerson,
   editPerson,
+  getPerson,
   getPersonsByInfo,
+  getPersonsById,
   getPersonsByCoproId,
   getAllPersons,
   countAllPersons,
-  getAllPersonsWithCoppro
-  // Add your new functions here
+  getAllPersonsWithCoppro,
 };
