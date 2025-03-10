@@ -33,10 +33,21 @@ const getAllAdherents = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+const getFactureOCRBrouillon = async (req, res) => {
+  try {
+    const factureOCRBrouillon = await vilogiService.getFactureOCRBrouillon();
+    console.log('Facture OCR Brouillon:', factureOCRBrouillon);
+    res.json(factureOCRBrouillon);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
 
 
 module.exports = {
   login,
   getAllAdherents,
-  getCoproData
+  getCoproData,
+  getFactureOCRBrouillon
 };

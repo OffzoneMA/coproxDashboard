@@ -377,6 +377,17 @@ const sendFactureToOCR = async (coproID, filePath) => {
   }
 };
 
+const getFactureOCRBrouillon = async () => {
+  const adherentsEndpoint = `/FichierOCR/all?token=${process.env.VILOGI_TOKEN}&id=${process.env.VILOGI_IDAUTH}&copro=${process.env.VILOGI_IDCOPROEXEMPLE}&idSyndic=${process.env.VILOGI_idSyndic}`;
+  try {
+    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
+    return response.data;
+  } catch (error) {
+    throw error; throw error;
+  }
+};
+
+
 module.exports = {
   authenticateUser,
   countConenction,
@@ -404,5 +415,6 @@ module.exports = {
   getRelanceAdherant,
   getUserHasMessage,
   getUserMessagePushLu,
-  sendFactureToOCR
+  sendFactureToOCR,
+  getFactureOCRBrouillon
 };
