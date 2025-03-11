@@ -15,6 +15,19 @@ function delay(ms) {
 }
 
 async function makeRequest(url, errorMessage, { method = 'get', params = {}, body = {} } = {}) {
+  // Validate required fields
+  const requiredFields = [
+    { id: '15114616615965', name: 'Priorité' },
+    { id: '15114688584221', name: 'Categorie Du Ticket' }
+  ];
+
+  for (const field of requiredFields) {
+    const fieldValue = body.custom_fields.find(f => f.id === field.id);
+    if (!fieldValue || !fieldValue.value) {
+      throw new Error(`Validation Error: ${field.name} is required for ticket resolution.`);
+    }
+  }
+
   try {
     let allData = [];
     let nextPage = url;

@@ -11,7 +11,6 @@ async function connectAndExecute(callback) {
     throw error;
   } 
 }
-
 function handleMongoError(message, error) {
   console.error(message, error.message);
   throw error;

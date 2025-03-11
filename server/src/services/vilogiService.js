@@ -387,45 +387,6 @@ const getFactureOCRBrouillon = async () => {
   }
 };
 
-const getProprietaireInfo = async (proprietaireID) => {
-  const endpoint = `/proprietaires/${proprietaireID}?token=${process.env.VILOGI_TOKEN}`;
-  try {
-    const response = await axios.get(`${apiUrl}${endpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const getProprietaireLots = async (proprietaireID) => {
-  const endpoint = `/proprietaires/${proprietaireID}/lots?token=${process.env.VILOGI_TOKEN}`;
-  try {
-    const response = await axios.get(`${apiUrl}${endpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const getProprietaireComptes = async (proprietaireID) => {
-  const endpoint = `/proprietaires/${proprietaireID}/comptes?token=${process.env.VILOGI_TOKEN}`;
-  try {
-    const response = await axios.get(`${apiUrl}${endpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const getProprietaireDocuments = async (proprietaireID) => {
-  const endpoint = `/proprietaires/${proprietaireID}/documents?token=${process.env.VILOGI_TOKEN}`;
-  try {
-    const response = await axios.get(`${apiUrl}${endpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
 
 module.exports = {
   authenticateUser,
@@ -455,9 +416,5 @@ module.exports = {
   getUserHasMessage,
   getUserMessagePushLu,
   sendFactureToOCR,
-  getFactureOCRBrouillon,
-  getProprietaireInfo,
-  getProprietaireLots,
-  getProprietaireComptes,
-  getProprietaireDocuments
+  getFactureOCRBrouillon
 };
