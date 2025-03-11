@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
 
-mongoose.set('useFindAndModify', false);
-
 async function connectAndExecute(callback) {
   try {
     await MongoDB.connectToDatabase();
@@ -24,9 +22,10 @@ async function listCopropriete() {
 async function detailsCopropriete(id) {
   return connectAndExecute(async () => {
     const coproprieteCollection = MongoDB.getCollection('copropriete');
-    return await coproprieteCollection.findOne({ _id: mongoose.Types.ObjectId(id) });
+    return await coproprieteCollection.findOne({ _id: new mongoose.Types.ObjectId(id) });
   });
 }
+
 async function detailsCoproprieteByidVilogi(id) {
   return connectAndExecute(async () => {
     const coproprieteCollection = MongoDB.getCollection('copropriete');
@@ -52,9 +51,9 @@ async function editCopropriete(id, updatedCoproprieteData) {
   return connectAndExecute(async () => {
     const coproprieteCollection = MongoDB.getCollection('copropriete');
     return await coproprieteCollection.findOneAndUpdate(
-      { _id: mongoose.Types.ObjectId(id) },
+      { _id: new mongoose.Types.ObjectId(id) },
       { $set: updatedCoproprieteData },
-      { returnDocument: 'after' }
+      { returnDocument: 'after' } // ✅ Mongoose 6+ correct option
     );
   });
 }

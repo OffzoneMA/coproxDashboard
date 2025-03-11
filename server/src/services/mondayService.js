@@ -25,12 +25,12 @@ async function logExecution(...args) {
 
 // Initialize Monday SDK
 const monday = mondaySdk();
-monday.setApiVersion("2023-10");
+monday.setApiVersion("2025-01"); // Updated API version
 monday.setToken(process.env.MONDAY_API_KEY)
 
 async function executeGraphQLQuery(queryString) {
   try {
-      console.log(queryString)
+      //console.log(queryString)
       const res = await monday.api(queryString);
       console.log(res);
       return res.data ;

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
+const vilogiService = require('./vilogiService');
 
 async function connectAndExecute(callback) {
   try {
@@ -40,6 +41,24 @@ async function getPerson(id) {
   return connectAndExecute(async () => {
     const personCollection = MongoDB.getCollection('person');
     const person = await personCollection.findOne({ _id: new mongoose.Types.ObjectId(id) });
+
+    if (person) {
+      const [proprietaireInfo, proprietaireLots, proprietaireComptes, proprietaireDocuments] = await Promise.all([
+        vilogiService.getProprietaireInfo(id),
+        vilogiService.getProprietaireLots(id),
+        vilogiService.getProprietaireComptes(id),
+        vilogiService.getProprietaireDocuments(id)
+      ]);
+
+      return {
+        ...person,
+        proprietaireInfo,
+        proprietaireLots,
+        proprietaireComptes,
+        proprietaireDocuments
+      };
+    }
+
     return person;
   });
 }

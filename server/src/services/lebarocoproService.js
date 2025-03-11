@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
 
-mongoose.set('useFindAndModify', false);
-
 const LebarocoproModel = MongoDB.addSaveMiddleware('lebarocopro');
 
 async function connectAndExecute(callback) {
@@ -40,17 +38,17 @@ async function getLastTemporalRecord(idCopro) {
   return connectAndExecute(async () => {
     const lebarocoproCollection = mongoose.connection.collection('lebarocopro');
     const objectIdCopro = new mongoose.Types.ObjectId(idCopro);
-    console.log(lebarocoproCollection);
+    
     try {
       const cursor = lebarocoproCollection.aggregate([
         {
           $match: {
-            idCopro: objectIdCopro, // Match documents where idCopro is equal to objectIdCopro
+            idCopro: objectIdCopro,
           },
         },
         {
           $sort: {
-            date: -1, // Sort by date in descending order
+            date: -1,
           },
         },
         {
@@ -65,7 +63,6 @@ async function getLastTemporalRecord(idCopro) {
       ]);
 
       const resultArray = await cursor.toArray();
-      await cursor.close();
 
       if (resultArray.length > 0) {
         console.log('Last temporal record:', resultArray[0]);
@@ -80,7 +77,6 @@ async function getLastTemporalRecord(idCopro) {
     }
   });
 }
-
 
 module.exports = {
   addLebarocopro,
