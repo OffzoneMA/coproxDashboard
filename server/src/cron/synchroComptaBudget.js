@@ -23,6 +23,7 @@ const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
         logs.logExecution("synchroComptaBudget")
+        let counterStart =await vilogiService.countConenction();
         
         const LogId = await scriptService.logScriptStart('synchroComptaBudget');
         //console.log(await mondayService.getItemsDetails("1510643845"))
@@ -128,11 +129,17 @@ const synchroMandats = {
 
   
                 }
-            }            
-            await scriptService.updateLogStatus('synchroComptaBudget',LogId ,2 ,"Script executed successfully");
+            }
+            let counterEnd =await vilogiService.countConenction();
+            
+        let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('synchroComptaBudget',LogId ,2 ,`Script executed successfully `, VolumeCalls );
             //console.log(FinalContrat)
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
+            let counterEnd =await vilogiService.countConenction(); 
+            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('synchroComptaBudget',LogId ,-1,`An error occurred: ${error.message} `, VolumeCalls );
             console.error('An error occurred:', error.message);
         }
     }

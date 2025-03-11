@@ -23,6 +23,7 @@ const synchroTravaux = {
     start: async () => {
         logs.logExecution("synchroTravaux")
         const LogId = await scriptService.logScriptStart('synchroTravaux');
+        let counterStart =await vilogiService.countConenction();
         console.log('Start Extraction ...');
         try {
             let copros = await coproService.listCopropriete();
@@ -30,6 +31,7 @@ const synchroTravaux = {
             let totalTravaux=0;
             for (const copro of copros) {
                 console.log("ID Vilogi:", copro.idCopro);
+                if (copro.idCopro !== "S037") continue
                 if (copro.idVilogi !== undefined) {
                     let travauxAll = await vilogiService.getCoproTravaux(copro.idVilogi);
 
@@ -39,7 +41,7 @@ const synchroTravaux = {
                     for (const travaux of travauxAll) {
                         totalTravaux++;
                         NbTravaux++;
-                        console.log(` Contrat numero ${totalTravaux}  Sync contrat Number :${travaux.id}   ---- ${copro.idCopro} -  [${NbTravaux}   /  ${travauxAll.length}] `)      
+                        console.log(` Decision numero ${totalTravaux}  identifiant travaux Number :${travaux.id}   ---- ${copro.idCopro} -  [${NbTravaux}   /  ${travauxAll.length}] `)      
                         //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
                         const columnValues = {
                             
@@ -56,7 +58,7 @@ const synchroTravaux = {
                           };
                           
 
-                          const itemName = `${travaux.nom}`;
+                          const itemName = `${copro.idCopro} - ${travaux.nom}`;
                           
                           try {
                             await saveMonday(itemName,columnValues,travaux.id)
@@ -70,10 +72,18 @@ const synchroTravaux = {
                     
                 }
             }
+
             console.log(totalTravaux)
-            await scriptService.updateLogStatus('synchroTravaux',LogId ,2 ,"Script executed successfully");
+            let counterEnd =await vilogiService.countConenction();
+            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('synchroTravaux',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
+                        let counterEnd =await vilogiService.countConenction();
+            
+            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('synchroTravaux',LogId ,-1,`An error occurred: ${error.message} `, VolumeCalls );
             console.error('An error occurred:', error.message);
         }
     }
@@ -85,6 +95,7 @@ async function saveMonday(itemName,data,idVilogi) {
         console.log(checkValue)
         if(checkValue.length > 0){
             console.log("Already exist")
+            await mondayService.updateItemName(boardId, checkValue[0].mondayItenID, itemName)
             const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
         }else{
             const newItem = await mondayService.createItem(boardId, itemName, data);

@@ -16,14 +16,12 @@ monday.setToken(process.env.MONDAY_API_KEY)
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-let FinalContrat = [];
-const boardId = 1437344331;
-const typeData="manda"
-
-const synchroMandats = {
+const synchroVilogiMessages = {
     start: async () => {
         console.log('Start Extraction ...');
         logs.logExecution("synchroVilogiMessages")
+        let counterStart =await vilogiService.countConenction();
+        const LogId = await scriptService.logScriptStart('synchroVilogiMessages');
         //console.log(await mondayService.getItemsDetails("1455188129"))
         try {
             let copros = await coproService.listCopropriete();
@@ -36,29 +34,29 @@ const synchroMandats = {
                     for(const person of persons){
                         let hasMessage = await vilogiService.getUserHasMessage(person.id,copro.idVilogi)
                         for(const message in hasMessage){
-                            console.log(hasMessage[message].id," ------ ",hasMessage[message].adherant," ------ ",hasMessage[message].date_envoi," ------ ", hasMessage[message].lu)
+                            console.log(hasMessage[message].id," ------ ",copro.idVilogi," ------ ",hasMessage[message].adherant," ------ ",hasMessage[message].date_envoi," ------ ",person.email," ------ ",person.nom," ", person.prenom," ------ ", hasMessage[message].lu)
                             // The date string you want to check
                             const dateEnvoi = hasMessage[message].date_envoi;
 
                             // Convert the date strings to Date objects
                             const envoiDate = new Date(dateEnvoi.split('/').reverse().join('-'));
-                            const comparisonDate = new Date('2024-01-01');
+                            const comparisonDate = new Date('2025-01-01');
 
                             // Compare the dates
-                            //if (envoiDate > comparisonDate) {
- 
-                            if(true){
+                            if (envoiDate > comparisonDate) {
+                              try {
+                            //if(hasMessage[message].lu==1){
                             console.log("The date is after 01/01/2024");
-                            createTicketZendesk(hasMessage[message])
+                            createTicketZendesk(hasMessage[message],person)
+                            //await vilogiService.getUserMessagePushLu(hasMessage[message].id,person.id,copro.idVilogi)
+                            } catch (error) {
+                              console.error('An error occurred:', error.url + + error.message);
+                          }
                             } else {
-                                
-                               //console.log(hasMessage[message].id,"   ",person.id,"   ",copro.idVilogi)
-                               //await vilogiService.getUserMessagePushLu(hasMessage[message].id,person.id,copro.idVilogi)
-                            }
-                            if(hasMessage[message].lu==0){
-                                //console.log(hasMessage[message])
+                                console.log('le message est deja enregistré :',hasMessage[message].id)
                             }
                         }
+
 
                         await delay(300)
                     }
@@ -67,49 +65,54 @@ const synchroMandats = {
                 }
                 
             }
-                    
+                    let counterEnd =await vilogiService.countConenction();
+                                
+                            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel 
             //console.log(FinalContrat)
-            await scriptService.updateLogStatus('synchroVilogiMessages',LogId ,2 ,"Script executed successfully");
+            await scriptService.updateLogStatus('synchroVilogiMessages',LogId ,2 ,`Script executed successfully `, VolumeCalls );
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
-            console.error('An error occurred:', error.message);
+            console.error('An error occurred:', error.url + + error.message);
         }
     }
 };
 
 
-async function createTicketZendesk(message) {
+async function createTicketZendesk(message,person) {
     try {
         const newTicket = {
             ticket: {
               subject: message.titre,
-              description: `🚨⚠️ L'équipe de gestion des signalements n'a pas accès à cette messagerie. 🚨⚠️
-
-                    Bonjour à vous,
-
-                    Vous recevez ce message automatique 🧑‍💻 qui vous informe que votre message a bien été réceptionné et ne s'est pas égaré 📬 !
-
-                    Si votre question concerne une demande portant sur les charges, une demande d'accès, une question d'ordre privative de manière générale vous êtes au bon endroit 📍, une réponse vous sera apportée.
-
-                    En revanche, si votre demande concerne un dossier lié à la copropriété, vous devez réorienter votre demande ou votre signalement ici =>  https://macopro.coprox.immo
-
-                    En effet, à des fins d'efficacité, aucune demande de signalement ou de suivi de dossiers impactant les parties communes ne sera traitée par courriel. Cette boîte e-mail est exclusivement réservée à répondre aux questions privatives des copropriétaires et à recevoir les factures des prestataires.
-
-                    Chez Coprox, nous offrons à chaque copropriété un espace réservé aux copropriétés accessible à chaque copropriétaire et locataire avec son e-mail enregistré chez Coprox. Votre participation sur le réseau contribue à conserver l'historique de votre copropriété et à favoriser la communication entre les voisins🤝. En utilisant ce réseau, vous nous aidez à être réactifs dans le traitement des demandes 🏃‍♀️.
-
-                    En cas de difficultés de connexion, il vous suffit de nous demander votre code immeuble. Notre équipe de gestion est constamment connectée 👩‍💻pour vous fournir une réponse rapide en fonction de l'urgence de votre demande ⏱.
-
-                    En attendant d'échanger sur le bon canal nous vous souhaitons une belle journée ☀️ ou fin de journée 🌙.`,
+              description: `Bonjour,
+ 
+Nous vous remercions pour votre message 😊
+ 
+Pour garantir un traitement rapide et efficace de votre demande, merci de suivre ces instructions :
+ 
+➡️ Si votre demande porte sur une question privative (charges, accès, vente, demandes personnelles, etc.) :
+Vous êtes au bon endroit 📍. Votre message sera pris en charge dans les meilleurs délais ⏳
+ 
+➡️ Si votre demande concerne les parties communes :
+Votre demande ne peut-être traitée depuis cette boîte email ⚠️. Veuillez svp utiliser le réseau privé de la copropriété MACOPRO où est connectée la Coproxteam gestion des copropriétés : 👉 https://macopro.coprox.immo. 
+ 
+Ce réseau vous offre 🎁 une totale transparence sur les actions que nous menons et nous permet de traiter efficacement les dossiers de votre copropriété 💪. (si vous rencontrez une difficulté à vous connecter dites le nous en répondant à cet email). 
+ 
+➡️ Pour consulter vos documents personnels :
+Rendez-vous sur 👉 https://www.vilogi.com.
+Les identifiants figurent sur les appels de fonds.
+ 
+Merci de votre coopération 🤝
+La Coproxteam, toujours à votre écoute 👂 `,
               requester: {
-                name: "Youssef DIOURI",
-                email: "contact@youssefdiouri.net"
+                name: "Youssef DIOURI",//person.nom + " " + person.prenom,
+                email: "contact@youssefdiouri.net",//person.email
               },
             }
           };
         
         const newTicketData = await zendeskService.createTicket(newTicket)
         await delay(300)
-        console.log('Ticket ID:', newTicketData[0].id);
+        console.log('Message publique:', newTicketData[0].id);
         const messageData = {
             ticket: {
               comment: {
@@ -118,7 +121,7 @@ async function createTicketZendesk(message) {
               }
             }
           };
-          console.log('Ticket 2  ID:', newTicketData[0].id);
+          console.log('Message privée:', newTicketData[0].id);
         await zendeskService.updateTicket(newTicketData[0].id,messageData)
     } catch (error) {
         console.error("Erreur lors de la création de l'élément:", error);
@@ -128,4 +131,4 @@ async function createTicketZendesk(message) {
 
 //extraction des contrat par copro
 
-module.exports = synchroMandats;
+module.exports = synchroVilogiMessages;

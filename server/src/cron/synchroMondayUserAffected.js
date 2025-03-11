@@ -34,6 +34,7 @@ const SynchroMondayUserAffected = {
         console.log(Boards)
         console.log('Start Extraction ...');
         logs.logExecution("synchroMondayUserAffected")
+        let counterStart =await vilogiService.countConenction();
         const LogId = await scriptService.logScriptStart('synchroMondayUserAffected');
         try {
             for(board of Boards){
@@ -59,7 +60,7 @@ const SynchroMondayUserAffected = {
                             }
                                 
 
-                            continue
+                            
                             if(column.value === null){
                                 console.log(item.id,"Culumn null -")
                             }else {
@@ -72,8 +73,15 @@ const SynchroMondayUserAffected = {
     
                 }
             }
-            await scriptService.updateLogStatus('synchroMondayUserAffected',LogId ,2 ,"Script executed successfully");
-        } catch (error) {
+                    let counterEnd =await vilogiService.countConenction();
+                               
+                    let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+                    await scriptService.updateLogStatus('synchroMondayUserAffected',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+                     } catch (error) {
+            let counterEnd =await vilogiService.countConenction();
+            
+            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('synchroMondayUserAffected',LogId ,-1,`An error occurred: ${error.message} `, VolumeCalls );
             console.error('An error occurred:', error.message);
         }
     }

@@ -21,6 +21,7 @@ const typeData="contratEntretien"
 const synchroContratEntretien = {
     start: async () => {
         logs.logExecution("synchroContratEntretien")
+        let counterStart =await vilogiService.countConenction();
         const LogId = await scriptService.logScriptStart('synchroContratEntretien');
         console.log('Start Extraction ...');
 
@@ -61,9 +62,11 @@ const synchroContratEntretien = {
                             console.log("Break");
                             break;
                         }else{
-
+                        let urlContrat = null;
+                        }if (contrat.idFichier) {
+                            urlContrat = `https://copro.vilogi.com/rest/contratEntretien/getFile/${contrat.idFichier}?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&idCopro=44378&idAdh=749799`;
                         }
-                        urlContrat=`https://copro.vilogi.com/rest/contratEntretien/getFile/${contrat.idFichier}?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&idCopro=44378&idAdh=749799`
+                        
                         
                         console.log(` Contrat numero ${TotalContrat}   Sync contrat Number :${contrat.id}   ---- ${copro.idCopro} -  [${NbContrat}   /  ${contrats.length}] `)                   
                         const columnValues = {
@@ -84,7 +87,8 @@ const synchroContratEntretien = {
                             t_lephone:  {"phone" :infoFournisseur.telephone, "countryShortName" : "FR"},
                             ...(copro.idMonday != null && { board_relation: { "item_ids": [copro.idMonday] } }),
                             texte_15: infoFournisseur.secteur,
-                            lien_internet_1__1 : {"url" : urlContrat, "text":"Lien vers contrat"},
+                            ...(urlContrat && { lien_internet_1__1: { "url": urlContrat, "text": "Lien vers contrat" } }),
+                            
                             //dup__of_texte_155:infoFournisseur.secteur,
                             texte_14: contrat.idFichier
                             // Add other properties as needed
@@ -114,6 +118,10 @@ const synchroContratEntretien = {
             
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
+            let counterEnd =await vilogiService.countConenction();
+            
+            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('synchroContratEntretien',LogId ,-1,`An error occurred: ${error.message} `, VolumeCalls );
             console.error('An error occurred:', error.message);
         }
     }
