@@ -21,9 +21,13 @@ const scriptsList = [
   //{ name: 'SynchroMondayUserAffected', script: require('../cron/synchroMondayUserAffected') },
   { name: 'synchroContratEntretien', script: require('../cron/synchroContratEntretien') },
   { name: 'campagneChauffage', script: require('../cron/campagneChauffage') },
-  //{ name: 'synchoBudgetCoproprietaire', script: require('../cron/synchoBudgetCoproprietaire') },
- // { name: 'synchroComptaList401', script: require('../cron/synchroComptaList401') },
-  //{ name: 'synchroComptaRapprochementBancaire', script: require('../cron/synchroComptaRapprochementBancaire') },
+  { name: 'synchoBudgetCoproprietaire', script: require('../cron/synchoBudgetCoproprietaire') },
+  { name: 'synchroComptaList401', script: require('../cron/synchroComptaList401') },
+  { name: 'synchroComptaList472', script: require('../cron/synchroComptaList472') },
+
+  
+  { name: 'synchroComptaRapprochementBancaire', script: require('../cron/synchroComptaRapprochementBancaire') },
+  { name: 'synchroFactureOCR', script: require('../cron/synchroFactureOCR') },
   { name: 'synchroFacture', script: require('../cron/synchroFacture') },
   //{ name: 'extractContratsEntretien', script: require('../cron/extractContratsEntretien') }
 ];
@@ -77,18 +81,31 @@ function scheduleCronJobs() {
     logs.logVilogiCounter(counter[0].nombreAppel)
     logs.logExecution(" ------------- Lancement script 3h  - ", counter[0].nombreAppel)
     await startScriptCron('zendeskTicket', require('../cron/zendeskTicket'));
-    await require('../services/zendeskService').recoverAllSuspendedTickets();
+    await startScriptCron('recoverAllSuspendedTickets',require('../services/zendeskService'));
+    await startScriptCron('synchroFactureOCR',require('../services/synchroFactureOCR'));
   });
 
-  cron.schedule('0 4 * * *', async () => {//equivalant a 5h 
+  cron.schedule('0 5 * * *', async () => {//equivalant a 6h 
     let counter =await vilogiService.countConenction();
     logs.logVilogiCounter(counter[0].nombreAppel)
     logs.logExecution(" ------------- Lancement script 4h  - ", counter[0].nombreAppel)
     await startScriptCron('synchroComptaList401',require('../cron/synchroComptaList401'));
     await startScriptCron('synchroComptaList472', require('../cron/synchroComptaList472'));
-    await startScriptCron('SynchroMondayUserAffected', require('../cron/SynchroMondayUserAffected'));
-    await startScriptCron('synchroFacture', require('../cron/synchroFacture'));
     await startScriptCron('synchroComptaRapprochementBancaire', require('../cron/synchroComptaRapprochementBancaire'));
+    await startScriptCron('synchroFacture', require('../cron/synchroFacture'));
+    await startScriptCron('SynchroMondayUserAffected', require('../cron/SynchroMondayUserAffected'));
+  });
+
+  cron.schedule('0 1 * * *', async () => {// equivalant a 9h 
+    console.log("------------- Lancement script 0h ")
+    let counter =await vilogiService.countConenction();
+    console.log(counter[0].nombreAppel)
+    logs.logVilogiCounter(counter[0].nombreAppel)
+    logs.logExecution(" ------------- Lancement script 0h  - ", counter[0].nombreAppel)
+    //await startScriptCron('zendeskTicketAI', require('../cron/zendeskTicketAI'));
+    await startScriptCron('synchroTravaux', require('../cron/synchroTravaux'));
+    await startScriptCron('synchroMandats', require('../cron/synchroMandats'));
+    await startScriptCron('synchroContratEntretien', require('../cron/synchroContratEntretien'));
   });
 
   cron.schedule('0 0 * * 0', async () => {
@@ -101,24 +118,12 @@ function scheduleCronJobs() {
     await startScriptCron('synchroTravaux', require('../cron/synchroTravaux'));
   });
 
-  cron.schedule('0 0 * * *', async () => {// equivalant a 9h 
-    console.log("------------- Lancement script 0h ")
-    let counter =await vilogiService.countConenction();
-    logs.logVilogiCounter(counter[0].nombreAppel)
-    logs.logExecution(" ------------- Lancement script 0h  - ", counter[0].nombreAppel)
-    await startScriptCron('zendeskTicketAI', require('../cron/zendeskTicketAI'));
-    await startScriptCron('synchroTravaux', require('../cron/synchroTravaux'));
-    await startScriptCron('synchroContratEntretien', require('../cron/synchroContratEntretien'));
-    await startScriptCron('SynchroMondayUserAffected', require('../cron/SynchroMondayUserAffected'));
-    await startScriptCron('synchroMandats', require('../cron/synchroMandats'));
-  });
+
 
   cron.schedule('*/5 * * * *', async () => {
-    //console.log('Starting cron 5 minutes')
+    console.log('Starting cron 5 minutes')
     //let counter = await vilogiService.countConenction();
     //logs.logVilogiCounter(counter[0].nombreAppel)
-    logs.logExecution(" ------------- Lancement script 0h  - ", counter[0].nombreAppel)
-    console.log(" ------------- Lancement script 0h  - ", counter[0].nombreAppel);
     for (const { name, script } of scriptsList) {
       //console.log(`Executing via batch script: ${name}`);
       await executeScript(name, script);
