@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
 
-mongoose.set('useFindAndModify', false);
-
 async function connectAndExecute(callback) {
   try {
     await MongoDB.connectToDatabase();
@@ -13,7 +11,6 @@ async function connectAndExecute(callback) {
     throw error;
   } 
 }
-
 function handleMongoError(message, error) {
   console.error(message, error.message);
   throw error;
@@ -30,16 +27,18 @@ async function addItem(newItemData) {
 async function editItem(id, updatedItemData) {
   return connectAndExecute(async () => {
     const ItemCollection = MongoDB.getCollection('mondayVilogi');
-    const result = await ItemCollection.updateOne({ _id: mongoose.Types.ObjectId(id) }, { $set: updatedItemData });
+    const result = await ItemCollection.updateOne(
+      { _id: new mongoose.Types.ObjectId(id) }, 
+      { $set: updatedItemData }
+    );
     return result;
   });
 }
 
-
-async function getItemsByInfo(boardID,vilogiItemID) {
+async function getItemsByInfo(boardID, vilogiItemID) {
   return connectAndExecute(async () => {
     const ItemCollection = MongoDB.getCollection('mondayVilogi');
-    const query = {"vilogiItemID": vilogiItemID,"boardID": boardID };
+    const query = { vilogiItemID: vilogiItemID, boardID: boardID };
     const Items = await ItemCollection.find(query).toArray();
     return Items;
   });
@@ -48,19 +47,14 @@ async function getItemsByInfo(boardID,vilogiItemID) {
 async function getItemsByCoproId(idCopro) {
   return connectAndExecute(async () => {
     const ItemCollection = MongoDB.getCollection('mondayVilogi');
-    const Items = await ItemCollection.find({ idCopro: mongoose.Types.ObjectId(idCopro) }).toArray();
+    const Items = await ItemCollection.find({ idCopro: new mongoose.Types.ObjectId(idCopro) }).toArray();
     return Items;
   });
 }
-
-
-
-
-// Add your new functions here
 
 module.exports = {
   addItem,
   editItem,
   getItemsByInfo,
-  // Add your new functions here
+  getItemsByCoproId, // ✅ Fixed missing export
 };

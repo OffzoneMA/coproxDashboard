@@ -11,10 +11,9 @@ class MongoDB {
         const clusterName = process.env.MONGODB_CLUSTER_NAME;
         const dbName = process.env.MONGODB_DB_NAME;
 
-        
         const connectionString = `mongodb+srv://${username}:${password}@${clusterName}/${dbName}?retryWrites=true&w=majority`;
 
-        await mongoose.connect(connectionString, { useNewUrlParser: true, useUnifiedTopology: true });
+        await mongoose.connect(connectionString);
 
         //console.log('Connected to MongoDB using Mongoose');
       }
