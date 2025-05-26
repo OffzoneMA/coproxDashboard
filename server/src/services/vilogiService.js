@@ -266,12 +266,17 @@ const getPrestataireById = async (prestaireID,coproID) => {
 };
 
 
-const getCoproAssemblee = async (coproID) => {
-  const adherentsEndpoint = `/adherant/all?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
-
+const getCoproAssemblee = async (coproID,assembleID) => {
+  const adherentsEndpoint = `/assemblee?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
   try {
     const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
-    return response.data;
+        // Make sure the response is an array
+        const data = Array.isArray(response.data) ? response.data : [];
+
+        // Filter to get the object with matching id
+        const result = data.find(adherent => adherent.id === assembleID);
+    
+        return result || null; // Return null if not found
   } catch (error) {
     throw error;
   }
