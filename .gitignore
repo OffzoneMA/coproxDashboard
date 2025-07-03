@@ -1,0 +1,49 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependency directories
+pnpjs/
+
+# React build
+/build/
+
+# Log files
+logs/
+*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.code-workspace
+
+# Compiled output
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Dependency lock files
+yarn.lock
+package-lock.json
+
+# Testing
+/coverage/
+
+# Build output
+/build/
+
+# Temp files
+.DS_Store
+Thumbs.db
+server/downloads/factureOCR/*
