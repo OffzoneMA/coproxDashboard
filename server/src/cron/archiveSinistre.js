@@ -24,7 +24,7 @@ const typeData="courriers"
 const archiveCourrier = {
     start: async () => {
         console.log('Start Extraction ...');
-        logs.logExecution("archiveCourrier")
+        logs.logExecution("archiveCourriel")
 
         //const LogId = await scriptService.logScriptStart('archiveCourrier');
         //console.log(await mondayService.getItemsDetails(1638270065))
@@ -38,12 +38,12 @@ const archiveCourrier = {
                 await saveFileLocally(courrierEnvoye.id,courrierEnvoye.name);
             }
 
-            const itemid=1638281196
-            //await saveFileLocally(itemid)
+            //const itemid=1638281196
+            await saveFileLocally(itemid)
 
 
 
-            //await scriptService.updateLogStatus('archiveCourrier',LogId ,2 ,"Script executed successfully");
+            //await scriptService.updateLogStatus('archiveCourrier',LogId ,0 ,"Script executed successfully");
             
             //console.log(FinalContrat)
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');

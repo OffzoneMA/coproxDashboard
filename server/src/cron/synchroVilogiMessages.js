@@ -69,7 +69,7 @@ const synchroVilogiMessages = {
                                 
                             let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel 
             //console.log(FinalContrat)
-            await scriptService.updateLogStatus('synchroVilogiMessages',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+            await scriptService.updateLogStatus('synchroVilogiMessages',LogId ,0 ,`Script executed successfully `, VolumeCalls );
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
             console.error('An error occurred:', error.url + + error.message);

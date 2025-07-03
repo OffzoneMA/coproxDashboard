@@ -100,12 +100,16 @@ const synchroMandats = {
                 await delay(300);
               });
 
-              await scriptService.updateLogStatus('synchroMandats',LogId ,2 ,"Script executed successfully");
+              await scriptService.updateLogStatus('synchroMandats',LogId ,0 ,"Script executed successfully");
             
             //console.log(FinalContrat)
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
-            console.error('An error occurred:', error.message);
+                        let counterEnd =await vilogiService.countConenction();
+                        
+                        let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+                        await scriptService.updateLogStatus('synchroMandats',LogId ,-1,`An error occurred: ${error.message} `, VolumeCalls );
+                        console.error('An error occurred:', error.message);
         }
     }
 };

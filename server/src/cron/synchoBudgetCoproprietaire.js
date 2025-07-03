@@ -26,6 +26,9 @@ const synchroMandats = {
     start: async () => {
         console.log('Start Extraction ...');
         logs.logExecution("synchoBudgetCoproprietaire")
+        let counterStart =await vilogiService.countConenction();
+
+        const LogId = await scriptService.logScriptStart('synchoBudgetCoproprietaire');
         //console.log(await mondayService.getItemsDetails("1487595725"))
         try {
             let copros = await coproService.listCopropriete();
@@ -148,8 +151,16 @@ const synchroMandats = {
                 }
             }            
             //console.log(FinalContrat)
+
+            let counterEnd =await vilogiService.countConenction();
+            
+            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('synchoBudgetCoproprietaire',LogId ,0 ,`Script executed successfully `, VolumeCalls );
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
+            let counterEnd =await vilogiService.countConenction(); 
+            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('synchoBudgetCoproprietaire',LogId ,-1,`An error occurred: ${error.message} `, VolumeCalls );
             console.error('An error occurred:', error.message);
         }
     }

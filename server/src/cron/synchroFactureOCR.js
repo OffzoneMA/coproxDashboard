@@ -52,7 +52,9 @@ async function manageZendeskTicketFacture(idTicket) {
         let ticketData = await zendeskService.getTicketsById(idTicket);
         const categorie = ticketData[0].custom_fields.find(field => field.id === 15114688584221);
         console.log(categorie);
-        if (categorie.value !== "facture_contrat") {
+        const allowedCategories = ["facture_contrat","facture_fluide"];//, "facture_ocr", "facture_contrat", "facture_travaux"];
+
+        if (!allowedCategories.includes(categorie.value)) {
             return;
         }
         const ticketDetails = await zendeskService.getTicketsComments(idTicket);
@@ -77,7 +79,7 @@ async function manageZendeskTicketFacture(idTicket) {
             }
         }
 
-        const { tags } = ticketData[0];
+       
         let updateData = {
             ticket: {
                 comment: {
@@ -86,10 +88,28 @@ async function manageZendeskTicketFacture(idTicket) {
                 }
             }
         };
-
+        const { tags } = ticketData[0];
         console.log(tags);
 
-        //if (!tags.includes('rapport_intervention')) {
+        if (tags.includes('contrat_rapport_intervention')) {
+
+            /////TODO : Cloturer le ticket et Faire le changement au niveau de monday ay lieu de 
+            updateData.ticket.status = "solved";
+            updateData.ticket.custom_fields = [
+                {
+                    id: 15114688584221,
+                    value: "rapport_facture"
+                },
+                {
+                    id: 25146150608413,
+                    value: true
+                }
+            ];
+        } else if (tags.includes('travaux_rapport_intervention')) {
+            console.log("travaux_rapport_intervention");
+        } else if (tags.includes('rapport_intervention')) {
+            console.log("rapport_intervention");
+        } else {
             updateData.ticket.status = "solved";
             updateData.ticket.custom_fields = [
                 {
@@ -97,7 +117,7 @@ async function manageZendeskTicketFacture(idTicket) {
                     value: "facture_ocr"
                 }
             ];
-        //}
+        }
 
         await zendeskService.updateTicket(idTicket, updateData);
         await delay(100);
@@ -112,10 +132,11 @@ const synchroFactureOCR = {
         logs.logExecution("synchroFactureOCR");
         let counterStart = await vilogiService.countConenction();
         const LogId = await scriptService.logScriptStart('synchroFactureOCR');
+        
         console.log(LogId);
         try {
             let facturesMonday = await zendeskService.getTicketsByStatus("19622552342301");
-
+            console.log("here")
             for (const factureMonday of facturesMonday) {
                 console.log(factureMonday.id);
                 await manageZendeskTicketFacture(factureMonday.id);
@@ -123,7 +144,7 @@ const synchroFactureOCR = {
 
             let counterEnd = await vilogiService.countConenction();
             let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel;
-            await scriptService.updateLogStatus('synchroFactureOCR', LogId, 2, `Script executed successfully`, VolumeCalls);
+            await scriptService.updateLogStatus('synchroFactureOCR', LogId, 0, `Script executed successfully`, VolumeCalls);
 
             console.log('END Extraction ...');
         } catch (error) {

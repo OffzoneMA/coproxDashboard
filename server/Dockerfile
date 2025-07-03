@@ -1,7 +1,6 @@
 # Assuming you're using a Node.js base image
-FROM node:14.16-alpine
+FROM node:21-alpine3.17
 
-RUN apk --no-cache add --virtual builds-deps build-base python
 
 # Create App Directory
 RUN mkdir -p /usr/src/app

@@ -18,6 +18,13 @@ async function listCopropriete() {
     return await coproprieteCollection.find({ status: { $ne: 'Inactif' } }).toArray();
   });
 }
+async function listCoproprieteInactive() {
+  return connectAndExecute(async () => {
+    const coproprieteCollection = MongoDB.getCollection('copropriete');
+    return await coproprieteCollection.find({ status: { $ne: 'Actif' } }).toArray();
+  });
+}
+
 
 async function detailsCopropriete(id) {
   return connectAndExecute(async () => {
@@ -115,6 +122,7 @@ async function countCoproprieteWithoutSuiviAG() {
 
 module.exports = {
   listCopropriete,
+  listCoproprieteInactive,
   detailsCopropriete,
   detailsCoproprieteByidVilogi,
   detailsCoproprieteByidCopro,

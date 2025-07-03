@@ -81,7 +81,7 @@ const synchroMandats = {
             let counterEnd =await vilogiService.countConenction();
             
         let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
-            await scriptService.updateLogStatus('synchroComptaList472',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+            await scriptService.updateLogStatus('synchroComptaList472',LogId ,0 ,`Script executed successfully `, VolumeCalls );
             
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {

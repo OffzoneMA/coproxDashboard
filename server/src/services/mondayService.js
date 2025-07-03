@@ -164,16 +164,19 @@ async function getItemInBoardWhereName(name, boardID) {
 // Function to create a new item in a board
 async function createItem(boardId, itemName, columnValues) {
   try {
+    
+    const cleanedColumnValues = JSON.stringify(columnValues).replace(/\\r\\n/g, '');
+    const columnValuesString = cleanedColumnValues.replace(/"/g, '\\"');
     const query = `mutation {
       create_item (
         board_id: ${boardId},
         item_name: "${removeFrenchSpecialCharacters(itemName)}",
-        column_values: "${JSON.stringify(columnValues).replace(/"/g, '\\"')}"
+        column_values: "${columnValuesString}"
       ) {id name}}`;
     const response = await executeGraphQLQuery(query);
     return response.create_item;
   } catch (error) {
-    logExecution(`Error creating item ${itemId}`)
+    logExecution(`Error creating item ${itemName}`)
     throw new Error('Error creating item:',itemName, error.message);
   }
 }

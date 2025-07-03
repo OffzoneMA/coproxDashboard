@@ -23,32 +23,39 @@ const synchroTravaux = {
     start: async () => {
         logs.logExecution("synchroTravaux")
         const LogId = await scriptService.logScriptStart('synchroTravaux');
+        console.log('LogId:', LogId);
+
         let counterStart =await vilogiService.countConenction();
+        console.log('test 2 ');
         console.log('Start Extraction ...');
         try {
+            console.log('test 3 ');
             let copros = await coproService.listCopropriete();
+            console.log('test 4 ');
             let FinalContrat = [];  // Initialize FinalContrat array
+            console.log('test 5 ');
             let totalTravaux=0;
             for (const copro of copros) {
+                console.log('test 6 ');
                 console.log("ID Vilogi:", copro.idCopro);
-                if (copro.idCopro !== "S037") continue
+                //if (copro.idCopro !== "S037") continue
                 if (copro.idVilogi !== undefined) {
                     let travauxAll = await vilogiService.getCoproTravaux(copro.idVilogi);
 
-                    //const data = await mondayService.getItemsDetails(1487186054);
-                    //console.log(data)
+                    const data = await mondayService.getItemsDetails(1772265497);
+                    console.log(data)
                     let NbTravaux=0;
                     for (const travaux of travauxAll) {
                         totalTravaux++;
                         NbTravaux++;
                         console.log(` Decision numero ${totalTravaux}  identifiant travaux Number :${travaux.id}   ---- ${copro.idCopro} -  [${NbTravaux}   /  ${travauxAll.length}] `)      
-                        //let assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
+                        const assemblee = await vilogiService.getCoproAssemblee(copro.idVilogi,travaux.assemblee);
                         const columnValues = {
                             
                             texte_1: travaux.description,
                             texte_3: travaux.contrat,
                             texte_32: travaux.montant,
-                            texte_6: travaux.assemblee,
+                            ...(assemblee && assemblee.dateassemblee ? { texte_6: assemblee.dateassemblee } : {}),//TODO changer la colonne avec la date de l'ag au liaux de l'identifiant de l'AG
                             texte_8:travaux.nbEcheance,
 
                             ...(copro.idMonday != null && { board_relation: { "item_ids": [copro.idMonday] } }),
@@ -57,7 +64,7 @@ const synchroTravaux = {
 
                           };
                           
-
+                          console.log(columnValues)
                           const itemName = `${copro.idCopro} - ${travaux.nom}`;
                           
                           try {
@@ -76,7 +83,7 @@ const synchroTravaux = {
             console.log(totalTravaux)
             let counterEnd =await vilogiService.countConenction();
             let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
-            await scriptService.updateLogStatus('synchroTravaux',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+            await scriptService.updateLogStatus('synchroTravaux',LogId ,0 ,`Script executed successfully `, VolumeCalls );
 
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
@@ -96,7 +103,7 @@ async function saveMonday(itemName,data,idVilogi) {
         if(checkValue.length > 0){
             console.log("Already exist")
             await mondayService.updateItemName(boardId, checkValue[0].mondayItenID, itemName)
-            const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
+            //const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
         }else{
             const newItem = await mondayService.createItem(boardId, itemName, data);
             //console.log("Nouvel élément créé:", newItem);

@@ -72,7 +72,7 @@ const synchroUsers = {
         
       }
       await SynchoZendesk();
-      await scriptService.updateLogStatus('synchroUsers',LogId ,2 ,"Script executed successfully");
+      await scriptService.updateLogStatus('synchroUsers',LogId ,0 ,"Script executed successfully");
 
 
   },

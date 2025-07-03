@@ -112,7 +112,7 @@ const synchroContratEntretien = {
             let counterEnd =await vilogiService.countConenction();
             
         let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
-            await scriptService.updateLogStatus('synchroContratEntretien',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+            await scriptService.updateLogStatus('synchroContratEntretien',LogId ,0 ,`Script executed successfully `, VolumeCalls );
 
 
             

@@ -23,6 +23,7 @@ const extractContratsEntretien = {
         try {
             let copros = await coproService.listCopropriete();
             let FinalContrat = [];  // Initialize FinalContrat array
+            let counterStart =await vilogiService.countConenction();
 
             for (const copro of copros) {
                 console.log("ID Vilogi:", copro.idCopro);
@@ -111,9 +112,13 @@ const extractContratsEntretien = {
                 if (err) throw err;
                 console.log('CSV file saved as output.csv');
             });
-            await scriptService.updateLogStatus('extractContratsEntretien',LogId ,2 ,"Script executed successfully");
+            await scriptService.updateLogStatus('extractContratsEntretien',LogId ,0 ,"Script executed successfully");
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
+            let counterEnd =await vilogiService.countConenction();
+                                                
+            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('extractContratsEntretien',LogId ,-1,`An error occurred: ${error.message} `, VolumeCalls );
             console.error('An error occurred:', error.message);
         }
     }

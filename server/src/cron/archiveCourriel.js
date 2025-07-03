@@ -43,7 +43,7 @@ const archiveCourrier = {
 
 
 
-            //await scriptService.updateLogStatus('archiveCourrier',LogId ,2 ,"Script executed successfully");
+            //await scriptService.updateLogStatus('archiveCourrier',LogId ,0 ,"Script executed successfully");
             
             //console.log(FinalContrat)
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');

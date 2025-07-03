@@ -80,50 +80,65 @@ const synchroMandats = {
 };
 
 
-async function generateData(data,copro) {
+async function generateData(data, copro) {
   try {
-    console.log("Start generateData for ...", copro.name)
-    for(item of data) {
+    console.log("Start generateData for ...", copro.name);
 
-      let verifResult = await verification(item,copro.name)
-      if (!verifResult.status) continue
-      
-      //console.log("coproData",coproData)
+    for (const item of data) {
+      let verifResult = await verification(item, copro.name);
+      if (!verifResult.status) continue;
 
       const today = new Date();
-      const futureDate = new Date(today); // Copy today
+      const futureDate = new Date(today);
 
-      let daysToAdd = item.value;
-      while (daysToAdd > 0) {
-        futureDate.setDate(futureDate.getDate() + 1); // Add one day
+      let daysToAdd = Number(item.value); // Ensure it's a number
+      if (isNaN(daysToAdd)) {
+        console.error("Invalid item.value (not a number):", item.value);
+        continue;
+      }
 
-        // Check if it's a weekday (Mon-Fri: 1–5)
-        const day = futureDate.getDay();
+      console.log(`Adding ${daysToAdd} business days to ${today}`);
+
+      let iterationCounter = 0; // Safety counter
+      while (daysToAdd > 0 && iterationCounter < 365) { // max 365 iterations
+        futureDate.setDate(futureDate.getDate() + 1);
+        const day = futureDate.getDay(); // 0 = Sunday, 6 = Saturday
         if (day !== 0 && day !== 6) {
-          daysToAdd--; // Only decrement if it's a weekday
+          daysToAdd--;
         }
+        iterationCounter++;
+      }
+
+      if (iterationCounter >= 365) {
+        console.error("Too many iterations - possible infinite loop.");
+        continue;
       }
 
       console.log("Today:", today);
-      console.log("Item value (business days):", item.value);
       console.log("Future date (excluding weekends):", futureDate);
-      //console.log(await mondayService.getItemsDetails(1973242086))
+
       const columnValues = {
         date_mkr7ah56: { date: formatDate(today) },
         date_mkr7ctp1: { date: formatDate(futureDate) },
-        ...(verifResult.coproData.idMonday != null && { board_relation_mkr7h5hy: { "item_ids": [verifResult.coproData.idMonday] } }),
-        color_mkr8ptyc:item.title,
+        ...(verifResult.coproData.idMonday != null && {
+          board_relation_mkr7h5hy: {
+            item_ids: [verifResult.coproData.idMonday],
+          },
+        }),
+        color_mkr8ptyc: item.title,
       };
-      console.log("columnValues",columnValues)
 
-      await saveMonday(copro.name +" - "+item.title,columnValues)
-      //TODO update item in mongoDB
-      await coproService.editCopropriete(coproData._id, { [`suiviCopro.${item.title}`]: formatDate(futureDate) });
-    
+      console.log("columnValues", columnValues);
+
+      await saveMonday(copro.name + " - " + item.title, columnValues);
+      await coproService.editCopropriete(
+        coproData._id,
+        { [`suiviCopro.${item.title}`]: formatDate(futureDate) }
+      );
     }
-    } catch (error) {
-      console.error("Erreur lors de la création de l'élément:", error);
-    }
+  } catch (error) {
+    console.error("Erreur lors de la création de l'élément:", error);
+  }
 }
 
 async function verification(item,copro) {

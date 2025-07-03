@@ -1,40 +1,24 @@
 const axios = require('axios');
+
 require('dotenv').config(); // Load environment variables from .env
 
 const subdomain = process.env.ZENDESK_SUBDOMAIN;
 const username = process.env.ZENDESK_USERNAME;
 const password = process.env.ZENDESK_PASSWORD;
 
-const BASE_URL = `https://${subdomain}.zendesk.com/api/v2`;
-
-// Rate limiting delay
-const RATE_LIMIT_DELAY = 300;
-
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function makeRequest(url, errorMessage, { method = 'get', params = {}, body = {} } = {}) {
-  // Validate required fields
-  const requiredFields = [
-    { id: '15114616615965', name: 'Priorité' },
-    { id: '15114688584221', name: 'Categorie Du Ticket' }
-  ];
-
-  for (const field of requiredFields) {
-    const fieldValue = body.custom_fields.find(f => f.id === field.id);
-    if (!fieldValue || !fieldValue.value) {
-      throw new Error(`Validation Error: ${field.name} is required for ticket resolution.`);
-    }
-  }
-
   try {
     let allData = [];
     let nextPage = url;
 
     do {
-      await delay(RATE_LIMIT_DELAY);
-      const link = `${BASE_URL}${nextPage}`;
+      await delay(300)
+      const link = `https://${subdomain}.zendesk.com/api/v2${nextPage}`;
+      console.log(link);
       console.log(`Making ${method.toUpperCase()} request to: ${link}`);
 
       const response = await axios({
@@ -52,11 +36,13 @@ async function makeRequest(url, errorMessage, { method = 'get', params = {}, bod
 
       // Merge data if 'next_page' exists
       if (responseData.next_page) {
-        allData = allData.concat(responseData.users || responseData.organizations || responseData.results || responseData.tickets || responseData.comments || responseData.suspended_tickets);
+        allData = allData.concat(responseData.users || responseData.organizations || responseData.results || responseData.tickets || responseData.comments || responseData.suspended_tickets) ;
         nextPage = extractNextPage(responseData.next_page);
+
       } else {
+ 
         nextPage = null;
-        allData = allData.concat(responseData.users || responseData.user || responseData.organizations || responseData.organization || responseData.results || responseData.tickets || responseData.comments || responseData.comment || responseData.suspended_tickets || responseData.ticket || responseData.count);
+        allData = allData.concat(responseData.users || responseData.user || responseData.organizations || responseData.organization || responseData.results || responseData.tickets|| responseData.comments || responseData.comment ||  responseData.suspended_tickets || responseData.ticket ||  responseData.count );
       }
     } while (nextPage);
 
@@ -67,7 +53,7 @@ async function makeRequest(url, errorMessage, { method = 'get', params = {}, bod
       status: error.response ? error.response.status : null,
       statusText: error.response ? error.response.statusText : null,
     };
-    const messages = flattenJSON(responseError.data);
+    const messages =flattenJSON(responseError.data)
 
     const requestBody = error.config ? error.config.data : null;
 
@@ -94,30 +80,39 @@ function flattenJSON(obj, separatorKey = '--', separatorValue = ':') {
   const result = [];
 
   function traverse(obj, parentKey = '') {
-    for (const key in obj) {
-      const currentKey = parentKey ? `${parentKey}${separatorKey}${key}` : key;
-      if (typeof obj[key] === 'object') {
-        traverse(obj[key], currentKey);
-      } else {
-        result.push(`${currentKey}${separatorValue}${obj[key]}`);
+      for (const key in obj) {
+          const currentKey = parentKey ? `${parentKey}${separatorKey}${key}` : key;
+          if (typeof obj[key] === 'object') {
+              traverse(obj[key], currentKey);
+          } else {
+              result.push(`${currentKey}${separatorValue}${obj[key]}`);
+          }
       }
-    }
   }
 
   traverse(obj);
   return result;
 }
 
-// User-related functions
 async function addUser(userData) {
   const url = '/users';
-  const response = await makeRequest(url, 'Error adding user', { method: 'post', body: userData });
-  return response[0].id;
+  response = await makeRequest(url, 'Error fetching current user', { method: 'post', body: userData });
+  console.log(response[0].id)
+  return response[0].id
+}
+async function updateUser(userID,userData) {
+  const url = `/users/${userID}`;
+  return makeRequest(url, 'Error fetching current user', { method: 'put', body: userData });
 }
 
-async function updateUser(userID, userData) {
-  const url = `/users/${userID}`;
-  return makeRequest(url, 'Error updating user', { method: 'put', body: userData });
+
+async function addOrganization(organizationData) {
+  console.log(organizationData)
+  const jsonObject = {"organization": organizationData};
+  const url = '/organizations.json';
+  response = await makeRequest(url, 'Error adding organization', { method: 'post', body: jsonObject });
+  console.log(response.id);
+  return response.id;
 }
 
 async function getCurrentUser() {
@@ -126,8 +121,8 @@ async function getCurrentUser() {
 }
 
 async function getAllUsers() {
-  const url = '/users.json';
-  return makeRequest(url, 'Error fetching all users');
+  let url = '/users.json';
+  return makeRequest(url, 'Error fetching current user');
 }
 
 async function getUserFromID(userID) {
@@ -136,19 +131,19 @@ async function getUserFromID(userID) {
 }
 
 async function getUserFromEmail(userEmail) {
+
   const url = `/users/search.json?query=${`email:${userEmail}`}`;
-  const user = await makeRequest(url, 'Error fetching user');
-  return { id: user[0]?.id } || {};
+   user = await makeRequest(url, 'Error fetching user');
+   const userEnd = {id: user[0]?.id} || {};
+   return userEnd
 }
-
 async function getUsersByOrg(orgID) {
+
   const url = `/organizations/${orgID}/users`;
-  return makeRequest(url, 'Error fetching users by organization');
+  return makeRequest(url, 'Error fetching user');
 }
 
-// Organization-related functions
-async function addOrganization(organizationData) {
-  const jsonObject = { organization: organizationData };
+async function getAllorganizations() {
   const url = '/organizations.json';
   const response = await makeRequest(url, 'Error adding organization', { method: 'post', body: jsonObject });
   return response.id;
@@ -188,43 +183,60 @@ async function getTicketsByStatus(ticketStatus) {
 async function getTicketsNew() {
   const today = new Date(new Date().getTime() - (1 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
   const url = `/search.json?query=created>=${today}&status:open+status:new&sort_by=created_at&sort_order=desc`;
-  return makeRequest(url, 'Error fetching new tickets');
+  return makeRequest(url, 'Error fetching All Ticket with status new');
+}
+
+async function createTicket(ticketData) {
+  const url = `/tickets.json`;
+  const errorMessage = 'Error creating new ticket';
+  const method = 'post';
+
+  return makeRequest(url, errorMessage, {
+    method,
+    body: ticketData,
+  });
+}
+async function addMessageToTicket(ticketId, ticket) {
+  const url = `/tickets/${ticketId}/comments.json`;
+  const errorMessage = 'Error adding message to ticket';
+  const method = 'post';
+
+  return makeRequest(url, errorMessage, { method,body: ticket});
 }
 
 async function getTicketsNotClosed() {
   const url = `/search.json?query=status:open+status:new+status:pending+status:resolved&sort_by=created_at&sort_order=desc`;
-  return makeRequest(url, 'Error fetching tickets not closed');
+  return makeRequest(url, 'Error fetching All Ticket with status not closed');
 }
 
 async function getTicketsNewAssigned() {
   const url = '/search.json?query=assignee%3A*+status%3Aopen&sort_by=created_at&sort_order=desc';
-  return makeRequest(url, 'Error fetching new assigned tickets');
+  return makeRequest(url, 'Error fetching All Ticket with status new');
 }
 
 async function getTicketsByUser(userID) {
   const url = `/users/${userID}/tickets/requested`;
-  return makeRequest(url, 'Error fetching tickets by user');
+  return makeRequest(url, 'Error fetching All Ticket with status new');
 }
-
 async function getTicketsById(ticketID) {
   const url = `/tickets/${ticketID}.json`;
-  return makeRequest(url, 'Error fetching ticket by ID');
+  return makeRequest(url, 'Error fetching All Ticket with status new');
 }
-
 async function getTicketsComments(ticketID) {
   const url = `/tickets/${ticketID}/comments`;
-  return makeRequest(url, 'Error fetching ticket comments');
+  return makeRequest(url, 'Error fetching All Ticket with status new');
 }
 
 async function updateTicket(ticketId, ticketData) {
   const url = `/tickets/${ticketId}`;
-  return makeRequest(url, 'Error updating ticket', { method: 'put', body: ticketData });
+  return await makeRequest(url, 'Error updating ticket', { method: 'put', body: ticketData });
 }
 
 async function getNonResolvedTicketCount() {
   const url = '/search.json?query=status<solved%20status<closed';
   const response = await makeRequest(url, 'Error fetching non-resolved ticket count');
-  return response.length || 0;
+  const count = response.length || 0;
+  return count
 }
 
 async function getNonResolvedTicketCountOrganisation(organizationExternalId) {
@@ -255,7 +267,6 @@ async function getOrganizationIdByExternalId(organizationExternalId) {
     throw new Error(`Error getting organization ID by external ID: ${error.message}`);
   }
 }
-
 async function getSuspendedTickets() {
   const url = '/suspended_tickets';
   return makeRequest(url, 'Error fetching suspended tickets');
@@ -268,13 +279,14 @@ async function recoverTicket(ticketId) {
       status: 'open'
     }
   };
-  return makeRequest(url, 'Error recovering ticket', { method: 'get' });
+  return await makeRequest(url, 'Error recovering ticket', { method: 'get' });
 }
 
 async function recoverAllSuspendedTickets() {
   try {
     const suspendedTickets = await getSuspendedTickets();
     for (const ticket of suspendedTickets) {
+      //console.log(ticket)
       console.log(`Recovering ticket with ID: ${ticket.id}`);
       await recoverTicket(ticket.id);
     }

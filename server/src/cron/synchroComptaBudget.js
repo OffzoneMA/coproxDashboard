@@ -133,7 +133,7 @@ const synchroMandats = {
             let counterEnd =await vilogiService.countConenction();
             
         let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
-            await scriptService.updateLogStatus('synchroComptaBudget',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+            await scriptService.updateLogStatus('synchroComptaBudget',LogId ,0 ,`Script executed successfully `, VolumeCalls );
             //console.log(FinalContrat)
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {

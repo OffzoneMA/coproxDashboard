@@ -10,7 +10,17 @@ const CoproprieteSchema = new mongoose.Schema({
     Offre: { type: String, required: false },
     exerciceCT: { type: Date, required: false },
     dateReprise:{ type: Date, required: false },
-    idVilogi:{ type: String, required: false }
+    idVilogi:{ type: String, required: false },
+    idMondayMortex:{ type: String, required: false },
+    immatriculation:{ type: String, required: false },
+    nbLotPrincipaux:{ type: Number, required: false },
+    typeChauffage:{ type: String, required: false },
+    dateConstruction:{ type: String, required: false },
+    dateCreation: { type: Date },
+    dateModification: { type: Date },
+    dateReprise: { type: Date, required: false },
+    dateFin: { type: Date, required: false },
+    suiviCopro: { type: Map,of: Date,required: false},
 });
 
 const Copropriete = mongoose.model('Copropriete', CoproprieteSchema);

@@ -25,8 +25,8 @@ const contratAssurance = {
             let copros = await coproService.listCopropriete();
             let FinalContrat = [];  // Initialize FinalContrat array
             let TotalContrat=0
-            //const data = await mondayService.getItemsDetails(1466840974);
-            //console.log(data)
+            const data = await mondayService.getItemsDetails(1466840974);
+            console.log(data)
 
             for (const copro of copros) {
                 console.log("ID Vilogi:", copro.idCopro);
@@ -59,6 +59,7 @@ const contratAssurance = {
                         NbContrat++
                         TotalContrat++
                         console.log(` Contrat numero ${TotalContrat}   Sync contrat Number :${contrat.id}   ---- ${copro.idCopro} -  [${NbContrat}   /  ${contrats.length}] `)  
+                        urlContrat=`https://copro.vilogi.com/rest/assurances/getFile/${contrat.idFichier}?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&idCopro=${copro.idVilogi}&idAdh=749799`
                         const columnValues = {
                             texte5: contrat.typecontrat,
                             //statut_1: contrat.typecontrat,
@@ -69,6 +70,7 @@ const contratAssurance = {
                             texte_2: contrat.police,
                             texte_6: contrat.assureur.replace(/^\d+-/, ''), // Removes leading digits and hyphen,
                             //texte_7: contrat.id,
+                            lien_internet__1:{"url" : urlContrat, "text":"Lien vers contrat"},
                             texte_8: contrat.compagnie,
                             chiffres: contrat.prime,
                             texte_mkkty1xq:`${infoFournisseur.adresse} ${infoFournisseur.complement} - ${infoFournisseur.codepostal} - ${infoFournisseur.ville}`,
@@ -99,7 +101,7 @@ const contratAssurance = {
         let counterEnd =await vilogiService.countConenction();
                    
         let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
-        await scriptService.updateLogStatus('synchroContratAssurance',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+        await scriptService.updateLogStatus('synchroContratAssurance',LogId ,0 ,`Script executed successfully `, VolumeCalls );
                      
             
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');

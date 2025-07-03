@@ -17,7 +17,7 @@ const zendeskRoutes = require('./src/routes/zendeskRoutes.js');
 const scriptRoutes = require('./src/routes/scriptRoutes.js');
 
 const scheduleCronJobs = require('./src/cron/cronStart.js');
-const batch = require('./src/cron/synchroVilogiMessages.js');
+const batch = require('./src/cron/synchroSuiviVieCopro.js');
 
 const app = express();
 const port = 8081;
@@ -28,7 +28,7 @@ app.use(bodyParser.json());
 // Prometheus Metrics
 const register = new client.Registry();
 client.collectDefaultMetrics({ register });
-
+ 
 const httpRequestDurationMicroseconds = new client.Histogram({
   name: 'http_request_duration_seconds',
   help: "Durée des requêtes HTTP en secondes",

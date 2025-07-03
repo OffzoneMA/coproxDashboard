@@ -1,80 +1,51 @@
-const scriptService = require('../services/scriptService');
+const ScriptService = require('../services/scriptService');
 
-// Update the script status
-exports.updateScriptStatus = async (req, res) => {
-  const { scriptName, status } = req.body;
-
-  try {
-    const result = await scriptService.updateScriptStatus(scriptName, status);
-    res.status(200).json({
-      message: 'Script status updated successfully',
-      data: result,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Failed to update script status',
-      error: error.message,
-    });
+class ScriptController {
+  static async sendResponse(res, operation) {
+    try {
+      const data = await operation();
+      return res.status(200).json({ success: true, data });
+    } catch (error) {
+      console.error(`Operation failed: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
   }
-};
 
-// Get all script logs
-exports.getScriptStateLogs = async (req, res) => {
-  try {
-    const logs = await scriptService.getScriptStateLogs();
-    res.status(200).json(logs);
-  } catch (error) {
-    res.status(500).json({
-      message: 'Failed to fetch script logs',
-      error: error.message,
-    });
+  static async updateScriptStatus(req, res) {
+    const { scriptName, status, option } = req.body;
+    return this.sendResponse(res, () => 
+      ScriptService.updateScriptStatus(scriptName, status, option)
+    );
   }
-};
 
-// Log when the script starts
-exports.logScriptStart = async (req, res) => {
-  const { scriptName } = req.body;
-
-  try {
-    const logId = await scriptService.logScriptStart(scriptName);
-    res.status(200).json({
-      message: 'Script started successfully',
-      logId,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Failed to start script',
-      error: error.message,
-    });
+  static async getScriptStateLogs(req, res) {
+    return this.sendResponse(res, () => 
+      ScriptService.getScriptStateLogs()
+    );
   }
-};
 
-// Update the log entry for a script
-exports.updateLogStatus = async (req, res) => {
-  const { scriptName, logId, status, message } = req.body;
-
-  try {
-    const result = await scriptService.updateLogStatus(scriptName, logId, status, message);
-    res.status(200).json({
-      message: 'Log entry updated successfully',
-      logId: result,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: 'Failed to update log entry',
-      error: error.message,
-    });
+  static async logScriptStart(req, res) {
+    const { scriptName } = req.body;
+    return this.sendResponse(res, () => 
+      ScriptService.logScriptStart(scriptName)
+    );
   }
-};
 
-// Sync function
-exports.getListScripts = async (req, res) => {
-  try {
-    await scriptService.getListScripts(req, res);
-  } catch (error) {
-    res.status(500).json({
-      message: 'Failed to getListScripts scripts',
-      error: error.message,
-    });
+  static async updateLogStatus(req, res) {
+    const { scriptName, logId, status, message, apiCalls } = req.body;
+    return this.sendResponse(res, () => 
+      ScriptService.updateLogStatus(scriptName, logId, status, message, apiCalls)
+    );
   }
-};
+
+  static async getListScripts(req, res) {
+    return this.sendResponse(res, () => 
+      ScriptService.getListScripts()
+    );
+  }
+}
+
+module.exports = ScriptController;

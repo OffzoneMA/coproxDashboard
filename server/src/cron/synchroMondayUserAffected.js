@@ -21,8 +21,8 @@ let Boards = [];
 Boards.push({ "BoardID": 1524894296, "PersonColumn": "" , "coproColumn": "connecter_les_tableaux__1"}); // Tableau facture
 
 
-Boards.push({ "BoardID": 1511021735, "PersonColumn": "personnes__1" , "coproColumn": "board_relation"}); // tableau Tache copro
-Boards.push({ "BoardID": 1511021735, "PersonColumn": "person" , "coproColumn": "board_relation"});// tableau tach copro 
+//Boards.push({ "BoardID": 1511021735, "PersonColumn": "personnes__1" , "coproColumn": "board_relation"}); // tableau Tache copro
+//Boards.push({ "BoardID": 1511021735, "PersonColumn": "person" , "coproColumn": "board_relation"});// tableau tach copro 
 //Boards.push({ "BoardID": 1429379552, "PersonColumn": "person" }); /// gestion des acces
 //Boards.push({ "BoardID": 1429385759, "PersonColumn": "person" }); //// Gestion des ventes
 Boards.push({ "BoardID": 1549773496, "PersonColumn": "" , "coproColumn": "connecter_les_tableaux__1"}); // tableau des avis de virements
@@ -76,7 +76,7 @@ const SynchroMondayUserAffected = {
                     let counterEnd =await vilogiService.countConenction();
                                
                     let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
-                    await scriptService.updateLogStatus('synchroMondayUserAffected',LogId ,2 ,`Script executed successfully `, VolumeCalls );
+                    await scriptService.updateLogStatus('synchroMondayUserAffected',LogId ,0 ,`Script executed successfully `, VolumeCalls );
                      } catch (error) {
             let counterEnd =await vilogiService.countConenction();
             
@@ -104,6 +104,7 @@ async function managementAffectation(idTicket,board,ItemID,) {
     }
 
 }
+//TODO : Affectation des taches par personne via MongoDB et service persone
 async function AffectInMondayPerson(personZendesk,BoardID, ItemID,fieldID) {
     
     await delay (100)

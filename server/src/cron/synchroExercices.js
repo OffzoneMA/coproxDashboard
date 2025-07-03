@@ -63,7 +63,7 @@ const synchroMandats = {
                 }
             }            
             //console.log(FinalContrat)
-            await scriptService.updateLogStatus('synchrosynchroExercicesContratEntretien',LogId ,2 ,"Script executed successfully");
+            await scriptService.updateLogStatus('synchrosynchroExercicesContratEntretien',LogId ,0 ,"Script executed successfully");
             
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {

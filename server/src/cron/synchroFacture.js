@@ -48,42 +48,18 @@ const synchroMandats = {
             
 
             //console.log(FinalContrat)
-            await scriptService.updateLogStatus('synchroFacture',LogId ,2 ,"Script executed successfully");
+            await scriptService.updateLogStatus('synchroFacture',LogId ,0 ,"Script executed successfully");
   
             console.log('--------------------------------------------------------------------------------------------END Extraction ...');
         } catch (error) {
-            console.error('An error occurred:', error.message);
+            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel           
+            await scriptService.updateLogStatus('synchroFacture',LogId ,-1,`An error occurred: ${error.message} `, VolumeCalls );
+           console.error('An error occurred:', error.message);
         }
     }
 };
 
 
-async function saveMonday(itemName,data,idVilogi) {
-    try {
-        const checkValue= await mondayVilogiSyncService.getItemsByInfo(boardId,idVilogi)
-        console.log(checkValue)
-        if(checkValue.length > 0){
-            console.log("Already exist")
-            const newItem = await mondayService.updateItem(boardId, checkValue[0].mondayItenID, data);
-        }else{
-            const newItem = await mondayService.createItem(boardId, itemName, data);
-            //console.log("Nouvel élément créé:", newItem);
-            const dataMongo={
-                boardID:boardId,
-                mondayItenID:newItem.id,
-                vilogiEndpoint:typeData,
-                //vilogiEndpointData:mandat,
-                vilogiItemID:idVilogi
-
-            }
-            mondayVilogiSyncService.addItem(dataMongo)
-        }
-        await delay(300);
-        //monday.api(`mutation {change_multiple_column_values(item_id:${newItem.id},board_id:${boardId}, column_values: \"{\\\"board_relation\\\" : {\\\"item_ids\\\" : [${copro.idMonday}]}}\") {id}}` )
-      } catch (error) {
-        console.error("Erreur lors de la création de l'élément:", error);
-      }
-}
 
 async function manageZendeskTicketFacture(idTicket,itemID) {
   try {
@@ -118,10 +94,10 @@ async function manageZendeskTicketFacture(idTicket,itemID) {
     };
     
     console.log(tags)
-    if (!tags.includes('avis_cs_en_cours')) {//// !tags.includes('monday') &&  removed if tags include monday
-      console.log("-------------------------------------------------------------------------------------------------")
+    //if (!tags.includes('rapport_intervention')) {//// !tags.includes('monday') &&  removed if tags include monday
+    //console.log("-------------------------------------------------------------------------------------------------")
       updateData.ticket.status = "solved";
-    }
+    //}
     
     await zendeskService.updateTicket(idTicket, updateData);
     //console.log(ticketData)

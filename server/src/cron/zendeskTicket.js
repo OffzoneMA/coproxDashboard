@@ -11,6 +11,7 @@ const zendeskTicket = {
     start: async () => {
         console.log('Zendesk ticket start ...');
         logs.logExecution("zendeskTicket")
+        const LogId = await scriptService.logScriptStart('synchoNomMandat');
 
         try {
             // Call controller function to fetch tickets
@@ -48,9 +49,9 @@ const zendeskTicket = {
 
 
                             //await processUserTags(ticket.id,ticket.requester_id);
-                            await delay(1000); 
+                        
                           }
-
+                          await delay(1000); 
                     }
                 },
                 // ... other Express.js response methods that you might use
@@ -59,7 +60,8 @@ const zendeskTicket = {
             // Add your additional synchronization logic here, using the fetched tickets data
         } catch (error) {
             // Handle errors
-            console.error('Error fetching tickets:', error.message);
+            await scriptService.updateLogStatus('synchroFactureOCR', LogId, -1, `An error occurred: ${error.message}`, VolumeCalls);
+            console.error('An error occurred:', error.message);
         }
     },
 };
