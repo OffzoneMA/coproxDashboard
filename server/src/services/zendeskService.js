@@ -182,8 +182,15 @@ async function getTicketsByStatus(ticketStatus) {
 
 async function getTicketsNew() {
   const today = new Date(new Date().getTime() - (1 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
-  const url = `/search.json?query=created>=${today}&status:open+status:new&sort_by=created_at&sort_order=desc`;
+  const url = `/search.json?query=created<=${today}&status:open+status:new&sort_by=created_at&sort_order=desc`;
   return makeRequest(url, 'Error fetching All Ticket with status new');
+}
+
+async function getTicketsold() {
+  //here search has only with attachements
+  const d = new Date(); d.setMonth(d.getMonth() - 17); d.setDate(d.getDate() - 15); const oneYearAgo = d.toISOString().slice(0, 10);
+  const url = `/search.json?query=solved<=${oneYearAgo}&status:solved:new&has_attachment:true&sort_by=update_at&sort_order=desc`;
+  return makeRequest(url, 'Error fetching All Ticket with status solved');
 }
 
 async function createTicket(ticketData) {
@@ -225,6 +232,10 @@ async function getTicketsById(ticketID) {
 async function getTicketsComments(ticketID) {
   const url = `/tickets/${ticketID}/comments`;
   return makeRequest(url, 'Error fetching All Ticket with status new');
+}
+async function redactCommentAttachment(ticketId,commentId, attachmentId) {
+  const url =  `/tickets/${ticketId}/comments/${commentId}/attachments/${attachmentId}/redact.json `;
+  return makeRequest(url, 'Error fetching All Ticket with status new',{ method: 'put' });
 }
 
 async function updateTicket(ticketId, ticketData) {
@@ -313,12 +324,14 @@ module.exports = {
   createTicket,
   addMessageToTicket,
   getTicketsNew,
+  getTicketsold,
   getTicketsByStatus,
   getTicketsNotClosed,
   getTicketsNewAssigned,
   getTicketsByUser,
   getTicketsById,
   getTicketsComments,
+  redactCommentAttachment,
   getNonResolvedTicketCount,
   recoverAllSuspendedTickets,
   getNonResolvedTicketCountOrganisation
