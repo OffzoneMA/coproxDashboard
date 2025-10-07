@@ -1,3 +1,5 @@
+// src/cron/synchroUsers.js
+
 // Import required services and controllers
 const vilogiService = require('../services/vilogiService');
 const coproService = require('../services/coproService');
@@ -20,25 +22,19 @@ const logFilePath2 = path.join(LOG_DIR, 'stats.log');
 
 // Generic logging function
 function writeLog(filePath, ...args) {
-    const timestamp = new Date().toISOString();
-    const logMessage = `${timestamp} ${args.join(' ')}\n`;
+  const timestamp = new Date().toISOString();
+  const logMessage = `${timestamp} ${args.join(' ')}\n`;
 
-    // Append to log file
-    fs.appendFile(filePath, logMessage, (err) => {
-        if (err) console.error(`Error writing to ${filePath}:`, err);
-    });
+  fs.appendFile(filePath, logMessage, (err) => {
+    if (err) console.error(`Error writing to ${filePath}:`, err);
+  });
 
-    process.stdout.write(logMessage); // Optional: Write to console
+  process.stdout.write(logMessage);
 }
 
-// Logging functions
-function FileLog(...args) {
-  writeLog(logFilePath, ...args);
-}
-
-function FileStatLog(...args) {
-  writeLog(logFilePath2, ...args);
-}
+// Logging helpers
+function FileLog(...args) { writeLog(logFilePath, ...args); }
+function FileStatLog(...args) { writeLog(logFilePath2, ...args); }
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -47,121 +43,125 @@ function delay(ms) {
 // Object for synchronizing users
 const synchroUsers = {
   start: async () => {
-      logs.logExecution("synchroUsers")
-      const LogId = await scriptService.logScriptStart('synchroUsers');
+    let LogId;            // <-- make visible in catch
+    let counterStart;     // <-- make visible in catch
+
+    try {
+      logs.logExecution("synchroUsers");
+      LogId = await scriptService.logScriptStart('synchroUsers');
+
       console.log('Synchronizing users...');
+      // Start counter (you had it commented out)
+      counterStart = await vilogiService.countConenction();
 
-      // TODO: Fetch the list of all copros
-       const copros = await coproService.listCopropriete();
-      // console.log(copros[0])
+      // Fetch all copros
+      const copros = await coproService.listCopropriete();
 
-      // Iterate through each copro
+      // Iterate copros
       for (const copro of copros) {
-      // Fetch data for the current copro
-        if(copro.idCopro!="S028") continue
-        if(copro.idVilogi){
-          //console.log(copro)
-          
-          await getAllUsersAndManageThem(copro.idVilogi,copro)
-          await fixUserRole(copro.idVilogi,copro)
-          
-        }else{
-          console.log("------------------------------------ Attention copro",copro._id," - ",copro.Nom ,"Sans IDVilogi ----------------------------------------------")
-        } 
-        
-        
+        if (copro.idVilogi) {
+          await getAllUsersAndManageThem(copro.idVilogi, copro);
+          await fixUserRole(copro.idVilogi, copro);
+        } else {
+          console.log("------------------------------------ Attention copro", copro._id, " - ", copro.Nom, "Sans IDVilogi ----------------------------------------------");
+        }
       }
+
       await SynchoZendesk();
-      await scriptService.updateLogStatus('synchroUsers',LogId ,0 ,"Script executed successfully");
 
+      const counterEnd = await vilogiService.countConenction();
+      const VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel;
 
+      await scriptService.updateLogStatus('synchroUsers', LogId, 0, `Script executed successfully`, VolumeCalls);
+      console.log('--------------------------------------------------------------------------------------------END Extraction ...');
+
+    } catch (error) {
+      console.error('An error occurred:', error.message);
+
+      try {
+        const counterEnd = await vilogiService.countConenction();
+        const VolumeCalls = counterEnd[0].nombreAppel - (counterStart?.[0]?.nombreAppel ?? 0);
+        if (LogId) {
+          await scriptService.updateLogStatus('synchroUsers', LogId, -1, `An error occurred: ${error.message}`, VolumeCalls);
+        }
+      } catch (inner) {
+        console.error('Failed to update script status after error:', inner?.message || inner);
+      }
+    }
   },
 };
 
-async function getAllUsersAndManageThem(idVilogi,Copro){
+async function getAllUsersAndManageThem(idVilogi, Copro) {
   const users = await vilogiService.getAllAdherents(idVilogi);
-  let i =0
-  FileStatLog("Charging from Copro : [",Copro.idCopro,"]"+` Users From Vilogi To MongoDB : [${users.length + 1}] -------- ${Copro.Nom},`)
+  let i = 0;
+  FileStatLog("Charging from Copro : [", Copro.idCopro, "]" + ` Users From Vilogi To MongoDB : [${(users?.length ?? 0) + 1}] -------- ${Copro.Nom},`);
+
   if (users && users.length > 0) {
-    // Iterate through each user in the array
     for (const user of users) {
-      // Check if the user object has an 'email' property
       if (user && user.email) {
-        // Log the email for the current user
         i++;
-        console.log("Charging from Copro : [",Copro.idCopro, " - " , Copro.Nom,"]"+` Users From Vilogi To MongoDB : [${i}/${users.length + 1}]` )
-        const idcoproVar = mongoose.Types.ObjectId(Copro._id);
+        console.log("Charging from Copro : [", Copro.idCopro, " - ", Copro.Nom, "]" + ` Users From Vilogi To MongoDB : [${i}/${users.length + 1}]`);
+
+        // ❗ FIX: use `new` with mongoose.Types.ObjectId
+        const idcoproVar = new mongoose.Types.ObjectId(Copro._id);
+
         const userData = {
-          "idCopro": idcoproVar,
-          "email": user.email,
-          "idVilogi": user.id,
-          "idCompteVilogi":user.compte,
-          "nom": user.nom,  
-          "prenom": user.prenom, 
-          "telephone": formatPhoneNumber(user.telephone),
-          "telephone2":formatPhoneNumber(user.telephone2),
-          "mobile":formatPhoneNumber(user.mobile),
-          "mobile2":formatPhoneNumber(user.mobile2),
-          "typePersonne": user.typePersonne,
-          "active":user.active,
-          "url":"https://copro.vilogi.com/AfficheProprietaire.do?operation=change&copropriete="+idVilogi+"&id="+user.id
+          idCopro: idcoproVar,
+          email: user.email,
+          idVilogi: user.id,
+          idCompteVilogi: user.compte,
+          nom: user.nom,
+          prenom: user.prenom,
+          telephone: formatPhoneNumber(user.telephone),
+          telephone2: formatPhoneNumber(user.telephone2),
+          mobile: formatPhoneNumber(user.mobile),
+          mobile2: formatPhoneNumber(user.mobile2),
+          typePersonne: user.typePersonne,
+          active: user.active,
+          url: `https://copro.vilogi.com/AfficheProprietaire.do?operation=change&copropriete=${idVilogi}&id=${user.id}`,
         };
-        console.log(userData)
-        //console.log(userData);
-        await SynchoMongoDB(userData)
-        
+
+        await SynchoMongoDB(userData);
+
       } else {
-        // Log a message if the user object or email property is missing
-        FileLog('| SyncUsers | getAllUsersAndManageThem | User with email :',user.email,' ---  email missing.');
+        FileLog('| SyncUsers | getAllUsersAndManageThem | User with email :', user?.email, ' ---  email missing.');
       }
     }
   }
 }
 
 function formatPhoneNumber(phoneNumber) {
-  // If the input is empty or only whitespace
-  if (!phoneNumber || phoneNumber.trim() === '') {
+  if (!phoneNumber || phoneNumber.trim() === '') return "";
+
+  let cleanedNumber = phoneNumber.trim().replace(/(?!^\+)[^0-9]/g, '');
+  if (!cleanedNumber || (!cleanedNumber.startsWith('0') && !cleanedNumber.startsWith('+'))) {
     return "";
   }
-
-  // Remove all characters except digits and the leading plus sign
-  let cleanedNumber = phoneNumber.trim().replace(/(?!^\+)[^0-9]/g, '');
-  
-  // Check if after cleaning it's still a valid number
-  if (!cleanedNumber || (!cleanedNumber.startsWith('0') && !cleanedNumber.startsWith('+'))) {
-      return "";
-  }
-
-  // If the number starts with '0' and doesn't already have a country code, replace it with '+33'
   if (cleanedNumber.startsWith('0')) {
-      cleanedNumber = '+33' + cleanedNumber.slice(1);
+    cleanedNumber = '+33' + cleanedNumber.slice(1);
   }
-
-  // Return the cleaned number
   return cleanedNumber;
 }
 
 async function SynchoMongoDB(userData) {
   try {
     const result = await PersonService.getPersonsByInfo('email', userData.email);
-    const val = result.length; // Count of results
+    const val = result.length;
 
     if (val === 1) {
-      //console.log('updating -------------------------------------------->' ,result[0]._id);
+      // Keep update logic using a plain object
       const newDataDocument = new personModel(userData);
       const newDataObject = newDataDocument.toObject({ transform: true });
-      delete newDataObject._id
-      await PersonService.editPerson(result[0]._id,newDataObject );
+      delete newDataObject._id;
+      await PersonService.editPerson(result[0]._id, newDataObject);
       console.log(`updated user with email: ${userData.email}`);
     } else if (val === 0) {
-      //console.log('adding -------------------------------------------->' ,userData.email);
-      const newDataDocument = new personModel(userData);
-      await PersonService.addPerson(newDataDocument);
+      // Insert plain object (safer than inserting mongoose doc directly)
+      await PersonService.addPerson(userData);
       console.log(`Added user with email: ${userData.email}`);
-      // Add your logic to add the record here
     } else if (val > 1) {
-      // Handle duplication when there are multiple matches    
-      FileLog('| SyncUsers | SynchoMongoDB | User with email :',user.email,' ---  Double Users.');
+      // ❗ FIX: user.email is not defined here; use userData.email
+      FileLog('| SyncUsers | SynchoMongoDB | User with email :', userData.email, ' ---  Double Users.');
     }
 
   } catch (error) {
@@ -169,61 +169,57 @@ async function SynchoMongoDB(userData) {
   }
 }
 
-async function fixUserRole(coproId,Copro) {
-  let i =0
+async function fixUserRole(coproId, Copro) {
+  let i = 0;
   const usersData = await vilogiService.getCoproData(coproId);
-  const users=usersData.listConseilSyndical;
+  const users = usersData.listConseilSyndical;
+
   if (users && users.length > 0) {
-    // Iterate through each user in the array
     for (const user of users) {
       i++;
-      await delay(200)
-      console.log("Charging from Copro : [",Copro.idCopro, " - " , Copro.Nom,"]"+` fixing roles in MongoDB: [${i}/${users.length + 1}]` )
-      // Check if the user object has an 'email' property
+      await delay(200);
+      console.log("Charging from Copro : [", Copro.idCopro, " - ", Copro.Nom, "]" + ` fixing roles in MongoDB: [${i}/${users.length + 1}]`);
+
       if (user && user.idCoproprietaire) {
-        const userData = {
-          "typePersonne": "CS"
-        };
+        const userData = { typePersonne: "CS" };
         const result = await PersonService.getPersonsByInfo("idVilogi", user.idCoproprietaire);
-        const val = result.length; // Count of results
-        //console.log(result)
+        const val = result.length;
+
         if (val === 1) {
-          //console.log('updating Role -------------------------------------------->' ,result[0]._id);
           const newDataDocument = new personModel(userData);
           const newDataObject = newDataDocument.toObject({ transform: true });
-          delete newDataObject._id
-          await PersonService.editPerson(result[0]._id,newDataObject );
-        }else{
-            try{
-              const userCS = await vilogiService.getAdherent(Copro.idVilogi,user.idCoproprietaire);
-              await delay(200)
-              if (userCS && userCS.email) {
-                const idcoproVar = mongoose.Types.ObjectId(Copro._id);
-                const userData = {
-                  "idCopro": idcoproVar,
-                  "email": userCS.email,
-                  "idVilogi": userCS.id,
-                  "idCompteVilogi":userCS.compte,
-                  "nom": userCS.nom,  
-                  "prenom": userCS.prenom, 
-                  "telephone": userCS.telephone,
-                  "telephone2":userCS.telephone2,
-                  "mobile":userCS.mobile,
-                  "mobile2":userCS.mobile2,
-                  "typePersonne": "CS",
-                  "active":userCS.active,
-                  "url":"https://copro.vilogi.com/AfficheProprietaire.do?operation=change&copropriete="+user.idCoproprietaire+"&id="+userCS.id
-                };
-                console.log(userData)
-                //console.log(userData);
-                await SynchoMongoDB(userData)
-              }
-            }catch (error) {
-              console.error('Error in SynchoMongoDB:', error);
-              FileLog('| SyncUsers | fixUserRole | User with IdVilogi :',user.idCoproprietaire,'  --- not found for a user.');
-            }
+          delete newDataObject._id;
+          await PersonService.editPerson(result[0]._id, newDataObject);
+        } else {
+          try {
+            const userCS = await vilogiService.getAdherent(Copro.idVilogi, user.idCoproprietaire);
+            await delay(200);
+            if (userCS && userCS.email) {
+              // ❗ FIX: use `new` with mongoose.Types.ObjectId
+              const idcoproVar = new mongoose.Types.ObjectId(Copro._id);
 
-          
+              const userData = {
+                idCopro: idcoproVar,
+                email: userCS.email,
+                idVilogi: userCS.id,
+                idCompteVilogi: userCS.compte,
+                nom: userCS.nom,
+                prenom: userCS.prenom,
+                telephone: userCS.telephone,
+                telephone2: userCS.telephone2,
+                mobile: userCS.mobile,
+                mobile2: userCS.mobile2,
+                typePersonne: "CS",
+                active: userCS.active,
+                url: `https://copro.vilogi.com/AfficheProprietaire.do?operation=change&copropriete=${user.idCoproprietaire}&id=${userCS.id}`
+              };
+
+              await SynchoMongoDB(userData);
+            }
+          } catch (error) {
+            console.error('Error in SynchoMongoDB:', error);
+            FileLog('| SyncUsers | fixUserRole | User with IdVilogi :', user.idCoproprietaire, '  --- not found for a user.');
+          }
         }
       }
     }
@@ -236,65 +232,63 @@ async function SynchoZendesk() {
 
   try {
     if (users && users.length > 0) {
-      // Iterate through each user in the array
       for (const user of users) {
-
         i++;
         console.log(`Charging to Zendesk: [${i}/${users.length}]`);
+
         const organisationName = await coproService.detailsCopropriete(user.idCopro);
+
         const baseUserData = {
-          "user": {
-            "email": user.email,
-            "skip_verify_email": true,
-            "name": `${user.nom} ${user.prenom}`,
-            "role": "end-user",
+          user: {
+            email: user.email,
+            skip_verify_email: true,
+            name: `${user.nom} ${user.prenom}`,
+            role: "end-user",
           }
         };
+
         const UserData = {
           ...baseUserData,
-          "user": {
+          user: {
             ...baseUserData.user,
-            "tags": [user.typePersonne],
-            "phone":  user.telephone ||  user.mobile || user.telephone2 || user.mobile2 ,
-            "mobile":user.mobile || user.mobile2,
-            "notes":user.url,
-            "url":user.url,
-            "organization": { "name": organisationName.idCopro },
-            "user_fields": { "role_du_demandeur": user.typePersonne }
+            tags: [user.typePersonne],
+            phone: user.telephone || user.mobile || user.telephone2 || user.mobile2,
+            mobile: user.mobile || user.mobile2,
+            notes: user.url,
+            url: user.url,
+            organization: { name: organisationName.idCopro },
+            user_fields: { role_du_demandeur: user.typePersonne }
           }
         };
-        try {
-          
 
+        try {
           const zendeskUser = user.idZendesk ? { id: user.idZendesk } : await ZendeskService.getUserFromEmail(user.email);
-          console.log(zendeskUser.id, " - " , user.email," - " , )
           await delay(300);
+
           if (zendeskUser && zendeskUser.id) {
-            console.log("Edit User " ,zendeskUser.id, " from copro: ",organisationName.idCopro )
+            console.log("Edit User ", zendeskUser.id, " from copro: ", organisationName.idCopro);
             await ZendeskService.updateUser(zendeskUser.id, UserData);
             user.idZendesk = zendeskUser.id;
             await PersonService.editPerson(user._id, user);
             await delay(100);
           } else {
-            console.log(UserData)
             const idzendeskAfterAdd = await ZendeskService.addUser(baseUserData);
-            console.log("Zendesk ID to Mongo db : ", idzendeskAfterAdd, " - " , user._id  ," From copro : ",organisationName.idCopro)
-            user.idZendesk = idzendeskAfterAdd
+            console.log("Zendesk ID to Mongo db : ", idzendeskAfterAdd, " - ", user._id, " From copro : ", organisationName.idCopro);
+            user.idZendesk = idzendeskAfterAdd;
             await PersonService.editPerson(user._id, user);
             await delay(100);
           }
         } catch (error) {
-          FileLog('| SyncUsers | SynchoZendesk | User with ID Vilogi :', user.idVilogi, ' and The user is : ', user.idZendesk || user.email, '  ---', error );
+          FileLog('| SyncUsers | SynchoZendesk | User with ID Vilogi :', user.idVilogi, ' and The user is : ', user.idZendesk || user.email, '  ---', error);
           console.error("Error synchronizing user with Zendesk:", error);
         }
+
         await delay(300);
       }
     }
   } catch (error) {
-      // Handle errors that might occur during the Zendesk API call
-      console.error("Error fetching user from Zendesk:", error);
+    console.error("Error fetching user from Zendesk:", error);
   }
 }
 
-// Export the synchronization object
 module.exports = synchroUsers;

@@ -1,5 +1,7 @@
 const { ObjectId } = require('mongodb');
 const MongoDB = require('../utils/mongodb');
+const { createServiceLogger } = require('./logger');
+const { logger, logError } = createServiceLogger('script');
 
 /**
  * @typedef {Object} ScriptLog
@@ -14,10 +16,13 @@ const MongoDB = require('../utils/mongodb');
 class ScriptService {
   static async connectAndExecute(callback) {
     try {
+      logger.debug('MongoDB connect start');
       await MongoDB.connectToDatabase();
-      return await callback();
+      const res = await callback();
+      logger.info('MongoDB operation success');
+      return res;
     } catch (error) {
-      console.error('Database operation failed:', error.message);
+      logError(error, 'Database operation failed');
       throw new Error(`Database operation failed: ${error.message}`);
     }
   }
@@ -32,6 +37,7 @@ class ScriptService {
     }
 
     return this.connectAndExecute(async () => {
+      logger.info('Update script status', { meta: { scriptName, status, hasOption: option != null } });
       const updateFields = { status, ...(option != null && { savedOption: option }) };
       const result = await this.getScriptCollection().updateOne(
         { name: scriptName },
@@ -51,6 +57,7 @@ class ScriptService {
     }
 
     return this.connectAndExecute(async () => {
+      logger.info('Get script state', { meta: { scriptName } });
       const script = await this.getScriptCollection().findOne({ name: scriptName });
       if (!script) {
         throw new Error(`Script "${scriptName}" not found`);
@@ -69,7 +76,7 @@ class ScriptService {
         return [];
       }
 
-      return scripts
+      const rows = scripts
         .flatMap(script => (script.logs || [])
           .map(log => ({
             ScriptName: script.name,
@@ -80,6 +87,8 @@ class ScriptService {
             APICalls: log.apicalls || 0
           })))
         .sort((a, b) => a.Start - b.Start);
+      logger.info('Get script state logs', { meta: { scripts: scripts.length, rows: rows.length } });
+      return rows;
     });
   }
 
@@ -104,6 +113,7 @@ class ScriptService {
         { name: scriptName },
         { $push: { logs: logEntry } }
       );
+      logger.info('Script log start', { meta: { scriptName, logId: logEntry.logId } });
       return logEntry.logId;
     });
   }
@@ -129,6 +139,7 @@ class ScriptService {
       if (result.matchedCount === 0) {
         throw new Error('Log entry not found');
       }
+      logger.info('Script log updated', { meta: { scriptName, logId, status } });
       return logId;
     });
   }
@@ -144,11 +155,13 @@ class ScriptService {
         })
         .toArray();
 
-      return scripts.map(script => ({
+      const mapped = scripts.map(script => ({
         ...script,
         lastExecution: script.execution_history?.[0]?.endTime || null,
         execution_history: undefined
       }));
+      logger.info('Get list scripts', { meta: { count: mapped.length } });
+      return mapped;
     });
   }
 
@@ -173,6 +186,7 @@ class ScriptService {
       if (result.matchedCount === 0) {
         throw new Error(`Script "${name}" not found`);
       }
+      logger.info('Logged execution history', { meta: { name, status } });
       return result;
     });
   }

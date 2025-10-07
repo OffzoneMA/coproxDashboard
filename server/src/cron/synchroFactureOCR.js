@@ -11,7 +11,7 @@ const path = require('path');
 const axios = require('axios');
 const mondaySdk = require("monday-sdk-js");
 const monday = mondaySdk();
-
+const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 monday.setApiVersion("2023-10");
 monday.setToken(process.env.MONDAY_API_KEY);
 
@@ -47,12 +47,54 @@ const saveFile = async (Url, ticketID, filename) => {
     }
 };
 
+
+
+async function addAnnotationToPdf(filePath, text) {
+  // Load the existing PDF
+  const existingPdfBytes = fs.readFileSync(filePath);
+
+  // Create a PDFDocument from it
+  const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+  // Embed a standard font (needed to measure width)
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  const pages = pdfDoc.getPages();
+  const firstPage = pages[0];
+
+  const { width, height } = firstPage.getSize();
+
+  const fontSize = 14;
+  const margin = 20;
+
+  // Measure text width so it never gets cut off
+  const textWidth = font.widthOfTextAtSize(text, fontSize);
+
+  // Coordinates for top-right, fully visible
+  const x = width - textWidth - margin;
+  const y = height - fontSize - margin;
+
+  // Draw text
+  firstPage.drawText(text, {
+    x,
+    y,
+    size: fontSize,
+    font,
+    color: rgb(0.012, 0.671, 0.933)
+  });
+
+  // Save
+  const pdfBytes = await pdfDoc.save();
+  fs.writeFileSync(filePath, pdfBytes);
+}
+
+
 async function manageZendeskTicketFacture(idTicket) {
     try {
         let ticketData = await zendeskService.getTicketsById(idTicket);
         const categorie = ticketData[0].custom_fields.find(field => field.id === 15114688584221);
         console.log(categorie);
-        const allowedCategories = ["facture_contrat","facture_fluide"];//, "facture_ocr", "facture_contrat", "facture_travaux"];
+        const allowedCategories = ["facture_contrat_usuel","facture_fluide"];//, "facture_ocr", "facture_contrat", "facture_travaux"];
 
         if (!allowedCategories.includes(categorie.value)) {
             return;
@@ -76,6 +118,8 @@ async function manageZendeskTicketFacture(idTicket) {
                     const filePath = path.join(__dirname, `../../downloads/factureOCR/zendesk - ${idTicket} - ${attachment.file_name}`);
                     await vilogiService.sendFactureToOCR(copro.idVilogi, filePath);
                 }
+            }else {
+                //TODO if no attachment
             }
         }
 
@@ -91,25 +135,8 @@ async function manageZendeskTicketFacture(idTicket) {
         const { tags } = ticketData[0];
         console.log(tags);
 
-        if (tags.includes('contrat_rapport_intervention')) {
+        if (tags.includes('contrat_rapport_intervention')) {}
 
-            /////TODO : Cloturer le ticket et Faire le changement au niveau de monday ay lieu de 
-            updateData.ticket.status = "solved";
-            updateData.ticket.custom_fields = [
-                {
-                    id: 15114688584221,
-                    value: "rapport_facture"
-                },
-                {
-                    id: 25146150608413,
-                    value: true
-                }
-            ];
-        } else if (tags.includes('travaux_rapport_intervention')) {
-            console.log("travaux_rapport_intervention");
-        } else if (tags.includes('rapport_intervention')) {
-            console.log("rapport_intervention");
-        } else {
             updateData.ticket.status = "solved";
             updateData.ticket.custom_fields = [
                 {
@@ -117,7 +144,7 @@ async function manageZendeskTicketFacture(idTicket) {
                     value: "facture_ocr"
                 }
             ];
-        }
+        
 
         await zendeskService.updateTicket(idTicket, updateData);
         await delay(100);
@@ -135,13 +162,13 @@ const synchroFactureOCR = {
         
         console.log(LogId);
         try {
-            let facturesMonday = await zendeskService.getTicketsByStatus("19622552342301");
+            let facturesZendesk = await zendeskService.getTicketsByStatus("19622552342301");
             console.log("here")
-            for (const factureMonday of facturesMonday) {
-                console.log(factureMonday.id);
-                await manageZendeskTicketFacture(factureMonday.id);
+            for (const factureZendesk of facturesZendesk) {
+                console.log(factureZendesk.id);
+                await manageZendeskTicketFacture(factureZendesk.id);
             }
-
+            console.log('--------------------------------------------------------------------------------------------END Extraction ...');
             let counterEnd = await vilogiService.countConenction();
             let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel;
             await scriptService.updateLogStatus('synchroFactureOCR', LogId, 0, `Script executed successfully`, VolumeCalls);

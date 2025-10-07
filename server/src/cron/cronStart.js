@@ -4,6 +4,9 @@ const ScriptService = require('../services/scriptService');
 const logs = require('../services/logs');
 const vilogiService = require('../services/vilogiService');
 
+// Ensure all cron jobs run on UTC time
+const TIMEZONE = 'Etc/UTC';
+
 let scriptsList = [];
 
 async function initializeScripts() {
@@ -64,17 +67,18 @@ async function executeScript(name, script) {
 async function scheduleCronJobs() {
   await initializeScripts();
   
-  cron.schedule('0 3 * * *', async () => {//equivalant a 6h 
+  cron.schedule('0 3 * * *', async () => { // Runs at 03:00 UTC
     let counter =await vilogiService.countConenction();
     logs.logVilogiCounter(counter[0].nombreAppel)
     logs.logExecution(" ------------- Lancement script 3h  - ", counter[0].nombreAppel)
+    await startScriptCron('synchroRapelles', require('../cron/synchroRapelles'));
     await startScriptCron('synchroFactureOCR', require('../cron/synchroFactureOCR'));
     await startScriptCron('synchroFacture', require('../cron/synchroFacture'));
     await startScriptCron('zendeskTicket', require('../cron/zendeskTicket'));
     await startScriptCron('recoverAllSuspendedTickets',require('../services/zendeskService'));
-  });
+  }, { timezone: TIMEZONE });
 
-  cron.schedule('0 5 * * *', async () => {//equivalant a 6h 
+  cron.schedule('0 5 * * *', async () => { // Runs at 05:00 UTC
     let counter =await vilogiService.countConenction();
     logs.logVilogiCounter(counter[0].nombreAppel)
     logs.logExecution(" ------------- Lancement script 4h  - ", counter[0].nombreAppel)
@@ -83,9 +87,9 @@ async function scheduleCronJobs() {
     await startScriptCron('synchroComptaRapprochementBancaire', require('../cron/synchroComptaRapprochementBancaire'));
 
     //await startScriptCron('SynchroMondayUserAffected', require('../cron/SynchroMondayUserAffected'));
-  });
+  }, { timezone: TIMEZONE });
 
-  cron.schedule('0 1 * * *', async () => {// equivalant a 9h 
+  cron.schedule('0 1 * * *', async () => { // Runs at 01:00 UTC
     console.log("------------- Lancement script 0h ")
     let counter =await vilogiService.countConenction();
     console.log(counter[0].nombreAppel)
@@ -96,9 +100,9 @@ async function scheduleCronJobs() {
     await startScriptCron('synchroContratEntretien', require('../cron/synchroContratEntretien'));
     await startScriptCron('synchroSuiviVieCopro', require('../cron/synchroSuiviVieCopro'));
     
-  });
+  }, { timezone: TIMEZONE });
 
-  cron.schedule('0 0 * * 0', async () => {
+  cron.schedule('0 0 * * 0', async () => { // Runs at 00:00 UTC every Sunday
     let counter =await vilogiService.countConenction();
     logs.logVilogiCounter(counter[0].nombreAppel)
     await startScriptCron('synchoBudgetCoproprietaire', require('../cron/synchoBudgetCoproprietaire'));
@@ -106,14 +110,22 @@ async function scheduleCronJobs() {
     await startScriptCron('synchroUsers', require('../cron/synchroUsers'));
     await startScriptCron('contratAssurance', require('./synchroContratAssurance'));
     await startScriptCron('synchroTravaux', require('../cron/synchroTravaux'));
-  });
+  }, { timezone: TIMEZONE }); 
+  
+  cron.schedule('0 19 * * *', async () => { // Runs at 19:00 UTC
+    let counter =await vilogiService.countConenction();
+    logs.logVilogiCounter(counter[0].nombreAppel)
+    await startScriptCron('synchroFactureOCRMonday', require('../cron/synchroFactureOCRMonday'));
+  }, { timezone: TIMEZONE });
 
-  cron.schedule('*/5 * * * *', async () => {
+
+
+  cron.schedule('*/5 * * * *', async () => { // Runs every 5 minutes UTC
     console.log('Starting cron 5 minutes')
     for (const { name, script } of scriptsList) {
       await executeScript(name, script);
     }
-  });
+  }, { timezone: TIMEZONE });
 }
 
 module.exports = scheduleCronJobs;

@@ -1,397 +1,343 @@
+// vilogiService.js
 const axios = require('axios');
 require('dotenv').config();
 const fs = require('fs');
 const FormData = require('form-data');
 const mime = require('mime-types');
 const path = require('path');
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
-const apiUrl = 'https://copro.vilogi.com/rest'; // Update with the correct base URL
+// ⬇⬇⬇ add redact to the import ⬇⬇⬇
+const { createServiceLogger, redact } = require('./logger');
+const { logger, logError } = createServiceLogger('vilogi');
 
-const authenticateUser = async (loginData,pwdData) => {
-  const loginEndpoint = '/connexionMulti'; // Update with the correct login endpoint
-  try {
-    const response = await axios.post(`${apiUrl}${loginEndpoint}?token=${process.env.VILOGI_TOKEN}`, {
-      login: loginData,
-      pwd: pwdData,
+// ... same usage
+
+function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+const apiUrl = 'https://copro.vilogi.com/rest';
+
+// —— Axios instance with wisdom logging ——
+const axiosInstance = axios.create({ baseURL: apiUrl, timeout: 120000 });
+
+// request timing + redacted logging
+axiosInstance.interceptors.request.use(config => {
+  config.metadata = { start: Date.now() };
+
+  // avoid logging huge headers objects + redact auth
+  const safeHeaders = {};
+  if (config.headers && typeof config.headers === 'object') {
+    for (const [k, v] of Object.entries(config.headers)) {
+      safeHeaders[k] = k.toLowerCase() === 'authorization' ? '[REDACTED]' : v;
+    }
+  }
+
+  logger.debug('HTTP request', {
+    meta: {
+      method: config.method,
+      url: redact((config.baseURL || '') + (config.url || '')),
+      headers: safeHeaders,
+      hasData: !!config.data
+    }
+  });
+  return config;
+});
+
+// response timing + outcome
+axiosInstance.interceptors.response.use(
+  res => {
+    const ms = Date.now() - (res.config.metadata?.start || Date.now());
+    logger.info('HTTP success', {
+      meta: {
+        status: res.status,
+        url: redact((res.config.baseURL || '') + (res.config.url || '')),
+        duration_ms: ms
+      }
     });
+    return res;
+  },
+  err => {
+    const cfg = err.config || {};
+    const ms = Date.now() - (cfg.metadata?.start || Date.now());
+    logError(err, 'HTTP error', {
+      url: redact((cfg.baseURL || '') + (cfg.url || '')),
+      duration_ms: ms,
+      method: cfg.method
+    });
+    return Promise.reject(err);
+  }
+);
+
+// ------------- AUTH -------------
+const authenticateUser = async (loginData, pwdData) => {
+  const url = `/connexionMulti?token=${process.env.VILOGI_TOKEN}`;
+  try {
+    logger.info('Authenticating user');
+    const response = await axiosInstance.post(url, { login: loginData, pwd: pwdData });
     return response.data;
   } catch (error) {
-    console.error('Error authenticating user:', error.message);
+    logError(error, 'Error authenticating user');
     throw error;
   }
 };
 
-
+// ------------- BASIC CALLS -------------
 const connection = async () => {
-  const coproEndpoint = `/adherant/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
-
+  const url = `/adherant/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
   try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    logger.info('Fetching connection data');
+    const response = await axiosInstance.get(url);
     return response.data;
-  } catch (error) {
-    throw error;
-  }
+  } catch (error) { logError(error, 'connection() failed'); throw error; }
 };
+
 const postAdherant = async () => {
-  const coproEndpoint = `/adherant/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
-
+  const url = `/adherant/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
   try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    logger.info('postAdherant');
+    const response = await axiosInstance.get(url);
     return response.data;
-  } catch (error) {
-    throw error;
-  }
+  } catch (error) { logError(error, 'postAdherant() failed'); throw error; }
 };
+
 const putAdherant = async () => {
-  const coproEndpoint = `/SyndicInfo/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
-
+  const url = `/SyndicInfo/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
   try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    logger.info('putAdherant');
+    const response = await axiosInstance.get(url);
     return response.data;
-  } catch (error) {
-    throw error;
-  }
+  } catch (error) { logError(error, 'putAdherant() failed'); throw error; }
 };
-
 
 const getAllCopros = async () => {
-  const coproEndpoint = `/SyndicInfo/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
+  const url = `/SyndicInfo/copro?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}&idAdh=${process.env.VILOGI_IDAUTH}`;
   try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    logger.info('getAllCopros');
+    const response = await axiosInstance.get(url);
     return response.data;
-  } catch (error) {
-    throw error;
-  }
+  } catch (error) { logError(error, 'getAllCopros() failed'); throw error; }
 };
+
+// ------------- COMPOSITES -------------
 const getCoproData = async (coproID) => {
   const mergedData = {};
-  const coproEndpoint1 = `/copro?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
-  //const coproEndpoint3= `/copro/donneeTechnique?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  const url1 = `/copro?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  const url3 = `/copro/info?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
   try {
-    const response1 = await axios.get(`${apiUrl}${coproEndpoint1}`);
-    await delay(300)
-    //const response3 = await axios.get(`${apiUrl}${coproEndpoint3}`);
-    Object.assign(mergedData, response1.data);
-    //Object.assign(mergedData, response3.data);
-
+    logger.info('getCoproData start', { meta: { coproID } });
+    const response1 = await axiosInstance.get(url1);
+    await delay(300);
+    const response3 = await axiosInstance.get(url3);
+    Object.assign(mergedData, response1.data, response3.data);
     return mergedData;
-  } catch (error) {
-    throw error;
-  }
+  } catch (error) { logError(error, 'getCoproData() failed', { coproID }); throw error; }
 };
-const countConenction = async () => {
-  const coproEndpoint = `/callApi?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}`;
 
+const countConenction = async () => {
+  const url = `/callApi?token=${process.env.VILOGI_TOKEN}&idCopro=${process.env.VILOGI_IDCOPROEXEMPLE}`;
   try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
+    logger.info('countConenction');
+    const response = await axiosInstance.get(url);
     return response.data;
-  } catch (error) {
-    throw error;
-  }
+  } catch (error) { logError(error, 'countConenction() failed'); throw error; }
 };
+
 const getCoproDataTech = async (coproID) => {
   const mergedData = {};
-  const coproEndpoint3= `/copro/donneeTechnique?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
-  try {
-    await delay(300)
-    const response3 = await axios.get(`${apiUrl}${coproEndpoint3}`);
-    Object.assign(mergedData, response3.data);
+  const urlTech = `/copro/donneeTechnique?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  const urlInfo = `/copro/info?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
 
+  try {
+    logger.info('getCoproDataTech start', { meta: { coproID } });
+    await delay(300);
+    const [techResponse, infoResponse] = await Promise.all([
+      axiosInstance.get(urlTech),
+      axiosInstance.get(urlInfo)
+    ]);
+    Object.assign(mergedData, techResponse.data, infoResponse.data);
     return mergedData;
-  } catch (error) {
-    throw error;
-  }
+  } catch (error) { logError(error, 'getCoproDataTech() failed', { coproID }); throw error; }
 };
 
+// ------------- SIMPLE FORWARDS -------------
 const getCoproTravaux = async (coproID) => {
-  const coproEndpoint = `/travaux?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
-  try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const url = `/travaux?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
+  try { logger.info('getCoproTravaux', { meta: { coproID } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getCoproTravaux() failed', { coproID }); throw e; }
 };
 
 const getCoproContratEntretien = async (coproID) => {
-  const coproEndpoint = `/contratEntretien?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
-  try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const url = `/contratEntretien?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
+  try { logger.info('getCoproContratEntretien', { meta: { coproID } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getCoproContratEntretien() failed', { coproID }); throw e; }
 };
-
 
 const getCoproManda = async (coproID) => {
-  const coproEndpoint = `/mandatSyndic?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
-  try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-const getCoproExercice = async (coproID) => {
-  const coproEndpoint = `/exercice?token=${process.env.VILOGI_TOKEN}&copro=${coproID}`;
-  try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const url = `/mandatSyndic?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  try { logger.info('getCoproManda', { meta: { coproID } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getCoproManda() failed', { coproID }); throw e; }
 };
 
+const getCoproExercice = async (coproID) => {
+  const url = `/exercice?token=${process.env.VILOGI_TOKEN}&copro=${coproID}`;
+  try { logger.info('getCoproExercice', { meta: { coproID } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getCoproExercice() failed', { coproID }); throw e; }
+};
 
 const getRapprochemetBancaire = async (coproID) => {
-  const coproEndpoint = `/rapprochements?token=${process.env.VILOGI_TOKEN}&copro=${coproID}`;
-  try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const url = `/rapprochements?token=${process.env.VILOGI_TOKEN}&copro=${coproID}`;
+  try { logger.info('getRapprochemetBancaire', { meta: { coproID } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getRapprochemetBancaire() failed', { coproID }); throw e; }
 };
 
-const getbudgetComptebyDate = async (coproID,compte,date) => {
-  const coproEndpoint = `/andecriture/soldeBalance?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&compte=${compte}&dateSolde=${date}`;
-  try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+const getbudgetComptebyDate = async (coproID, compte, date) => {
+  const url = `/andecriture/soldeBalance?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&compte=${compte}&dateSolde=${date}`;
+  try { logger.info('getbudgetComptebyDate', { meta: { coproID, compte, date } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getbudgetComptebyDate() failed', { coproID, compte }); throw e; }
 };
 
-const getbudgetCopro = async (coproID,exerciceID) => {
-  const coproEndpoint = `/budgets?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&exercice=${exerciceID}`;
-  try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+const getbudgetCopro = async (coproID, exerciceID) => {
+  const url = `/budgets?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&exercice=${exerciceID}`;
+  try { logger.info('getbudgetCopro', { meta: { coproID, exerciceID } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getbudgetCopro() failed', { coproID, exerciceID }); throw e; }
 };
 
-const getecritureComptableCompte = async (coproID,compte) => {
-  const coproEndpoint = `/andecriture/list?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&withCompte=${compte}`;
-  try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+const getecritureComptableCompte = async (coproID, compte) => {
+  const url = `/andecriture/list?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&withCompte=${compte}`;
+  try { logger.info('getecritureComptableCompte', { meta: { coproID, compte} }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getecritureComptableCompte() failed', { coproID, compte }); throw e; }
 };
-
-
 
 const getCoproContratAssurance = async (coproID) => {
-  const coproEndpoint = `/assurances?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
-  try {
-    const response = await axios.get(`${apiUrl}${coproEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const url = `/assurances?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
+  try { logger.info('getCoproContratAssurance', { meta: { coproID } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getCoproContratAssurance() failed', { coproID }); throw e; }
 };
-const getCoproContratEntretienFichier = async (fichierID, coproID, outputFileName) => {
-  const coproEndpoint = `/contratEntretien/getFile/${fichierID}?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
-  try {
-    const response = await axios({
-      method: 'get',
-      url: `${apiUrl}${coproEndpoint}`,
-      responseType: 'stream',
-    });
 
-    // Ensure the directory exists
+// file download (stream) with logging
+const getCoproContratEntretienFichier = async (fichierID, coproID, outputFileName) => {
+  const url = `/contratEntretien/getFile/${fichierID}?token=${process.env.VILOGI_TOKEN}&idCopro=${coproID}&idAdh=${process.env.VILOGI_IDAUTH}`;
+  try {
+    logger.info('Downloading contrat entretien file', { meta: { fichierID, coproID, outputFileName } });
+    const response = await axiosInstance.get(url, { responseType: 'stream' });
+
     const outputDir = path.dirname(outputFileName);
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
     const writer = fs.createWriteStream(outputFileName);
-    // Pipe the response stream to a file
     response.data.pipe(writer);
 
-    // Wait for the file to be fully written
     await new Promise((resolve, reject) => {
-      writer.on('finish', resolve); // Resolve the promise when the stream finishes
-      writer.on('error', (err) => {
-        // Delete the file if an error occurs and reject the promise
-        fs.unlink(outputFileName, () => reject(err));
-      });
+      writer.on('finish', resolve);
+      writer.on('error', err => { fs.unlink(outputFileName, () => reject(err)); });
     });
 
-    console.log('File downloaded successfully:', outputFileName);
+    logger.info('File downloaded', { meta: { outputFileName } });
   } catch (error) {
-    console.error('Error downloading file:', error.message);
+    logError(error, 'getCoproContratEntretienFichier() failed', { fichierID, coproID, outputFileName });
+    throw error;
   }
 };
 
-
+// ------------- PRESTATAIRES -------------
 const getPrestataires = async (coproID) => {
-  const coproEndpoint = `/professionnel?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
-  try { 
-    //console.log(`${apiUrl}${coproEndpoint}`)
-    const pros = await axios.get(`${apiUrl}${coproEndpoint}`);
+  const url = `/professionnel?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  try {
+    logger.info('getPrestataires', { meta: { coproID } });
+    const pros = await axiosInstance.get(url);
     return pros.data;
-  } catch (error) {
-    throw error;
-  }
+  } catch (error) { logError(error, 'getPrestataires() failed', { coproID }); throw error; }
 };
 
-const getPrestataireById = async (prestaireID,coproID) => {
-  //const coproEndpoint = `/professionnel/idProfessionnel=${prestaireID}?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
-  const coproEndpoint = `/professionnel?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
-  
-  try { 
-    //console.log(`${apiUrl}${coproEndpoint}`)
-    const pros = await axios.get(`${apiUrl}${coproEndpoint}`);
-    //console.log(pros.data)
-    for(const pro in pros.data){
-      //console.log(pros.data[pro])
-      if(prestaireID.includes(pros.data[pro].idCompte)){
-        //console.log(pros.data[pro])
-        return pros.data[pro];
+const getPrestataireById = async (prestaireID, coproID) => {
+  const url = `/professionnel?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+  try {
+    logger.info('getPrestataireById', { meta: { coproID, prestaireID } });
+    const pros = await axiosInstance.get(url);
+    for (const idx in pros.data) {
+      if (prestaireID.includes(pros.data[idx].idCompte)) {
+        return pros.data[idx];
       }
-        
     }
-  } catch (error) {
-    throw error;
-  }
+    return null;
+  } catch (error) { logError(error, 'getPrestataireById() failed', { coproID, prestaireID }); throw error; }
 };
 
-
-const getCoproAssemblee = async (coproID,assembleID) => {
-  const adherentsEndpoint = `/assemblee?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
+// ------------- ASSEMBLÉES / ADHÉRENTS -------------
+const getCoproAssemblee = async (coproID, assembleID) => {
+  const url = `/assemblee?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
   try {
-    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
-        // Make sure the response is an array
-        const data = Array.isArray(response.data) ? response.data : [];
-
-        // Filter to get the object with matching id
-        const result = data.find(adherent => adherent.id === assembleID);
-    
-        return result || null; // Return null if not found
-  } catch (error) {
-    throw error;
-  }
+    logger.info('getCoproAssemblee', { meta: { coproID, assembleID } });
+    const response = await axiosInstance.get(url);
+    const data = Array.isArray(response.data) ? response.data : [];
+    return data.find(a => a.id === assembleID) || null;
+  } catch (error) { logError(error, 'getCoproAssemblee() failed', { coproID, assembleID }); throw error; }
 };
 
-const getAdherent = async (coproID,adherantID) => {
-  const adherentsEndpoint = `/adherant/${adherantID}?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
-
-  try {
-    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+const getAdherent = async (coproID, adherantID) => {
+  const url = `/adherant/${adherantID}?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
+  try { logger.info('getAdherent', { meta: { coproID, adherantID } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getAdherent() failed', { coproID, adherantID }); throw e; }
 };
+
 const getAllAdherents = async (coproID) => {
-  const adherentsEndpoint = `/adherant/all?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
-
-  try {
-    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-const getpayementAdherant = async (idAdh,coproID) => {
-  const adherentsEndpoint = `/suiviPaiment?token=${process.env.VILOGI_TOKEN}&idAdh=${idAdh}&idCopro=${coproID}`;
-
-  try {
-    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-const getRelanceAdherant = async (idAdh,coproID) => {
-  const adherentsEndpoint = `/relances?token=${process.env.VILOGI_TOKEN}&idAdherant=${idAdh}&copro=${coproID}`;
-
-  try {
-    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-const getUserHasMessage = async (idAdh,coproID) => {
-  const adherentsEndpoint = `/odsmessage?token=${process.env.VILOGI_TOKEN}&idAdh=${idAdh}&idCopro=${coproID}`;
-
-  try {
-    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const url = `/adherant/all?token=${process.env.VILOGI_TOKEN}&idAdh=${process.env.VILOGI_IDAUTH}&idCopro=${coproID}`;
+  try { logger.info('getAllAdherents', { meta: { coproID } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getAllAdherents() failed', { coproID }); throw e; }
 };
 
-const getUserMessagePushLu = async (idMessage,idAdh,coproID) => {
-  const adherentsEndpoint = `/odsmessage/setLu?token=${process.env.VILOGI_TOKEN}&idAdh=${idAdh}&idCopro=${coproID}&idEvent=${idMessage}`;
-  try {
-    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+const getpayementAdherant = async (idAdh, coproID) => {
+  const url = `/suiviPaiment?token=${process.env.VILOGI_TOKEN}&idAdh=${idAdh}&idCopro=${coproID}`;
+  try { logger.info('getpayementAdherant', { meta: { coproID, idAdh } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getpayementAdherant() failed', { coproID, idAdh }); throw e; }
 };
 
-/*
-axios.interceptors.request.use(request => {
-  console.log('Request Details:');
-  console.log(`URL: ${request.url}`);
-  console.log(`Method: ${request.method}`);
-  console.log(`Headers:`, request.headers);
-  if (request.data) {
-    console.log(`Data:`, request.data); // For FormData, this may not be fully visible
-  }
-  return request; // Important to return the request so Axios can continue with it
-});*/
+const getRelanceAdherant = async (idAdh, coproID) => {
+  const url = `/relances?token=${process.env.VILOGI_TOKEN}&idAdherant=${idAdh}&copro=${coproID}`;
+  try { logger.info('getRelanceAdherant', { meta: { coproID, idAdh } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getRelanceAdherant() failed', { coproID, idAdh }); throw e; }
+};
 
+const getUserHasMessage = async (idAdh, coproID) => {
+  const url = `/odsmessage?token=${process.env.VILOGI_TOKEN}&idAdh=${idAdh}&idCopro=${coproID}`;
+  try { logger.info('getUserHasMessage', { meta: { coproID, idAdh } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getUserHasMessage() failed', { coproID, idAdh }); throw e; }
+};
+
+const getUserMessagePushLu = async (idMessage, idAdh, coproID) => {
+  const url = `/odsmessage/setLu?token=${process.env.VILOGI_TOKEN}&idAdh=${idAdh}&idCopro=${coproID}&idEvent=${idMessage}`;
+  try { logger.info('getUserMessagePushLu', { meta: { coproID, idAdh, idMessage } }); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getUserMessagePushLu() failed', { coproID, idAdh, idMessage }); throw e; }
+};
+
+// ------------- OCR -------------
 const sendFactureToOCR = async (coproID, filePath) => {
-  // Construct the endpoint
-  const adherentsEndpoint = `/FichierOCR?token=${process.env.VILOGI_TOKEN}&id=${process.env.VILOGI_IDAUTH}&copro=${coproID}&idSyndic=${process.env.VILOGI_idSyndic}`;
+  const url = `/FichierOCR?token=${process.env.VILOGI_TOKEN}&id=${process.env.VILOGI_IDAUTH}&copro=${coproID}&idSyndic=${process.env.VILOGI_idSyndic}`;
 
   if (!fs.existsSync(filePath)) {
-    throw new Error(`File not found at path: ${filePath}`);
+    const err = new Error(`File not found at path: ${filePath}`);
+    logError(err, 'sendFactureToOCR() local file missing', { filePath });
+    throw err;
   }
 
   const formData = new FormData();
   formData.append('fichier', fs.createReadStream(filePath));
-  
-  console.log(`Sending request to: ${apiUrl}${adherentsEndpoint}`);
 
   try {
-    console.log(`${apiUrl}${adherentsEndpoint}`)
-    const response = await axios.put(`${apiUrl}${adherentsEndpoint}`, formData, {
-      headers: formData.getHeaders(),
-    });
-
-    console.log('OCR Response:', response.data);
+    logger.info('sendFactureToOCR start', { meta: { coproID, filePath } });
+    const response = await axiosInstance.put(url, formData, { headers: formData.getHeaders() });
+    logger.info('sendFactureToOCR success');
     return response.data;
   } catch (error) {
-    console.error('Error sending file to OCR:', error.response ? error.response.data : error.message);
+    logError(error, 'sendFactureToOCR() failed', { coproID, filePath });
     throw error;
   }
 };
 
 const getFactureOCRBrouillon = async () => {
-  const adherentsEndpoint = `/FichierOCR/all?token=${process.env.VILOGI_TOKEN}&id=${process.env.VILOGI_IDAUTH}&copro=${process.env.VILOGI_IDCOPROEXEMPLE}&idSyndic=${process.env.VILOGI_idSyndic}`;
-  try {
-    const response = await axios.get(`${apiUrl}${adherentsEndpoint}`);
-    return response.data;
-  } catch (error) {
-    throw error; throw error;
-  }
+  const url = `/FichierOCR/all?token=${process.env.VILOGI_TOKEN}&id=${process.env.VILOGI_IDAUTH}&copro=${process.env.VILOGI_IDCOPROEXEMPLE}&idSyndic=${process.env.VILOGI_idSyndic}`;
+  try { logger.info('getFactureOCRBrouillon'); const r = await axiosInstance.get(url); return r.data; }
+  catch (e) { logError(e, 'getFactureOCRBrouillon() failed'); throw e; }
 };
-
 
 module.exports = {
   authenticateUser,

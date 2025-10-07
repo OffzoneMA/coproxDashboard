@@ -1,5 +1,7 @@
 const axios = require('axios');
 require('dotenv').config(); 
+const { createServiceLogger, redact } = require('./logger');
+const { logger, logError } = createServiceLogger('trello');
 
 const API_KEY  = process.env.TRELLO_API_KEY;
 const TOKEN  = process.env.TRELLO_TOKEN;
@@ -34,6 +36,7 @@ const trelloAPI = axios.create({
 
 const findListId = async () => {
   try {
+    logger.info('Finding Trello list ID', { meta: { BOARD_ID, LIST_NAME } });
     const { data: lists } = await trelloAPI.get(`/boards/${BOARD_ID}/lists`);
     const list = lists.find(list => list.name === LIST_NAME);
 
@@ -41,40 +44,46 @@ const findListId = async () => {
       throw new Error('List not found');
     }
 
+    logger.info('Found Trello list', { meta: { listId: list.id } });
     return list.id;
   } catch (error) {
-    console.error('Error finding list ID:', error.message);
+    logError(error, 'Error finding Trello list ID', { BOARD_ID, LIST_NAME });
     throw error;
   }
 };
 
 const createCard = async (listId, cardName) => {
   try {
+    logger.info('Creating Trello card', { meta: { listId, cardName } });
     const { data: card } = await trelloAPI.post('/cards', { idList: listId, name: cardName });
+    logger.info('Created Trello card', { meta: { cardId: card.id } });
     return card.id;
   } catch (error) {
-    console.error('Error creating Trello card:', error.message);
+    logError(error, 'Error creating Trello card', { listId, cardName });
     throw error;
   }
 };
 
 const createChecklist = async (cardId, checklistName, checkItems) => {
   try {
+    logger.info('Creating Trello checklist', { meta: { cardId, checklistName } });
     const { data: checklist } = await trelloAPI.post(`/checklists`, { idCard: cardId, name: checklistName });
 
     for (const itemName of checkItems) {
       await trelloAPI.post(`/checklists/${checklist.id}/checkItems`, { name: itemName });
     }
 
+    logger.info('Created Trello checklist', { meta: { checklistId: checklist.id, items: checkItems?.length || 0 } });
     return checklist.id;
   } catch (error) {
-    console.error('Error creating Trello checklist:', error.message);
+    logError(error, 'Error creating Trello checklist', { cardId, checklistName });
     throw error;
   }
 };
 
 exports.createTicket = async (cardName) => {
   try {
+    logger.info('Creating Trello ticket flow start', { meta: { cardName } });
     const listId = await findListId();
     const cardId = await createCard(listId, cardName);
 
@@ -82,15 +91,17 @@ exports.createTicket = async (cardName) => {
       await createChecklist(cardId, name, items);
     }
 
+    logger.info('Trello ticket flow completed', { meta: { cardId } });
     return 'Ticket and checklists created successfully';
   } catch (error) {
-    console.error('Error creating Trello ticket:', error.message);
+    logError(error, 'Error creating Trello ticket', { cardName });
     throw error;
   }
 };
 
 exports.getCardsWithIncompleteCheckItems = async (checkItemNames) => {
   try {
+    logger.info('Fetching Trello cards');
     const { data: cards } = await trelloAPI.get(`/boards/${BOARD_ID}/cards`);
     const cardsWithIncompleteCheckItems = [];
 
@@ -112,15 +123,17 @@ exports.getCardsWithIncompleteCheckItems = async (checkItemNames) => {
       }
     }
 
+    logger.info('Fetched Trello cards with incomplete check items', { meta: { count: cardsWithIncompleteCheckItems.length } });
     return cardsWithIncompleteCheckItems;
   } catch (error) {
-    console.error('Error fetching Trello cards with incomplete check items:', error.message);
+    logError(error, 'Error fetching Trello cards with incomplete check items');
     throw error;
   }
 };
 
 exports.getAllChecklistItems = async () => {
   try {
+    logger.info('Fetching Trello checklist items');
     const { data: cards } = await trelloAPI.get(`/boards/${BOARD_ID}/cards`);
 
     const allChecklistItems = await Promise.all(
@@ -132,15 +145,17 @@ exports.getAllChecklistItems = async () => {
 
     const uniqueChecklistItems = [...new Set(allChecklistItems.flat())];
 
+    logger.info('Fetched Trello checklist items', { meta: { count: uniqueChecklistItems.length } });
     return uniqueChecklistItems;
   } catch (error) {
-    console.error('Error fetching Trello checklist items:', error.message);
+    logError(error, 'Error fetching Trello checklist items');
     throw error;
   }
 };
 
 exports.getAgSteps = async () => {
   try {
+    logger.info('Fetching Trello AG steps');
     const { data: lists } = await trelloAPI.get(`/boards/${BOARD_ID}/lists`);
     const allLists = [];
 
@@ -151,9 +166,10 @@ exports.getAgSteps = async () => {
       });
     }
 
+    logger.info('Fetched Trello AG steps', { meta: { count: allLists.length } });
     return allLists;
   } catch (error) {
-    console.error('Error fetching Trello lists:', error.message);
+    logError(error, 'Error fetching Trello lists');
     throw error;
   }
 };
@@ -187,9 +203,10 @@ exports.getCardInfo = async (cardId) => {
       checklistItems,
     };
 
+    logger.info('Fetched Trello card info', { meta: { cardId } });
     return cardInfo;
   } catch (error) {
-    console.error('Error fetching Trello card information:', error.message);
+    logError(error, 'Error fetching Trello card information', { cardId });
     throw error;
   }
 };

@@ -18,18 +18,26 @@ const synchroCopro = {
         logs.logExecution("synchroCopro")
         let counterStart =await vilogiService.countConenction();
         const LogId = await scriptService.logScriptStart('synchroCopro');
-        console.log(LogId)
-        await vilogiToMongodb()
-        await mongodbToZendesk()
-        await mongodbToMondayCoproMorte()
-        await mongodbToMonday()
-        await mongodbToMondayCoproInacrtiv()
-        //await mondayToZendeskResponsables()
-        let counterEnd =await vilogiService.countConenction();
-        let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel
-        console.log(VolumeCalls)
-        await scriptService.updateLogStatus('synchroCopro',LogId ,0 ,`Script executed successfully `, VolumeCalls );
-        console.log('--------------------------------------------------------------------------------------------END Extraction ...');
+        try {
+            await vilogiToMongodb()
+            await mongodbToZendesk()
+            await mongodbToMondayCoproMorte()
+            await mongodbToMonday()
+            await mongodbToMondayCoproInacrtiv()
+            await mondayToZendeskResponsables()
+            let counterEnd =await vilogiService.countConenction();
+            let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel
+            console.log(VolumeCalls)
+            await scriptService.updateLogStatus('synchroCopro',LogId ,0 ,`Script executed successfully `, VolumeCalls );
+            console.log('--------------------------------------------------------------------------------------------END Extraction ...');
+        } catch (error) {
+
+            console.error("Une erreur est survenue :", error);
+            await scriptService.updateLogStatus('synchroCopro', LogId, -1, `Script executed with Error: ${error.message}`);
+            return; 
+          
+        }
+
                                           
             
     }
@@ -183,13 +191,12 @@ async function mongodbToMondayCoproMorte(){
   for (const copro of copros) {
       //if(copro.idCopro!="S070")continue
       const values = await mondayService.getItemInBoardWhereName(copro.idCopro,LesCoprosInfoMorteIDBoard)
-      console.log(values)
-      console.log(copro)
       try {
         const data= await vilogiService.getCoproData(copro.idVilogi)
         let dataTech = null;
         try {
             dataTech = await vilogiService.getCoproDataTech(copro.idVilogi);
+            console.log("Data technique récupérée :", dataTech);
         } catch (error) {
             console.error("Une erreur est survenue lors de la récupération des données techniques:", error.data);
         }

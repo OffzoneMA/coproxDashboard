@@ -75,6 +75,7 @@ async function manageZendeskTicketFacture(idTicket,itemID) {
           await delay(500)
           const filePath = await path.join(__dirname, `../../downloads/zendesk/zendesk - ${idTicket} - ${attachment.file_name}`); // Replace with your file path
           await mondayService.uploadFileToMonday(filePath,itemID,"fichier__1");
+          await mondayService.uploadFileToMonday(filePath,itemID,"file_mkvcm99f");//envoyer vers monday fichier OCR
           //await saveFileToDropbox(`downloads/zendesk/zendesk - ${idTicket} - ${attachment.file_name}`,`zendesk - ${ticket.id} - ${attachment.file_name}`)
         }
 
@@ -96,7 +97,7 @@ async function manageZendeskTicketFacture(idTicket,itemID) {
     console.log(tags)
     //if (!tags.includes('rapport_intervention')) {//// !tags.includes('monday') &&  removed if tags include monday
     //console.log("-------------------------------------------------------------------------------------------------")
-      updateData.ticket.status = "solved";
+      //updateData.ticket.status = "solved";
     //}
     
     await zendeskService.updateTicket(idTicket, updateData);

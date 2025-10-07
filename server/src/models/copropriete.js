@@ -20,7 +20,7 @@ const CoproprieteSchema = new mongoose.Schema({
     dateModification: { type: Date },
     dateReprise: { type: Date, required: false },
     dateFin: { type: Date, required: false },
-    suiviCopro: { type: Map,of: Date,required: false},
+    suiviCopro: { type: Map,of: Date,required: false}
 });
 
 const Copropriete = mongoose.model('Copropriete', CoproprieteSchema);

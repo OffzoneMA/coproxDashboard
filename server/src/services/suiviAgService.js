@@ -1,14 +1,19 @@
 const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
+const { createServiceLogger } = require('./logger');
+const { logger, logError } = createServiceLogger('suiviAg');
 
 const suiviAgModel = MongoDB.addSaveMiddleware('suiviAg');
 
 async function connectAndExecute(callback) {
   try {
+    logger.debug('MongoDB connect start');
     await MongoDB.connectToDatabase();
-    return await callback();
+    const res = await callback();
+    logger.info('MongoDB operation success');
+    return res;
   } catch (error) {
-    console.error('Error connecting and executing:', error.message);
+    logError(error, 'Error connecting and executing');
     throw error;
   }
 }
@@ -25,11 +30,10 @@ async function addsuiviAg(jsonData) {
           date: new Date(record.date),
         });
       } else {
-        console.warn(`No copropriete found for id: ${record.id}`);
+        logger.warn('No copropriete found for id', { meta: { id: record.id } });
       }
     }
-
-    console.log('JSON data processed successfully');
+    logger.info('JSON data processed successfully');
   });
 }
 
@@ -46,14 +50,14 @@ async function getLastTemporalRecord(idCopro) {
         .toArray();
 
       if (result.length > 0) {
-        console.log('Last temporal record:', result[0]);
+        logger.info('Last temporal record', { meta: { idCopro, note: result[0].note } });
         return result[0];
       } else {
-        console.log('No temporal records found for idCopro:', idCopro);
+        logger.info('No temporal records found for idCopro', { meta: { idCopro } });
         return null;
       }
     } catch (error) {
-      console.error('Error getting last temporal record:', error.message);
+      logError(error, 'Error getting last temporal record', { idCopro });
       throw error;
     }
   });

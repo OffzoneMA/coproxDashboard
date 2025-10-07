@@ -17,7 +17,7 @@ const zendeskRoutes = require('./src/routes/zendeskRoutes.js');
 const scriptRoutes = require('./src/routes/scriptRoutes.js');
 
 const scheduleCronJobs = require('./src/cron/cronStart.js');
-const batch = require('./src/cron/synchroSuiviVieCopro.js');
+const batch = require('./src/cron/synchroCoproUsers.js');
 
 const app = express();
 const port = 8081;
@@ -48,11 +48,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Exposer les métriques Prometheus
-app.get('/metrics', async (req, res) => {
-  res.set('Content-Type', register.contentType);
-  res.end(await register.metrics());
-});
+
 
 // Routes API
 app.use('/trello', trelloRoutes);
@@ -67,6 +63,12 @@ app.use('/mongodb', trelloRoutes);
 app.use('/monday', mondayRoutes);
 app.use('/script', scriptRoutes);
 
+
+// Exposer les métriques Prometheus
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
 /// Chargement dynamique des services
 const services = fs.readdirSync(path.join(__dirname, 'src/services'))
 .filter(file => file.endsWith('.js'))

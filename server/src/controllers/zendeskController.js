@@ -30,6 +30,8 @@ async function getAllorganizations(req, res) {
   await handleRequest(res, zendeskService.getAllorganizations, 'Error fetching current organisation');
 }
 async function getTicketsNew(req, res) {
+  const today = new Date(new Date().getTime() - (1 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+  const url = `/search.json?query=created>=${today}&status:open+status:new&sort_by=created_at&sort_order=desc`;
   await handleRequest(res, zendeskService.getTicketsNew, 'Error fetching current tickets with status');
 }
 async function getTicketsNotClosed(req, res) {

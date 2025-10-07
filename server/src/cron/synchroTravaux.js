@@ -38,7 +38,7 @@ const synchroTravaux = {
             for (const copro of copros) {
                 console.log('test 6 ');
                 console.log("ID Vilogi:", copro.idCopro);
-                //if (copro.idCopro !== "S037") continue
+                //if (copro.idCopro !== "S047") continue
                 if (copro.idVilogi !== undefined) {
                     let travauxAll = await vilogiService.getCoproTravaux(copro.idVilogi);
 

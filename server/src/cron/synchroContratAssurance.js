@@ -37,61 +37,91 @@ const contratAssurance = {
                     let NbContrat=0
                     
                     for (const contrat of contrats) {
-                        // Define a regular expression pattern to match the desired format
-                        const regex = /^(\d+)-(.*)$/;
-                        
-                        const match = contrat.assureur.match(regex);
-                        let infoFournisseur = {};
-                    
-                        if (match) {
-                            // Extract the numbers from the match
-                            const fournisseurID = match[1];
-                            infoFournisseur = await vilogiService.getPrestataireById(fournisseurID, copro.idVilogi);
-                        } else {
-                            //console.log("Invalid format for contrat.fournisseur");
-                        }
-                        if (infoFournisseur === undefined){
-                            console.log("Break");
-                            break;
-                        }else{
+                        try {
+                            // Defensive guards for missing contrat fields
+                            if (!contrat) {
+                                console.warn(`Contrat item null/undefined for copro ${copro.idCopro}, skipping.`);
+                                continue;
+                            }
 
+                            // Define a regular expression pattern to match the desired format (digits - anything)
+                            const regex = /^(\d+)-(.*)$/;
+                            const assureurStr = contrat.assureur || '';
+                            const match = assureurStr.match(regex);
+                            let infoFournisseur = null;
+
+                            if (match) {
+                                // Extract the numbers from the match
+                                const fournisseurID = match[1];
+                                try {
+                                    infoFournisseur = await vilogiService.getPrestataireById(fournisseurID, copro.idVilogi);
+                                } catch (e) {
+                                    console.warn(`Failed to fetch fournisseur (${fournisseurID}) for contrat ${contrat.id}: ${e.message}`);
+                                }
+                            } else {
+                                console.warn(`Assureur format unexpected (value='${assureurStr}') for contrat ${contrat.id} (copro ${copro.idCopro}).`);
+                            }
+
+                            if (!infoFournisseur) {
+                                // Decide: skip or create with empty contact info. We choose to still create but with placeholders.
+                                infoFournisseur = {
+                                    adresse: '',
+                                    complement: '',
+                                    codepostal: '',
+                                    ville: '',
+                                    email: '',
+                                    telephone: null
+                                };
+                            }
+
+                            NbContrat++;
+                            TotalContrat++;
+                            console.log(` Contrat numero ${TotalContrat}   Sync contrat Number :${contrat.id}   ---- ${copro.idCopro} -  [${NbContrat}   /  ${contrats.length}] `);
+
+                            const urlContrat = `https://copro.vilogi.com/rest/assurances/getFile/${contrat.idFichier}?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&idCopro=${copro.idVilogi}&idAdh=749799`;
+
+                            // Safe date parsing helper
+                            const parseDate = (str) => {
+                                if (!str || typeof str !== 'string') return null;
+                                const parts = str.split('/');
+                                if (parts.length === 3) return { date: parts.reverse().join('-') };
+                                return null;
+                            };
+
+                            const buildAddress = (f) => {
+                                const segs = [f.adresse, f.complement].filter(Boolean).join(' ').trim();
+                                const loc = [f.codepostal, f.ville].filter(Boolean).join(' ');
+                                return [segs, loc].filter(Boolean).join(' - ');
+                            };
+
+                            const columnValues = {
+                                texte5: contrat.typecontrat || '',
+                                texte_3: contrat.contrat || '',
+                                date__1: parseDate(contrat.dateeffet),
+                                date_1__1: parseDate(contrat.dateecheance),
+                                texte_2: contrat.police || '',
+                                texte_6: assureurStr.replace(/^\d+-/, ''),
+                                lien_internet__1: { url: urlContrat, text: 'Lien vers contrat' },
+                                texte_8: contrat.compagnie || '',
+                                chiffres: contrat.prime || '',
+                                texte_mkkty1xq: buildAddress(infoFournisseur),
+                                e_mail8__1: infoFournisseur.email || '',
+                                ...(infoFournisseur.telephone && { t_l_phone__1: { phone: infoFournisseur.telephone, countryShortName: 'FR' } }),
+                                ...(copro.idMonday != null && { board_relation5: { item_ids: [copro.idMonday] } }),
+                            };
+
+                            const itemName = `Contrat d'assurance - ${copro.idCopro} - ${contrat.typecontrat || ''} - ${assureurStr}`;
+
+                            try {
+                                await saveMonday(itemName, columnValues, contrat.id);
+                                await delay(200);
+                            } catch (error) {
+                                console.error(`Erreur lors de la création/mise à jour de l'élément (contrat ${contrat.id}):`, error.message || error);
+                            }
+                        } catch (innerErr) {
+                            console.error(`Unexpected error processing contrat for copro ${copro.idCopro}:`, innerErr.message || innerErr);
+                            // continue with next contrat
                         }
-                        NbContrat++
-                        TotalContrat++
-                        console.log(` Contrat numero ${TotalContrat}   Sync contrat Number :${contrat.id}   ---- ${copro.idCopro} -  [${NbContrat}   /  ${contrats.length}] `)  
-                        urlContrat=`https://copro.vilogi.com/rest/assurances/getFile/${contrat.idFichier}?token=PE00FqnH93BRzvKp7LBR5o5Sk0M1aJ3f&idCopro=${copro.idVilogi}&idAdh=749799`
-                        const columnValues = {
-                            texte5: contrat.typecontrat,
-                            //statut_1: contrat.typecontrat,
-                            texte_3: contrat.contrat,
-                            //texte__1: contrat.description,
-                            date__1: {"date" : contrat.dateeffet.split('/').reverse().join('-')},
-                            date_1__1: {"date" : contrat.dateecheance.split('/').reverse().join('-')},
-                            texte_2: contrat.police,
-                            texte_6: contrat.assureur.replace(/^\d+-/, ''), // Removes leading digits and hyphen,
-                            //texte_7: contrat.id,
-                            lien_internet__1:{"url" : urlContrat, "text":"Lien vers contrat"},
-                            texte_8: contrat.compagnie,
-                            chiffres: contrat.prime,
-                            texte_mkkty1xq:`${infoFournisseur.adresse} ${infoFournisseur.complement} - ${infoFournisseur.codepostal} - ${infoFournisseur.ville}`,
-                            //texte_10: contrat.compteCharge,
-                            e_mail8__1:infoFournisseur.email,
-                            ...(infoFournisseur.telephone != null && infoFournisseur!== undefined && { t_l_phone__1:  {"phone" :infoFournisseur.telephone, "countryShortName" : "FR"}}),
-                            date_2__1: contrat.datefin ? { "date": contrat.datefin.split('/').reverse().join('-') }: null,
-                            //texte_12: contrat.idFichier,
-                            ...(copro.idMonday != null && { board_relation5: { "item_ids": [copro.idMonday] } }),
-                          };
-                          
-                          
-                          const itemName = `Contrat d'assurance - ${copro.idCopro} - ${contrat.typecontrat} - ${contrat.assureur}`;//
-                          
-                          try {
-                            await saveMonday(itemName,columnValues,contrat.id)
-                            await delay(200)
-                          } catch (error) {
-                            console.error("Erreur lors de la création de l'élément:", error);
-                          }
-                        
                     }
                     
                 }

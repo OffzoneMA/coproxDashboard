@@ -11,7 +11,8 @@ const zendeskTicket = {
     start: async () => {
         console.log('Zendesk ticket start ...');
         logs.logExecution("zendeskTicket")
-        const LogId = await scriptService.logScriptStart('synchoNomMandat');
+
+        //const LogId = await scriptService.logScriptStart('zendeskTicket');
 
         try {
             // Call controller function to fetch tickets
@@ -23,7 +24,7 @@ const zendeskTicket = {
                 },
                 json: async data => {
                     // Call getUserFromID for each ticket
-                    
+                    console.log('Fetched tickets:', data);
                     for (const ticket of data) {
                         //console.log(ticket.requester_id);
 
@@ -60,7 +61,7 @@ const zendeskTicket = {
             // Add your additional synchronization logic here, using the fetched tickets data
         } catch (error) {
             // Handle errors
-            await scriptService.updateLogStatus('synchroFactureOCR', LogId, -1, `An error occurred: ${error.message}`, VolumeCalls);
+            //await scriptService.updateLogStatus('synchroFactureOCR', LogId, -1, `An error occurred: ${error.message}`);
             console.error('An error occurred:', error.message);
         }
     },

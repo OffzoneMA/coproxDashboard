@@ -5,316 +5,485 @@ const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
 const download = require('download');
-
-// Ensure logs are written to /tmp on Vercel
-const LOG_DIR = process.env.LOG_DIR || '/tmp';
-const logFilePath = path.join(LOG_DIR, 'logsMonday.log');
-
-async function logExecution(...args) {
-    const timestamp = new Date().toISOString();
-    const logMessage = `${timestamp} ${args.join(' ')}\n`;
-
-    // Append to log file
-    fs.appendFile(logFilePath, logMessage, (err) => {
-        if (err) console.error(`Error writing to ${logFilePath}:`, err);
-    });
-
-    process.stdout.write(logMessage); // Optional: Write to console
-}
-
+const { createServiceLogger, redact } = require('./logger');
+const { logger, logError } = createServiceLogger('monday');
 
 // Initialize Monday SDK
 const monday = mondaySdk();
-monday.setApiVersion("2025-01"); // Updated API version
-monday.setToken(process.env.MONDAY_API_KEY)
+monday.setApiVersion("2025-01");
+monday.setToken(process.env.MONDAY_API_KEY);
 
-async function executeGraphQLQuery(queryString) {
-  try {
-      //console.log(queryString)
-      const res = await monday.api(queryString);
-      console.log(res);
-      return res.data ;
-    
-
-    } catch (error) {
-      if (error.response && error.response.data && error.response.data.errors) {
-        const errorMessages = error.response.data.errors.map(err => err.message).join(', ');
-        throw new Error(`Error executing GraphQL query: ${errorMessages}`);
-      } else {
-        let errorMessage = 'Error executing GraphQL query:';
-        if (error.response) {
-          errorMessage += ` Status Code: ${error.response.status},`;
-          if (error.response.data && error.response.data.error_message) {
-            errorMessage += ` Error Message: ${error.response.data.error_message},`;
-          }
-          if (error.response.data && error.response.data.error_code) {
-            errorMessage += ` Error Code: ${error.response.data.error_code},`;
-            // Handling specific error codes
-            if (error.response.data.error_code === 'InvalidColumnIdException') {
-              // Handle InvalidColumnIdException here
-              errorMessage += ` Invalid Column ID: ${error.response.data.error_data.column_id},`;
-              errorMessage += ` Error Reason: ${error.response.data.error_data.error_reason},`;
-            }
-            // Add more conditions for other error codes if needed
-          }
-          if (error.response.data && error.response.data.error_data) {
-            errorMessage += ` Error Data: ${JSON.stringify(error.response.data.error_data)},`;
-          }
-        } else {
-          errorMessage += ` ${error.message}`;
-        }
-        throw new Error(errorMessage);
-      }
-    }
-  }
-let cachedItemFields;
-
-async function fetchItemFields() {
-
-  cachedItemFields="";      
-const introspectionQuery = `query IntrospectionQuery {__schema {types {namefields {nametype {nameofType {name}}}}}}`;
- const introspectionResult = await monday.api(introspectionQuery);
-  console.log(introspectionResult)
-  const itemFields = introspectionResult.data.__schema.types.find(type => type.name === 'Item').fields;
-  console.log(itemFields)
-  cachedItemFields = itemFields.map(field => field.name);
-
-  return cachedItemFields;
+// (Optional) one-liner replacement for your previous logExecution()
+function logExecution(...args) {
+  logger.info(args.join(' '));
 }
 
-// Function to get all items in a board
+/** ---------------------------------------------------------
+ * Helpers
+ * --------------------------------------------------------- */
+
+/**
+ * Escape a JS string for safe interpolation inside GraphQL quoted strings.
+ * Escapes backslashes and double quotes.
+ */
+function escapeForGraphQL(str = "") {
+  return String(str).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+/**
+ * Monday GraphQL expects column_values as a JSON string (i.e., stringified JSON).
+ * When embedding that JSON string into a GraphQL string literal, we must:
+ *   1) JSON.stringify() the object to get JSON text
+ *   2) JSON.stringify() that JSON text again to produce a JS string literal with quotes
+ * This returns the final token you can put unquoted in the GraphQL mutation:
+ *
+ *   column_values: ${asGraphQLJSONString({status: "Done"})}
+ *
+ * which expands to:
+ *   column_values: "{\"status\":\"Done\"}"
+ */
+function asGraphQLJSONString(obj) {
+  const json = JSON.stringify(obj ?? {});
+  return JSON.stringify(json); // double-stringify for GraphQL embedding
+}
+
+/**
+ * Remove CR/LF to avoid accidental GraphQL formatting issues inside strings.
+ */
+function stripNewlines(str = "") {
+  return String(str).replace(/\r?\n|\r/g, "");
+}
+
+/** ---------------------------------------------------------
+ * GraphQL wrapper with structured logging
+ * --------------------------------------------------------- */
+async function executeGraphQLQuery(queryString) {
+  const startedAt = Date.now();
+  logger.debug('GraphQL request', { meta: { query: redact(queryString) } });
+
+  try {
+    const res = await monday.api(queryString);
+    const ms = Date.now() - startedAt;
+
+    // Monday SDK returns { data, accountId, etc. }
+    // If there were GraphQL errors, they’re on res.errors; surface them.
+    if (res.errors && res.errors.length) {
+      // Attach the raw GraphQL errors to the Error object so callers can inspect
+      // and decide whether the error is recoverable (eg. inactive items).
+      const err = new Error('Monday GraphQL error');
+      err.graphQLErrors = res.errors;
+      logError(err, 'GraphQL errors returned', { duration_ms: ms, errors: res.errors });
+      throw err;
+    }
+
+    logger.info('GraphQL success', { meta: { duration_ms: ms } });
+    return res.data;
+  } catch (error) {
+    const ms = Date.now() - startedAt;
+    let errorMessage = 'Error executing GraphQL query';
+    let meta = { duration_ms: ms };
+
+    if (error.response) {
+      meta.status = error.response.status;
+      if (error.response.data) {
+        meta.api_errors = error.response.data.errors || error.response.data.error_message;
+        meta.api_error_code = error.response.data.error_code;
+        meta.api_error_data = error.response.data.error_data;
+      }
+    } else if (error.errors || error.graphQLErrors) {
+      // monday.api sometimes puts GraphQL errors on error.errors or we attached
+      // them as error.graphQLErrors above. Normalize into meta.api_errors.
+      meta.api_errors = error.errors || error.graphQLErrors;
+    } else {
+      meta.reason = error.message;
+    }
+
+    logError(error, errorMessage, meta);
+    const thrown = new Error(
+      `${errorMessage}: ${meta.status ? 'Status ' + meta.status + ' ' : ''}${meta.api_error_code || ''}`.trim()
+    );
+    // Preserve original GraphQL errors for callers
+    if (meta.api_errors) thrown.api_errors = meta.api_errors;
+    throw thrown;
+  }
+}
+
+/** ---------------------------------------------------------
+ * Queries & Mutations
+ * --------------------------------------------------------- */
+
 async function getItems(boardId) {
   try {
-    const query = `query { boards(ids: ${boardId}) { items_page (limit: 300) { cursor items { id  name  } } } }`;
-    result=await executeGraphQLQuery(query)
-    //console.log(result.boards[0].items_page.items)
-    return result.boards[0].items_page.items
+    logger.info('Fetching items', { meta: { boardId } });
+    const query = `query {
+      boards(ids: ${boardId}) {
+        items_page (limit: 300) {
+          cursor
+          items { id name }
+        }
+      }
+    }`;
+    const result = await executeGraphQLQuery(query);
+    const items = result.boards[0].items_page.items;
+    logger.info('Fetched items', { meta: { boardId, count: items.length } });
+    return items;
   } catch (error) {
-    throw new Error('Error fetching items:', error.message);
+    logError(error, 'Error fetching items', { boardId });
+    throw error;
   }
 }
 
-async function getItemsGroup(boardId,groupID) {
+async function getItemsGroup(boardId, groupID) {
   try {
-    const query = `query { boards(ids: ${boardId}) { items_page (limit: 500) { cursor items { id  name group {id title }  } } } }`;
-    //const query = `query { boards(ids: ${boardId}) { groups(ids: ["${groupID}"]) { id title items_page(limit: 300) { items { id name group { id title } } cursor } } } }`;
-    result=await executeGraphQLQuery(query)
-    //console.log(result.boards[0].items_page.items)
-    return result.boards[0].items_page.items
+    logger.info('Fetching items in group', { meta: { boardId, groupID } });
+    // NOTE: You can add group filter via query_params if needed.
+    const query = `query {
+      boards(ids: ${boardId}) {
+        items_page (limit: 500) {
+          cursor
+          items { id name group { id title } }
+        }
+      }
+    }`;
+    const result = await executeGraphQLQuery(query);
+    return result.boards[0].items_page.items;
   } catch (error) {
-    throw new Error('Error fetching items:', error.message);
+    logError(error, 'Error fetching items (group)', { boardId, groupID });
+    throw error;
   }
 }
 
 async function moveItemToGroup(itemId, targetGroupId) {
   try {
+    logger.info('Moving item to group', { meta: { itemId, targetGroupId } });
     const mutation = `mutation {
-      move_item_to_group (item_id: ${itemId}, group_id: "${targetGroupId}") {
-        id
-      }
+      move_item_to_group (item_id: ${itemId}, group_id: "${escapeForGraphQL(targetGroupId)}") { id }
     }`;
-
     const response = await executeGraphQLQuery(mutation);
-    console.log(`Item ${itemId} successfully moved to group ${targetGroupId}`);
     return response.move_item_to_group;
   } catch (error) {
-    logExecution(`Error moving item ${itemId} to group ${targetGroupId}`);
-    throw new Error(`Error moving item ${itemId} to group ${targetGroupId}: ${error.message}`);
-  }
-}
-
-
-async function getItemsDetails(itemID) {
-  try {
-    //await fetchItemFields()
-    const query = `query { items(ids: ${itemID}) { id name column_values {column {id  title}  id type value    }} }`;
-    const result = await executeGraphQLQuery(query);
-    //console.log("name : ",result.items[0].name)
-    //console.log("values : ",result.items[0].column_values[0].value)
-    for(column in result.items[0].column_values)
-    //console.log("ColumnID : ",result.items[0].column_values[column].id,"                 Column : ",result.items[0].column_values[column].column.title,"                  Value : " ,result.items[0].column_values[column].value)
-    //console.log(result.items[0])
-    //console.log("---------------------------")
-    return result.items[0];
-  } catch (error) {
-    throw new Error('Error fetching items:', error.message);
-  }
-}
-
-
-async function getItemInBoardWhereName(name, boardID) {
-  try {
-    // Query to fetch the item based on its name within the specified board
-    const query = `query { boards(ids: ${boardID}) { id state items_page(limit: 1, query_params: { rules: [{ column_id: \"name\", compare_value:  \"${name}\"}] }) { items { id name } } } }`;
-
-    // Execute the query
-    const response = await executeGraphQLQuery(query);
-
-    
-      // Return the first item found (assuming unique names)
-      return response.boards[0].items_page.items[0];
-
-  } catch (error) {
-    // Handle any errors
-    console.error("Error fetching item:", error);
+    logError(error, 'Error moving item to group', { itemId, targetGroupId });
     throw error;
   }
 }
 
-// Function to create a new item in a board
-async function createItem(boardId, itemName, columnValues) {
+async function getItemsDetails(itemID) {
   try {
+    logger.info('Fetching item details', { meta: { itemID } });
+    const query = `query {
+      items(ids: ${itemID}) {
+        id
+        name
+        column_values {
+          column { id title }
+          id
+          type
+          value
+        }
+      }
+    }`;
+    const result = await executeGraphQLQuery(query);
     
-    const cleanedColumnValues = JSON.stringify(columnValues).replace(/\\r\\n/g, '');
-    const columnValuesString = cleanedColumnValues.replace(/"/g, '\\"');
-    const query = `mutation {
-      create_item (
-        board_id: ${boardId},
-        item_name: "${removeFrenchSpecialCharacters(itemName)}",
-        column_values: "${columnValuesString}"
-      ) {id name}}`;
-    const response = await executeGraphQLQuery(query);
-    return response.create_item;
+    // Check if items array exists and has content
+    if (!result.items || result.items.length === 0) {
+      return null; // Item not found
+    }
+    
+    return result.items[0];
   } catch (error) {
-    logExecution(`Error creating item ${itemName}`)
-    throw new Error('Error creating item:',itemName, error.message);
+    logError(error, 'Error fetching item details', { itemID });
+    return null; // Return null instead of throwing to allow graceful handling
   }
 }
-// Function to create a new item in a board
-async function updateItemName(boardId, itemId, newItemName) {
+
+async function getItemInBoardWhereName(name, boardID) {
   try {
-    // Escape special characters in the newItemName string
-    const sanitizedItemName = JSON.stringify({ name: newItemName }).replace(/"/g, '\\"');
+    logger.info('Searching item by name', { meta: { boardID, name } });
+    const query = `query {
+      boards(ids: ${boardID}) {
+        id
+        state
+        items_page(
+          limit: 1,
+          query_params: {
+            rules: [{ column_id: "name", compare_value: "${escapeForGraphQL(name)}" }]
+          }
+        ) {
+          items { id name }
+        }
+      }
+    }`;
+    const response = await executeGraphQLQuery(query);
+    return response.boards[0]?.items_page?.items?.[0];
+  } catch (error) {
+    logError(error, 'Error fetching item by name', { boardID, name });
+    throw error;
+  }
+}
+
+/**
+ * CREATE ITEM — fixed escaping:
+ * - item_name: escaped for GraphQL string
+ * - column_values: embedded as a JSON string using asGraphQLJSONString()
+ */
+async function createItem(boardId, itemName, columnValues) {
+  try {
+    logger.info('Creating item', { meta: { boardId, itemName } });
+
+    // Validate inputs
+    if (!boardId || !itemName) {
+      throw new Error('boardId and itemName are required for creating items');
+    }
+
+    const safeName = escapeForGraphQL(stripNewlines(itemName));
+    const payload = columnValues || {};
+    
+    // Optional cleanup of multiline text fields and validate column values
+    if (payload && typeof payload === 'object') {
+      Object.keys(payload).forEach(k => {
+        if (typeof payload[k] === 'string') {
+          payload[k] = stripNewlines(payload[k]);
+        }
+      });
+    }
+    
+    const columnValuesToken = asGraphQLJSONString(payload);
+
+    const query = `
+      mutation {
+        create_item (
+          board_id: ${boardId},
+          item_name: "${safeName}",
+          column_values: ${columnValuesToken}
+        ) { id name }
+      }
+    `;
+
+    logger.debug('Create item query built');
+    const response = await executeGraphQLQuery(query);
+    
+    if (!response.create_item || !response.create_item.id) {
+      throw new Error('Invalid response from Monday.com - no item ID returned');
+    }
+    
+    return response.create_item;
+  } catch (error) {
+    logError(error, 'Error creating item', { boardId, itemName });
+    throw error;
+  }
+}
+
+/**
+ * UPDATE ITEM NAME — Monday requires change_multiple_column_values with {"name": "..."} JSON string.
+ */
+async function updateItemName(boardId, itemId, newItemName) {
+  let existingItem = null;
+  try {
+    logger.info('Updating item name', { meta: { boardId, itemId } });
+    
+    // First, check if the item exists
+    existingItem = await getItemsDetails(itemId);
+    if (!existingItem) {
+      const error = new Error(`Could not find item with ID ${itemId} in board ${boardId}`);
+      logError(error, 'Item not found for name update', { boardId, itemId, newItemName });
+      throw error;
+    }
+    
+    const payload = { name: stripNewlines(newItemName) };
+    const columnValuesToken = asGraphQLJSONString(payload);
 
     const query = `
       mutation {
         change_multiple_column_values(
           board_id: ${boardId},
           item_id: ${itemId},
-          column_values: "${sanitizedItemName}"
-        ) {
-          id
-          name
-        }
+          column_values: ${columnValuesToken}
+        ) { id name }
       }
     `;
-
     const response = await executeGraphQLQuery(query);
     return response.change_multiple_column_values;
   } catch (error) {
-    throw new Error(`Error updating item name for item ${itemId}: ${error.message}`);
+    // Handle specific Monday GraphQL error for inactive items: when the
+    // API returns an error describing "inactive_pulse_ids" we treat this as
+    // a non-retriable condition and skip updating the item.
+    const apiErrors = error.api_errors || error.graphQLErrors || [];
+    try {
+      const errs = Array.isArray(apiErrors) ? apiErrors : [apiErrors];
+      const inactiveErr = errs.find(e => {
+        const data = e.extensions?.error_data || e.error_data || {};
+        return data.inactive_pulse_ids && Array.isArray(data.inactive_pulse_ids) && data.inactive_pulse_ids.length;
+      });
+      if (inactiveErr) {
+        logger.info('Item appears inactive/archived on Monday — creating a new item instead', { meta: { boardId, itemId, reason: inactiveErr } });
+        try {
+          const itemName = existingItem?.name || `Imported item ${Date.now()}`;
+          const created = await createItem(boardId, itemName, {});
+          logger.info('Created replacement item on Monday for inactive item (name update)', { meta: { boardId, newItemId: created.id } });
+          return created;
+        } catch (createError) {
+          logError(createError, 'Error creating replacement item after inactive item name failure', { boardId, itemId, newItemName });
+          throw createError;
+        }
+      }
+    } catch (inner) {
+      // ignore parsing errors and fall through to generic error handling
+    }
+
+    // If item doesn't exist, provide specific error message
+    if (error.message && error.message.includes('Could not find item')) {
+      logError(error, 'Item not found for name update', { boardId, itemId, newItemName });
+    } else {
+      logError(error, 'Error updating item name', { boardId, itemId, newItemName });
+    }
+    throw error;
   }
 }
-// Function to create a new item in a board
-async function updateItem(boardId, itemId, columnValues) {
-  try {
-    console.log(columnValues)
-    // Remove occurrences of /r/n from columnValues
-    const cleanedColumnValues = JSON.stringify(columnValues).replace(/\\r\\n/g, '');
 
-    const columnValuesString = cleanedColumnValues.replace(/"/g, '\\"');
+/**
+ * UPDATE ITEM COLUMNS — same JSON-string rule as above.
+ */
+async function updateItem(boardId, itemId, columnValues) {
+  let existingItem = null;
+  try {
+    logger.info('Updating item columns', { meta: { boardId, itemId } });
+    
+    // First, check if the item exists
+    existingItem = await getItemsDetails(itemId);
+    if (!existingItem) {
+      const error = new Error(`Could not find item with ID ${itemId} in board ${boardId}`);
+      logError(error, 'Item not found for column update', { boardId, itemId, columnValues });
+      throw error;
+    }
+
+    const payload = columnValues || {};
+    if (payload && typeof payload === 'object') {
+      Object.keys(payload).forEach(k => {
+        if (typeof payload[k] === 'string') payload[k] = stripNewlines(payload[k]);
+      });
+    }
+    const columnValuesToken = asGraphQLJSONString(payload);
+
     const query = `mutation {
       change_multiple_column_values (
         item_id: ${itemId},
         board_id: ${boardId},
-        column_values: "${columnValuesString}"
-      ) {
-        id
+        column_values: ${columnValuesToken}
+      ) { id name }
+    }`;
+    const response = await executeGraphQLQuery(query);
+    return response.change_multiple_column_values;
+  } catch (error) {
+    // Detect inactive-pulse GraphQL error and skip update
+    const apiErrors = error.api_errors || error.graphQLErrors || [];
+    try {
+      const errs = Array.isArray(apiErrors) ? apiErrors : [apiErrors];
+      const inactiveErr = errs.find(e => {
+        const data = e.extensions?.error_data || e.error_data || {};
+        return data.inactive_pulse_ids && Array.isArray(data.inactive_pulse_ids) && data.inactive_pulse_ids.length;
+      });
+      if (inactiveErr) {
+        logger.info('Item appears inactive/archived on Monday — creating a new item instead', { meta: { boardId, itemId, reason: inactiveErr } });
+        try {
+          const itemName = existingItem?.name || `Imported item ${Date.now()}`;
+          const created = await createItem(boardId, itemName, columnValues);
+          logger.info('Created replacement item on Monday for inactive item', { meta: { boardId, newItemId: created.id } });
+          return created;
+        } catch (createError) {
+          logError(createError, 'Error creating replacement item after inactive item failure', { boardId, itemId });
+          throw createError;
+        }
+      }
+    } catch (inner) {
+      // ignore parsing errors and continue to generic handling
+    }
+
+    // If item doesn't exist, provide specific error message
+    if (error.message && error.message.includes('Could not find item')) {
+      logError(error, 'Item not found for column update', { boardId, itemId, columnValues });
+    } else {
+      logError(error, 'Error updating item', { boardId, itemId });
+    }
+    throw error;
+  }
+}
+
+async function createSubitem(parentItemId, subitemName) {
+  try {
+    logger.info('Creating subitem', { meta: { parentItemId, subitemName } });
+    const query = `mutation {
+      create_subitem (parent_item_id: ${parentItemId}, item_name: "${escapeForGraphQL(stripNewlines(subitemName))}") {
+        id name
       }
     }`;
     const response = await executeGraphQLQuery(query);
-    console.log(response.change_multiple_column_values)
-    return await response.change_multiple_column_values;
+    return response.create_subitem;
   } catch (error) {
-    logExecution(`Error updating item ${itemId}`)
-    throw new Error(`Error updating item ${itemId}: ${error.message}`);
+    logError(error, 'Error creating subitem', { parentItemId });
+    throw error;
   }
 }
 
-// Function to create a subitem under a parent item
-async function createSubitem(parentItemId, subitemName) {
+async function createGroup(boardId, groupName){
   try {
-    const query = `mutation { create_subitem (parent_item_id: ${parentItemId}, item_name: "${subitemName}") { id name } }`;
-    const response = await monday.api(query);
-    return response.data.create_subitem;
+    logger.info('Creating group', { meta: { boardId, groupName } });
+    const query = `mutation {
+      create_group (board_id: ${boardId}, group_name: "${escapeForGraphQL(stripNewlines(groupName))}") { id title }
+    }`;
+    const response = await executeGraphQLQuery(query);
+    return response.create_group;
   } catch (error) {
-    throw new Error('Error creating subitem:', error.message);
+    logError(error, 'Error creating group', { boardId, groupName });
+    throw error;
   }
 }
 
-async function createGroup(boardId,groupName){
-  try {
-    const response = await monday.api(`mutation {create_group (board_id:  ${boardId}, group_name: "${removeFrenchSpecialCharacters(groupName)}") {id}}`);
-    return response.data.create_subitem;
-  } catch (error) {
-    throw new Error('Error creating subitem:', error.message);
-  }
-}
-async function uploadFileToMonday(filePath,ITEM_ID,COLUMN_ID) {
+async function uploadFileToMonday(filePath, ITEM_ID, COLUMN_ID) {
   const form = new FormData();
   const fileStream = fs.createReadStream(filePath);
-  
   form.append('variables[file]', fileStream);
   form.append('query', `
-      mutation ($file: File!) {
-          add_file_to_column (
-              file: $file,
-              item_id: ${ITEM_ID},
-              column_id: "${COLUMN_ID}"
-          ) {
-              id
-          }
-      }
+    mutation ($file: File!) {
+      add_file_to_column (file: $file, item_id: ${ITEM_ID}, column_id: "${escapeForGraphQL(COLUMN_ID)}") { id }
+    }
   `);
 
   try {
+    logger.info('Uploading file', { meta: { ITEM_ID, COLUMN_ID, filePath } });
     const response = await axios.post('https://api.monday.com/v2/file', form, {
-      headers: {
-          ...form.getHeaders(),
-          Authorization: process.env.MONDAY_API_KEY
-      },
-      maxContentLength: Infinity, // Allow large content length
-      maxBodyLength: Infinity, // Allow large body length
-      timeout: 300000 // 5 minutes timeout
-  });
-
-  console.log('File uploaded successfully:', response.data);
+      headers: { ...form.getHeaders(), Authorization: process.env.MONDAY_API_KEY },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      timeout: 300000
+    });
+    logger.info('File uploaded', { meta: { ITEM_ID, COLUMN_ID } });
+    return response?.data;
   } catch (error) {
-      console.error('Error uploading file:', error.response ? error.response.data : error.message);
+    logError(error, 'Error uploading file', { ITEM_ID, COLUMN_ID });
+    throw error;
   }
 }
-async function downloadFileFromMonday(assetId, downloadPath,fileName) {
+
+async function downloadFileFromMonday(assetId, downloadPath, fileName) {
   try {
+    logger.info('Downloading file', { meta: { assetId, downloadPath, fileName } });
     const query = `query { assets(ids: ${assetId}) { public_url } }`;
     const response = await executeGraphQLQuery(query);
+    const fileUrl = response.assets?.[0]?.public_url;
+    if (!fileUrl) throw new Error('No file found for the provided asset ID.');
 
-    if (response.assets && response.assets[0].public_url) {
-      const fileUrl = response.assets[0].public_url;
-
-      // Download the file to the specified downloadPath
-      const filePath = `${downloadPath}/${fileName}`;
-      await download(fileUrl, downloadPath, { filename: fileName });
-      console.log('File downloaded successfully.');
-    } else {
-      throw new Error('No file found for the provided asset ID.');
-    }
+    await download(fileUrl, downloadPath, { filename: fileName });
+    logger.info('File downloaded', { meta: { assetId, savedAs: path.join(downloadPath, fileName) } });
   } catch (error) {
-    logExecution(`Error downloading file ${assetId}`);
-    throw new Error(`Error downloading file ${assetId}: ${error.message}`);
+    logError(error, 'Error downloading file', { assetId });
+    throw error;
   }
 }
 
+// Backwards-compat alias kept (but improved escaping)
 function removeFrenchSpecialCharacters(inputString) {
-  // Define the regular expression pattern to match French special characters
-  //const frenchSpecialCharactersRegex = /[ÀÁÂÃÄÅàáâãäåÇçÈÉÊËèéêëÌÍÎÏìíîïÑñÒÓÔÕÖØòóôõöøÙÚÛÜùúûüÝýÿ]/g;
-  
-  // Remove the French special characters using the replace method with an empty string
-  const cleanedString = inputString.replace(/"/g, '\\"');
-
-  return cleanedString;
+  return escapeForGraphQL(inputString);
 }
-
-
 
 module.exports = {
   executeGraphQLQuery,
@@ -329,5 +498,8 @@ module.exports = {
   updateItemName,
   updateItem,
   uploadFileToMonday,
+  downloadFileToMonday: downloadFileFromMonday, // alias if you used it elsewhere
   downloadFileFromMonday,
+  // expose logger if you want to use it elsewhere
+  logger,
 };
