@@ -1,4 +1,4 @@
-const { ObjectId } = require('mongodb');
+const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
 const { createServiceLogger } = require('./logger');
 const { logger, logError } = createServiceLogger('script');
@@ -103,7 +103,7 @@ class ScriptService {
     }
 
     const logEntry = {
-      logId: new ObjectId(),
+      logId: new mongoose.Types.ObjectId(),
       status: 2,
       startTime: new Date(),
     };

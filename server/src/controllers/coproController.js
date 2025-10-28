@@ -1,5 +1,5 @@
 // coproController.js
-const { ObjectID } = require('mongodb');
+const mongoose = require('mongoose');
 const CoproService = require('../services/coproService');
 
 async function listCopropriete(req, res) {

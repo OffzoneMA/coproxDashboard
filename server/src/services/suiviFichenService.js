@@ -5,7 +5,6 @@ const { logger, logError } = createServiceLogger('suiviFichen');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
-const { ObjectId } = require('mongodb');
 
 async function connectAndExecute(callback) {
   try {
@@ -38,7 +37,7 @@ async function saveFiches(fiches) {
       telephone1: fiche.telephone1 || '',
       telephone2: fiche.telephone2 || '',
       ville: fiche.ville || '',
-      idCopro: new ObjectId(fiche.idCopro),
+      idCopro: new mongoose.Types.ObjectId(fiche.idCopro),
       status: fiche.status || '',
       creationDateTime: new Date(),
       editDateTime: new Date()
@@ -54,7 +53,7 @@ async function editFiche(id, updatedFicheData) {
     const ficheCollection = MongoDB.getCollection('fiche');
     logger.info('Editing fiche', { meta: { id } });
     const result = await ficheCollection.updateOne(
-      { _id: new ObjectId(id) },
+      { _id: new mongoose.Types.ObjectId(id) },
       { $set: updatedFicheData }
     );
     logger.info('Fiche edited', { meta: { id, matched: result?.matchedCount, modified: result?.modifiedCount } });
@@ -66,7 +65,7 @@ async function getInfo(id) {
   return connectAndExecute(async () => {
     const ficheCollection = MongoDB.getCollection('fiche');
     logger.info('Get fiche info', { meta: { id } });
-    const result = await ficheCollection.findOne({ _id: new ObjectId(id) });
+    const result = await ficheCollection.findOne({ _id: new mongoose.Types.ObjectId(id) });
     return result;
   });
 }
@@ -86,7 +85,7 @@ async function getFichesByCoproId(idCopro) {
   return connectAndExecute(async () => {
     const ficheCollection = MongoDB.getCollection('fiche');
     logger.info('Get fiches by copro', { meta: { idCopro } });
-    const res = await ficheCollection.find({ idCopro: new ObjectId(idCopro) }).toArray();
+    const res = await ficheCollection.find({ idCopro: new mongoose.Types.ObjectId(idCopro) }).toArray();
     logger.info('Got fiches by copro', { meta: { count: res?.length || 0 } });
     return res;
   });
