@@ -1,0 +1,19 @@
+{
+    "version": 2,
+    "functions": {
+        "index.js": {
+            "runtime": "nodejs20.x",
+            "maxDuration": 30
+        }
+    },
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "/index.js"
+        }
+    ],
+    "env": {
+        "NODE_ENV": "production"
+    },
+    "installCommand": "npm ci --production=false"
+}
