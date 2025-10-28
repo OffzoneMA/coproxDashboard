@@ -16,33 +16,33 @@ class ScriptController {
 
   static async updateScriptStatus(req, res) {
     const { scriptName, status, option } = req.body;
-    return this.sendResponse(res, () => 
+    return ScriptController.sendResponse(res, () => 
       ScriptService.updateScriptStatus(scriptName, status, option)
     );
   }
 
   static async getScriptStateLogs(req, res) {
-    return this.sendResponse(res, () => 
+    return ScriptController.sendResponse(res, () => 
       ScriptService.getScriptStateLogs()
     );
   }
 
   static async logScriptStart(req, res) {
-    const { scriptName } = req.body;
-    return this.sendResponse(res, () => 
-      ScriptService.logScriptStart(scriptName)
+    const { scriptName, option } = req.body;
+    return ScriptController.sendResponse(res, () => 
+      ScriptService.logScriptStart(scriptName, option)
     );
   }
 
   static async updateLogStatus(req, res) {
     const { scriptName, logId, status, message, apiCalls } = req.body;
-    return this.sendResponse(res, () => 
+    return ScriptController.sendResponse(res, () => 
       ScriptService.updateLogStatus(scriptName, logId, status, message, apiCalls)
     );
   }
 
   static async getListScripts(req, res) {
-    return this.sendResponse(res, () => 
+    return ScriptController.sendResponse(res, () => 
       ScriptService.getListScripts()
     );
   }

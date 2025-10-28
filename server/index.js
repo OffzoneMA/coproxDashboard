@@ -15,9 +15,10 @@ const personRoutes = require('./src/routes/personRoutes.js');
 const suiviFicheRoutes = require('./src/routes/suiviFicheRoutes.js');
 const zendeskRoutes = require('./src/routes/zendeskRoutes.js');
 const scriptRoutes = require('./src/routes/scriptRoutes.js');
+const cronConfigRoutes = require('./src/routes/cronConfigRoutes.js');
 
 const scheduleCronJobs = require('./src/cron/cronStart.js');
-const batch = require('./src/cron/synchroCoproUsers.js');
+const batch = require('./src/cron/synchroFactureOCRMonday.js');
 
 const app = express();
 const port = 8081;
@@ -62,6 +63,7 @@ app.use('/vilogi', vilogiRoutes);
 app.use('/mongodb', trelloRoutes);
 app.use('/monday', mondayRoutes);
 app.use('/script', scriptRoutes);
+app.use('/cron-config', cronConfigRoutes);
 
 
 // Exposer les métriques Prometheus

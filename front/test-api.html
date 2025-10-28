@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testAPI() {
+            const results = document.getElementById('results');
+            
+            try {
+                // Test script API
+                console.log('Testing script API...');
+                const scriptResponse = await fetch('http://localhost:8081/script/');
+                const scriptData = await scriptResponse.json();
+                results.innerHTML += '<h2>Script API Response:</h2><pre>' + JSON.stringify(scriptData, null, 2) + '</pre>';
+                
+                // Test cron-config API
+                console.log('Testing cron-config API...');
+                const cronResponse = await fetch('http://localhost:8081/cron-config/');
+                const cronData = await cronResponse.json();
+                results.innerHTML += '<h2>Cron Config API Response:</h2><pre>' + JSON.stringify(cronData, null, 2) + '</pre>';
+                
+            } catch (error) {
+                results.innerHTML += '<h2>Error:</h2><pre>' + error.message + '</pre>';
+                console.error('API Test Error:', error);
+            }
+        }
+        
+        // Run test when page loads
+        window.onload = testAPI;
+    </script>
+</body>
+</html>
