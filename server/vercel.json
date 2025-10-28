@@ -1,18 +1,19 @@
 {
     "version": 2,
-    "builds": [
-      {
-        "src": "./index.js",
-        "use": "@now/node"
-      }
-],
-
+    "functions": {
+        "index.js": {
+            "runtime": "@vercel/node@22.x",
+            "maxDuration": 30
+        }
+    },
     "routes": [
-    {
-        "src": "/(.*)",
-        "dest": "/"
-    }
-]  
-
-
+        {
+            "src": "/(.*)",
+            "dest": "/index.js"
+        }
+    ],
+    "env": {
+        "NODE_ENV": "production"
+    },
+    "installCommand": "npm ci --production=false"
 }
