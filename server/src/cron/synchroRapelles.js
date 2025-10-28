@@ -27,7 +27,7 @@ const synchroRapelles = {
             if (!hasRappel) {
                     ticketData = {
                         ticket: {
-                            "status": "open",
+                            "status": "30388622603805",
                         }
                     }
                     await zendeskService.updateTicket(ticket.id, ticketData)
@@ -97,3 +97,4 @@ function parseRappelTag(tag) {
 //extraction des contrat par copro
 
 module.exports = synchroRapelles;
+
