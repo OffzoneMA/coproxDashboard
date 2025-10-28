@@ -18,7 +18,7 @@
         "dropbox": "^10.34.0",
         "express": "^4.21.2",
         "firebase-admin": "^13.2.0",
-        "form-data": "4.0.0",
+        "form-data": "^4.0.0",
         "fs-extra": "^11.3.1",
         "jest": "^26.6.3",
         "json2csv": "6.0.0-alpha.2",

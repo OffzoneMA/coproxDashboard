@@ -18,18 +18,25 @@ function TrelloPage({ onSetTitle }) {
         console.log('🔄 Starting to fetch data...');
         setLoading(true);
         try {
-            console.log('📡 Calling APIs...');
-            const [scriptResponse, cronResponse] = await Promise.all([
-                fetchDataFromApi('script/'),
-                fetchDataFromApi('cron-config/')
-            ]);
-            console.log('✅ Script data received:', scriptResponse?.length || 0, 'items');
-            console.log('✅ Cron data received:', cronResponse?.length || 0, 'items');
-            setScriptData(scriptResponse);
-            setCronData(cronResponse);
+            console.log('📡 Calling script API...');
+            const scriptResponse = await fetchDataFromApi('script/');
+            
+            // Extract data array from API response (now includes cron info)
+            const scriptData = scriptResponse?.data || [];
+            
+            console.log('✅ Script data received:', scriptData?.length || 0, 'items');
+            console.log('✅ Scripts with cron enabled:', scriptData.filter(s => s.cronEnabled).length);
+            setScriptData(scriptData);
+            setCronData([]); // No longer needed as cron data is embedded in scripts
             setError(null);
         } catch (error) {
             console.error("❌ Error fetching data:", error);
+            console.error("❌ Error details:", {
+                message: error.message,
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data
+            });
             setError("Erreur lors du chargement des données");
             setSnackbar({ open: true, message: "Erreur lors du chargement des données", severity: 'error' });
         } finally {
@@ -105,11 +112,9 @@ function TrelloPage({ onSetTitle }) {
     }, []);
 
     const getCronInfoForScript = useCallback((scriptName) => {
-        const cronConfig = cronData.find(config => 
-            config.scripts?.some(script => script.name === scriptName)
-        );
+        const script = scriptData.find(s => s.name === scriptName);
         
-        if (!cronConfig) return { 
+        if (!script || !script.cronEnabled) return { 
             frequency: "Non programmé", 
             lastRun: null, 
             enabled: false,
@@ -118,13 +123,13 @@ function TrelloPage({ onSetTitle }) {
         };
         
         return {
-            frequency: formatCronSchedule(cronConfig.schedule),
-            lastRun: cronConfig.lastRun,
-            enabled: cronConfig.enabled,
-            runCount: cronConfig.runCount || 0,
-            errorCount: cronConfig.errorCount || 0
+            frequency: script.cronFrequency || formatCronSchedule(script.cronSchedule),
+            lastRun: script.cronLastRun,
+            enabled: script.cronEnabled,
+            runCount: script.cronRunCount || 0,
+            errorCount: script.cronErrorCount || 0
         };
-    }, [cronData, formatCronSchedule]);
+    }, [scriptData, formatCronSchedule]);
 
     const formatLastRun = useCallback((lastRun) => {
         if (!lastRun) return "Jamais exécuté";

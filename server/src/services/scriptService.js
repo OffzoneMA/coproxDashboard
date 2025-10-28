@@ -151,18 +151,55 @@ class ScriptService {
         .project({
           name: 1,
           status: 1,
-          'execution_history': { $slice: -1 }
+          'execution_history': { $slice: -1 },
+          cronConfig: 1
         })
         .toArray();
 
       const mapped = scripts.map(script => ({
         ...script,
         lastExecution: script.execution_history?.[0]?.endTime || null,
-        execution_history: undefined
+        execution_history: undefined,
+        // Include cron information directly in script response
+        cronEnabled: script.cronConfig?.enabled || false,
+        cronSchedule: script.cronConfig?.schedule || null,
+        cronDescription: script.cronConfig?.description || '',
+        cronCategory: script.cronConfig?.category || 'sync',
+        cronRunCount: script.cronConfig?.runCount || 0,
+        cronLastRun: script.cronConfig?.lastRun || null,
+        cronFrequency: this.parseCronFrequency(script.cronConfig?.schedule)
       }));
       logger.info('Get list scripts', { meta: { count: mapped.length } });
       return mapped;
     });
+  }
+
+  static parseCronFrequency(schedule) {
+    if (!schedule) return 'Manual';
+    
+    // Parse common cron patterns to human-readable frequency
+    const patterns = {
+      '*/5 * * * *': 'Every 5 minutes',
+      '*/10 * * * *': 'Every 10 minutes',
+      '*/15 * * * *': 'Every 15 minutes',
+      '*/30 * * * *': 'Every 30 minutes',
+      '0 * * * *': 'Every hour',
+      '0 */2 * * *': 'Every 2 hours',
+      '0 */4 * * *': 'Every 4 hours',
+      '0 */6 * * *': 'Every 6 hours',
+      '0 */12 * * *': 'Every 12 hours',
+      '0 0 * * *': 'Daily at midnight',
+      '0 1 * * *': 'Daily at 1 AM',
+      '0 3 * * *': 'Daily at 3 AM',
+      '0 5 * * *': 'Daily at 5 AM',
+      '0 19 * * *': 'Daily at 7 PM',
+      '0 0 * * 0': 'Weekly on Sunday',
+      '0 0 * * 6': 'Weekly on Saturday',
+      '0 0 1 * *': 'Monthly on 1st',
+      '0 0 1 1 *': 'Yearly on Jan 1st'
+    };
+    
+    return patterns[schedule] || schedule;
   }
 
   static async logExecutionHistory(name, startTime, endTime, status, message) {

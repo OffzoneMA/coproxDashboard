@@ -21,7 +21,7 @@ const scheduleCronJobs = require('./src/cron/cronStart.js');
 const batch = require('./src/cron/synchroFactureOCRMonday.js');
 
 const app = express();
-const port = 8081;
+const port = 8082;
 
 app.use(cors());
 app.use(bodyParser.json());

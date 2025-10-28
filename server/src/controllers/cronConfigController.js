@@ -52,7 +52,7 @@ class CronConfigController {
     if (category) filter.category = category;
     if (enabled !== undefined) filter.enabled = enabled === 'true';
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.getAllConfigs(filter)
     );
   }
@@ -63,7 +63,7 @@ class CronConfigController {
    * @param {Object} res - Express response object
    */
   static async getEnabledConfigs(req, res) {
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.getEnabledConfigs()
     );
   }
@@ -76,7 +76,7 @@ class CronConfigController {
   static async getConfigByName(req, res) {
     const { name } = req.params;
     
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.getConfigByName(name)
     );
   }
@@ -98,7 +98,7 @@ class CronConfigController {
       });
     }
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.createConfig(configData)
     );
   }
@@ -117,7 +117,7 @@ class CronConfigController {
     delete updateData._id;
     delete updateData.createdAt;
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.updateConfig(name, updateData)
     );
   }
@@ -130,7 +130,7 @@ class CronConfigController {
   static async deleteConfig(req, res) {
     const { name } = req.params;
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.deleteConfig(name)
     );
   }
@@ -152,7 +152,7 @@ class CronConfigController {
       });
     }
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.setEnabled(name, enabled)
     );
   }
@@ -175,7 +175,7 @@ class CronConfigController {
       });
     }
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.addScript(name, scriptConfig)
     );
   }
@@ -188,7 +188,7 @@ class CronConfigController {
   static async removeScript(req, res) {
     const { name, scriptName } = req.params;
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.removeScript(name, scriptName)
     );
   }
@@ -206,7 +206,7 @@ class CronConfigController {
     delete updates.name;
     delete updates._id;
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.updateScript(name, scriptName, updates)
     );
   }
@@ -219,7 +219,7 @@ class CronConfigController {
   static async getConfigsByCategory(req, res) {
     const { category } = req.params;
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.getConfigsByCategory(category)
     );
   }
@@ -230,7 +230,7 @@ class CronConfigController {
    * @param {Object} res - Express response object
    */
   static async getDueConfigs(req, res) {
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.getDueConfigs()
     );
   }
@@ -243,7 +243,7 @@ class CronConfigController {
   static async resetErrorCount(req, res) {
     const { name } = req.params;
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.resetErrorCount(name)
     );
   }
@@ -256,7 +256,7 @@ class CronConfigController {
   static async getHighErrorRateConfigs(req, res) {
     const { threshold = 0.1 } = req.query;
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.getHighErrorRateConfigs(parseFloat(threshold))
     );
   }
@@ -270,7 +270,7 @@ class CronConfigController {
     const { name } = req.params;
     const { runTime, success = true } = req.body;
 
-    return this.sendResponse(res, () => 
+    return CronConfigController.sendResponse(res, () => 
       CronConfigService.updateRunStats(name, runTime, success)
     );
   }
@@ -291,7 +291,7 @@ class CronConfigController {
       });
     }
 
-    return this.sendResponse(res, () => {
+    return CronConfigController.sendResponse(res, () => {
       const isValid = CronConfigService.validateCronExpression(expression);
       return {
         expression: expression,
@@ -307,7 +307,7 @@ class CronConfigController {
    * @param {Object} res - Express response object
    */
   static async getStats(req, res) {
-    return this.sendResponse(res, async () => {
+    return CronConfigController.sendResponse(res, async () => {
       const [allConfigs, enabledConfigs, highErrorConfigs] = await Promise.all([
         CronConfigService.getAllConfigs(),
         CronConfigService.getEnabledConfigs(),
@@ -364,7 +364,7 @@ class CronConfigController {
       });
     }
 
-    return this.sendResponse(res, async () => {
+    return CronConfigController.sendResponse(res, async () => {
       const results = [];
       const errors = [];
 
@@ -399,7 +399,7 @@ class CronConfigController {
    * @param {Object} res - Express response object
    */
   static async seedConfigs(req, res) {
-    return this.sendResponse(res, async () => {
+    return CronConfigController.sendResponse(res, async () => {
       const cronSeeder = require('../utils/cronSeeder');
       const result = await cronSeeder.fullSeed();
       
@@ -416,7 +416,7 @@ class CronConfigController {
    * @param {Object} res - Express response object
    */
   static async reloadCronJobs(req, res) {
-    return this.sendResponse(res, async () => {
+    return CronConfigController.sendResponse(res, async () => {
       // Import scheduleCronJobs to access reload function
       const scheduleCronJobs = require('../cron/cronStart');
       

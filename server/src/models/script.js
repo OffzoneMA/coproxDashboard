@@ -79,6 +79,70 @@ const ScriptSchema = new mongoose.Schema({
   logs: {
     type: [LogSchema],
     default: []
+  },
+  // Cron configuration embedded in script
+  cronConfig: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    schedule: {
+      type: String,
+      default: null // Cron expression like "0 */6 * * *"
+    },
+    timezone: {
+      type: String,
+      default: 'Etc/UTC'
+    },
+    description: {
+      type: String,
+      default: ''
+    },
+    category: {
+      type: String,
+      enum: ['sync', 'maintenance', 'monitoring', 'reporting', 'cleanup'],
+      default: 'sync'
+    },
+    priority: {
+      type: Number,
+      min: 1,
+      max: 10,
+      default: 5
+    },
+    timeout: {
+      type: Number,
+      default: 300000 // 5 minutes in milliseconds
+    },
+    maxRetries: {
+      type: Number,
+      default: 1
+    },
+    runCount: {
+      type: Number,
+      default: 0
+    },
+    errorCount: {
+      type: Number,
+      default: 0
+    },
+    averageRunTime: {
+      type: Number,
+      default: 0
+    },
+    lastRun: {
+      type: Date,
+      default: null
+    },
+    notifications: {
+      onError: {
+        type: Boolean,
+        default: false
+      },
+      onSuccess: {
+        type: Boolean,
+        default: false
+      }
+    }
   }
 });
 
