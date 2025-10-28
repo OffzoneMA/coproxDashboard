@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
-const download = require('download');
 const { createServiceLogger, redact } = require('./logger');
 const { logger, logError } = createServiceLogger('monday');
 
@@ -472,8 +471,31 @@ async function downloadFileFromMonday(assetId, downloadPath, fileName) {
     const fileUrl = response.assets?.[0]?.public_url;
     if (!fileUrl) throw new Error('No file found for the provided asset ID.');
 
-    await download(fileUrl, downloadPath, { filename: fileName });
-    logger.info('File downloaded', { meta: { assetId, savedAs: path.join(downloadPath, fileName) } });
+    // Download file using axios instead of download module
+    const fileResponse = await axios({
+      method: 'GET',
+      url: fileUrl,
+      responseType: 'stream'
+    });
+
+    // Ensure download directory exists
+    if (!fs.existsSync(downloadPath)) {
+      fs.mkdirSync(downloadPath, { recursive: true });
+    }
+
+    // Create write stream and pipe the response
+    const filePath = path.join(downloadPath, fileName);
+    const writer = fs.createWriteStream(filePath);
+    
+    fileResponse.data.pipe(writer);
+
+    // Wait for download to complete
+    await new Promise((resolve, reject) => {
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
+
+    logger.info('File downloaded', { meta: { assetId, savedAs: filePath } });
   } catch (error) {
     logError(error, 'Error downloading file', { assetId });
     throw error;
