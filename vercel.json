@@ -3,10 +3,7 @@
     "builds": [
         {
             "src": "server/index.js",
-            "use": "@vercel/node",
-            "config": {
-                "maxLambdaSize": "50mb"
-            }
+            "use": "@vercel/node"
         }
     ],
     "routes": [
@@ -14,14 +11,5 @@
             "src": "/(.*)",
             "dest": "/server/index.js"
         }
-    ],
-    "env": {
-        "NODE_ENV": "production"
-    },
-    "functions": {
-        "server/index.js": {
-            "maxDuration": 30
-        }
-    },
-    "installCommand": "cd server && npm install --production=false"
+    ]
 }
