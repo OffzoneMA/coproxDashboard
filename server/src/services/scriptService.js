@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
 const { createServiceLogger } = require('./logger');
 const { logger, logError } = createServiceLogger('script');
+const CronConfigRepository = require('../repositories/cronConfigRepository');
 
 /**
  * @typedef {Object} ScriptLog
@@ -171,6 +172,43 @@ class ScriptService {
       }));
       logger.info('Get list scripts', { meta: { count: mapped.length } });
       return mapped;
+    });
+  }
+
+  static async getScriptsDashboardView() {
+    return this.connectAndExecute(async () => {
+      // Fetch all scripts
+      const scripts = await this.getScriptCollection().find({}).toArray();
+      
+      // Fetch all cron configs
+      const cronConfigs = await CronConfigRepository.findAll();
+      
+      // Create a map of cron configs for easy lookup
+      const cronConfigMap = new Map(cronConfigs.map(config => [config.name, config]));
+
+      // Map scripts to the requested format
+      const dashboardView = scripts.map(script => {
+        const cronConfig = cronConfigMap.get(script.name);
+        
+        // Get last log for execution details
+        const lastLog = script.logs && script.logs.length > 0 
+          ? script.logs[script.logs.length - 1] 
+          : null;
+
+        return {
+          id: script._id,
+          nom: script.name,
+          option: script.savedOption || 'N/A',
+          frequence: cronConfig ? this.parseCronFrequency(cronConfig.schedule) : 'Manuelle',
+          derniere_execution: lastLog ? lastLog.endTime : null,
+          date_de_lancement: lastLog ? lastLog.startTime : null,
+          status: lastLog ? lastLog.status : 'Inconnu',
+          raw_schedule: cronConfig ? cronConfig.schedule : null,
+          is_enabled: cronConfig ? cronConfig.enabled : false
+        };
+      });
+
+      return dashboardView;
     });
   }
 
