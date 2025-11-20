@@ -1,5 +1,5 @@
 # Assuming you're using a Node.js base image
-FROM node:21-alpine3.17
+FROM node:22-alpine
 
 
 # Create App Directory
