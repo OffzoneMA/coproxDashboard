@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const MongoDB = require('../utils/mongodb');
 const { createServiceLogger } = require('./logger');
 const { logger, logError } = createServiceLogger('script');
+const CronConfigRepository = require('../repositories/cronConfigRepository');
 
 /**
  * @typedef {Object} ScriptLog
@@ -171,6 +172,49 @@ class ScriptService {
       }));
       logger.info('Get list scripts', { meta: { count: mapped.length } });
       return mapped;
+    });
+  }
+
+  static async getScriptsDashboardView() {
+    return this.connectAndExecute(async () => {
+      // Fetch all scripts and cron configs
+      const [scripts, cronConfigs] = await Promise.all([
+        this.getScriptCollection().find({}).toArray(),
+        CronConfigRepository.findAll()
+      ]);
+      
+      // Create maps for easy lookup
+      const scriptMap = new Map(scripts.map(s => [s.name, s]));
+      const configMap = new Map(cronConfigs.map(c => [c.name, c]));
+
+      // Get all unique names
+      const allNames = new Set([...scriptMap.keys(), ...configMap.keys()]);
+
+      // Map to dashboard view
+      const dashboardView = Array.from(allNames).map((name, index) => {
+        const script = scriptMap.get(name);
+        const config = configMap.get(name);
+        
+        // Get last log for execution details
+        const lastLog = script?.logs && script.logs.length > 0 
+          ? script.logs[script.logs.length - 1] 
+          : null;
+
+        return {
+          id: script?._id || `config-${index}`,
+          nom: name,
+          option: script?.savedOption || 'N/A',
+          frequence: config ? this.parseCronFrequency(config.schedule) : 'Manuelle',
+          derniere_execution: lastLog ? lastLog.endTime : null,
+          date_de_lancement: lastLog ? lastLog.startTime : null,
+          status: lastLog ? lastLog.status : 'Inconnu',
+          raw_schedule: config ? config.schedule : null,
+          is_enabled: config ? config.enabled : false,
+          execution_count: script?.logs?.length || 0
+        };
+      });
+
+      return dashboardView;
     });
   }
 

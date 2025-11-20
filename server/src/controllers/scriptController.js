@@ -46,6 +46,12 @@ class ScriptController {
       ScriptService.getListScripts()
     );
   }
+
+  static async getScriptsDashboardView(req, res) {
+    return ScriptController.sendResponse(res, () => 
+      ScriptService.getScriptsDashboardView()
+    );
+  }
 }
 
 module.exports = ScriptController;
