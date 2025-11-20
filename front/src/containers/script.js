@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { fetchDataFromApi } from '@src/utils/api';
-import { Table, Select, MenuItem, Chip, TableBody, TableCell, Button, TableContainer, TableHead, TableRow, Paper, CircularProgress, Alert, Snackbar, Tooltip, Box, Typography } from '@mui/material';
+import { fetchDataFromApi, fetchApiData } from '@src/utils/api';
+import { 
+    Table, Select, MenuItem, Chip, TableBody, TableCell, Button, 
+    TableContainer, TableHead, TableRow, Paper, CircularProgress, 
+    Alert, Snackbar, Tooltip, Box, Typography, Dialog, DialogTitle, 
+    DialogContent, DialogActions, TextField, FormControlLabel, Switch,
+    IconButton
+} from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import '@src/assets/styles/App.css';
 
 function TrelloPage({ onSetTitle }) {
@@ -13,6 +21,18 @@ function TrelloPage({ onSetTitle }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+
+    // Dialog states
+    const [openAddScript, setOpenAddScript] = useState(false);
+    const [openCronConfig, setOpenCronConfig] = useState(false);
+    const [newScript, setNewScript] = useState({ name: '', content: '' });
+    const [currentCron, setCurrentCron] = useState({ 
+        name: '', 
+        schedule: '0 0 * * *', 
+        enabled: true, 
+        description: '',
+        scriptName: '' 
+    });
 
     const fetchData = useCallback(async () => {
         console.log('🔄 Starting to fetch data...');
@@ -170,12 +190,94 @@ function TrelloPage({ onSetTitle }) {
         setSnackbar(prev => ({ ...prev, open: false }));
     }, []);
 
+    const handleAddScript = async () => {
+        if (!newScript.name || !newScript.content) {
+            setSnackbar({ open: true, message: "Nom et contenu requis", severity: 'warning' });
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await fetchApiData('script/add', 'POST', {
+                scriptName: newScript.name,
+                scriptContent: newScript.content
+            });
+            setSnackbar({ open: true, message: "Script ajouté avec succès", severity: 'success' });
+            setOpenAddScript(false);
+            setNewScript({ name: '', content: '' });
+            fetchData();
+        } catch (error) {
+            setSnackbar({ open: true, message: "Erreur lors de l'ajout du script", severity: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenCronDialog = (script) => {
+        const cronInfo = getCronInfoForScript(script.name);
+        setCurrentCron({
+            name: script.name, // Use script name as cron name by default
+            schedule: script.cronSchedule || '0 0 * * *',
+            enabled: script.cronEnabled !== false,
+            description: script.cronDescription || '',
+            scriptName: script.name,
+            isUpdate: !!script.cronSchedule // Flag to know if we are updating or creating
+        });
+        setOpenCronConfig(true);
+    };
+
+    const handleSaveCron = async () => {
+        try {
+            setLoading(true);
+            
+            // 1. Create or Update Cron Config
+            const configData = {
+                name: currentCron.name,
+                schedule: currentCron.schedule,
+                enabled: currentCron.enabled,
+                description: currentCron.description
+            };
+
+            if (currentCron.isUpdate) {
+                await fetchApiData(`cron-config/${currentCron.name}`, 'PUT', configData);
+            } else {
+                await fetchApiData('cron-config', 'POST', configData);
+                // 2. Add script to cron if it's new
+                await fetchApiData(`cron-config/${currentCron.name}/scripts`, 'POST', {
+                    name: currentCron.scriptName,
+                    modulePath: `../cron/${currentCron.scriptName}`,
+                    enabled: true
+                });
+            }
+
+            setSnackbar({ open: true, message: "Configuration Cron sauvegardée", severity: 'success' });
+            setOpenCronConfig(false);
+            fetchData();
+        } catch (error) {
+            console.error(error);
+            setSnackbar({ open: true, message: "Erreur lors de la sauvegarde Cron", severity: 'error' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading && !scriptData.length) {
         return <CircularProgress />;
     }
 
     return (
         <div className="container-main">
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h5">Gestion des Scripts</Typography>
+                <Button 
+                    variant="contained" 
+                    startIcon={<AddIcon />} 
+                    onClick={() => setOpenAddScript(true)}
+                >
+                    Nouveau Script
+                </Button>
+            </Box>
+
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             <TableContainer component={Paper}>
                 <Table>
@@ -197,7 +299,7 @@ function TrelloPage({ onSetTitle }) {
                             return (
                                 <TableRow key={row.endpoint || index}>
                                     <TableCell>{index + 1}</TableCell>
-                                    <TableCell>{row.label}</TableCell>
+                                    <TableCell>{row.label || row.name}</TableCell>
                                     <TableCell>
                                         {row.options?.length > 0 && (
                                             <Select
@@ -214,7 +316,7 @@ function TrelloPage({ onSetTitle }) {
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        <Box display="flex" flexDirection="column" gap={0.5}>
+                                        <Box display="flex" alignItems="center" gap={1}>
                                             <Tooltip title={cronInfo.enabled ? "Programmation active" : "Programmation désactivée"}>
                                                 <Chip
                                                     icon={<ScheduleIcon />}
@@ -225,13 +327,16 @@ function TrelloPage({ onSetTitle }) {
                                                     className="cron-info-chip"
                                                 />
                                             </Tooltip>
-                                            {cronInfo.runCount > 0 && (
-                                                <Typography variant="caption" color="textSecondary">
-                                                    {cronInfo.runCount} exécution(s)
-                                                    {cronInfo.errorCount > 0 && ` • ${cronInfo.errorCount} erreur(s)`}
-                                                </Typography>
-                                            )}
+                                            <IconButton size="small" onClick={() => handleOpenCronDialog(row)}>
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
                                         </Box>
+                                        {cronInfo.runCount > 0 && (
+                                            <Typography variant="caption" color="textSecondary" display="block">
+                                                {cronInfo.runCount} exécution(s)
+                                                {cronInfo.errorCount > 0 && ` • ${cronInfo.errorCount} erreur(s)`}
+                                            </Typography>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <Tooltip title={cronInfo.lastRun ? new Date(cronInfo.lastRun).toLocaleString('fr-FR') : "Jamais exécuté"}>
@@ -263,6 +368,71 @@ function TrelloPage({ onSetTitle }) {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            {/* Add Script Dialog */}
+            <Dialog open={openAddScript} onClose={() => setOpenAddScript(false)} maxWidth="md" fullWidth>
+                <DialogTitle>Ajouter un nouveau script</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Nom du script (ex: monScript.js)"
+                        fullWidth
+                        value={newScript.name}
+                        onChange={(e) => setNewScript({ ...newScript, name: e.target.value })}
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Contenu du script"
+                        fullWidth
+                        multiline
+                        rows={10}
+                        value={newScript.content}
+                        onChange={(e) => setNewScript({ ...newScript, content: e.target.value })}
+                        sx={{ fontFamily: 'monospace' }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenAddScript(false)}>Annuler</Button>
+                    <Button onClick={handleAddScript} variant="contained">Ajouter</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Cron Config Dialog */}
+            <Dialog open={openCronConfig} onClose={() => setOpenCronConfig(false)}>
+                <DialogTitle>Configuration Cron pour {currentCron.scriptName}</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        margin="dense"
+                        label="Expression Cron (ex: 0 0 * * *)"
+                        fullWidth
+                        value={currentCron.schedule}
+                        onChange={(e) => setCurrentCron({ ...currentCron, schedule: e.target.value })}
+                        helperText="Format: minute heure jour mois jour-semaine"
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Description"
+                        fullWidth
+                        value={currentCron.description}
+                        onChange={(e) => setCurrentCron({ ...currentCron, description: e.target.value })}
+                    />
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={currentCron.enabled}
+                                onChange={(e) => setCurrentCron({ ...currentCron, enabled: e.target.checked })}
+                            />
+                        }
+                        label="Activer la planification"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenCronConfig(false)}>Annuler</Button>
+                    <Button onClick={handleSaveCron} variant="contained">Sauvegarder</Button>
+                </DialogActions>
+            </Dialog>
+
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}

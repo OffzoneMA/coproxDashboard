@@ -14,6 +14,13 @@ class ScriptController {
     }
   }
 
+  static async addScript(req, res) {
+    const { scriptName, scriptContent } = req.body;
+    return ScriptController.sendResponse(res, () => 
+      ScriptService.addScript(scriptName, scriptContent)
+    );
+  }
+
   static async updateScriptStatus(req, res) {
     const { scriptName, status, option } = req.body;
     return ScriptController.sendResponse(res, () => 

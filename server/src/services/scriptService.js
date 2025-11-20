@@ -3,6 +3,8 @@ const MongoDB = require('../utils/mongodb');
 const { createServiceLogger } = require('./logger');
 const { logger, logError } = createServiceLogger('script');
 const CronConfigRepository = require('../repositories/cronConfigRepository');
+const fs = require('fs').promises;
+const path = require('path');
 
 /**
  * @typedef {Object} ScriptLog
@@ -15,6 +17,52 @@ const CronConfigRepository = require('../repositories/cronConfigRepository');
  */
 
 class ScriptService {
+  static async addScript(scriptName, scriptContent) {
+    if (!scriptName || !scriptContent) {
+      throw new Error('Script name and content are required');
+    }
+
+    if (!scriptName.endsWith('.js')) {
+      scriptName += '.js';
+    }
+
+    // Sanitize script name to prevent directory traversal
+    const sanitizedScriptName = path.basename(scriptName);
+    const scriptPath = path.join(__dirname, '../cron', sanitizedScriptName);
+
+    // Check if file exists
+    try {
+      await fs.access(scriptPath);
+      throw new Error(`Script "${sanitizedScriptName}" already exists`);
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
+    }
+
+    // Write file
+    await fs.writeFile(scriptPath, scriptContent, 'utf8');
+
+    // Add to database
+    return this.connectAndExecute(async () => {
+      const result = await this.getScriptCollection().updateOne(
+        { name: sanitizedScriptName },
+        { 
+          $set: { 
+            name: sanitizedScriptName,
+            status: 0, // Initial status
+            logs: [],
+            execution_history: []
+          } 
+        },
+        { upsert: true }
+      );
+      
+      logger.info('Added new script', { meta: { scriptName: sanitizedScriptName } });
+      return { name: sanitizedScriptName, path: scriptPath };
+    });
+  }
+
   static async connectAndExecute(callback) {
     try {
       logger.debug('MongoDB connect start');
