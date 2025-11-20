@@ -5,6 +5,9 @@ const scriptController = require('../controllers/scriptController');
 
 router.get('/',scriptController.getListScripts);
 
+// Route to add a new script
+router.post('/add', scriptController.addScript);
+
 // Route to get scripts for dashboard view
 router.get('/dashboard-view', scriptController.getScriptsDashboardView);
 
