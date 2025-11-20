@@ -5,6 +5,9 @@ const scriptController = require('../controllers/scriptController');
 
 router.get('/',scriptController.getListScripts);
 
+// Route to get scripts for dashboard view
+router.get('/dashboard-view', scriptController.getScriptsDashboardView);
+
 // Route to update script status
 router.post('/update-status', scriptController.updateScriptStatus);
 
