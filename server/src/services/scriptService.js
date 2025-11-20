@@ -195,29 +195,43 @@ class ScriptService {
 
   static async getListScripts() {
     return this.connectAndExecute(async () => {
+      // Fetch scripts
       const scripts = await this.getScriptCollection()
         .find({})
         .project({
           name: 1,
           status: 1,
-          'execution_history': { $slice: -1 },
-          cronConfig: 1
+          'execution_history': { $slice: -1 }
         })
         .toArray();
 
-      const mapped = scripts.map(script => ({
-        ...script,
-        lastExecution: script.execution_history?.[0]?.endTime || null,
-        execution_history: undefined,
-        // Include cron information directly in script response
-        cronEnabled: script.cronConfig?.enabled || false,
-        cronSchedule: script.cronConfig?.schedule || null,
-        cronDescription: script.cronConfig?.description || '',
-        cronCategory: script.cronConfig?.category || 'sync',
-        cronRunCount: script.cronConfig?.runCount || 0,
-        cronLastRun: script.cronConfig?.lastRun || null,
-        cronFrequency: this.parseCronFrequency(script.cronConfig?.schedule)
-      }));
+      // Fetch cron configs to merge real-time data
+      const cronConfigs = await CronConfigRepository.findAll();
+
+      const mapped = scripts.map(script => {
+        // Find relevant cron config:
+        // 1. Match by name (legacy/direct mapping)
+        // 2. Check if script is included in a cron config's scripts list
+        const relevantConfig = cronConfigs.find(config => 
+          config.name === script.name || 
+          (config.scripts && Array.isArray(config.scripts) && config.scripts.some(s => s.name === script.name))
+        );
+
+        return {
+          ...script,
+          lastExecution: script.execution_history?.[0]?.endTime || null,
+          execution_history: undefined,
+          // Include cron information from the actual CronConfig repository
+          cronEnabled: relevantConfig?.enabled || false,
+          cronSchedule: relevantConfig?.schedule || null,
+          cronDescription: relevantConfig?.description || '',
+          cronCategory: relevantConfig?.category || 'sync',
+          cronRunCount: relevantConfig?.runCount || 0,
+          cronLastRun: relevantConfig?.lastRun || null,
+          cronFrequency: this.parseCronFrequency(relevantConfig?.schedule)
+        };
+      });
+      
       logger.info('Get list scripts', { meta: { count: mapped.length } });
       return mapped;
     });
