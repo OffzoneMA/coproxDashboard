@@ -1,53 +1,58 @@
 // App.js
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { CssBaseline } from '@mui/material';
-import Sidebar from './components/Sidebar';
-import TrelloPage from './containers/TrelloPage';
-import Copro from './containers/Copro';
-import AddFiches from './containers/AddFiches';
-import ListeFiches from './containers/ListeFiches.js';
-import Clients from './containers/clients';
-import Script from './containers/script.js';
-import DetailCopro from './containers/DetailCopro';
-import HomePage from './containers/HomePage';
+import { ThemeProvider, CssBaseline, Box, CircularProgress } from '@mui/material';
+import Layout from './components/Layout';
+import theme from './theme';
 import './assets/styles/App.css';
 
-const Footer = () => <h1>footer</h1>;
+// Lazy load components for performance
+const HomePage = lazy(() => import('./containers/HomePage'));
+const TrelloPage = lazy(() => import('./containers/TrelloPage'));
+const Copro = lazy(() => import('./containers/Copro'));
+const AddFiches = lazy(() => import('./containers/AddFiches'));
+const ListeFiches = lazy(() => import('./containers/ListeFiches.js'));
+const Clients = lazy(() => import('./containers/clients'));
+const Script = lazy(() => import('./containers/script.js'));
+const DetailCopro = lazy(() => import('./containers/DetailCopro'));
+const Settings = lazy(() => import('./containers/Settings'));
+
+const Loading = () => (
+  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <CircularProgress />
+  </Box>
+);
 
 function App() {
-  const [currentTitle, setCurrentTitle] = useState('');
+  const [currentTitle, setCurrentTitle] = useState('Dashboard');
 
   const setTitle = (title) => {
-    setCurrentTitle(title || "Default Title");
+    setCurrentTitle(title || "Dashboard");
   };
 
   return (
-    <Router>
-      <div className="trello-page">
-        <Sidebar />
-        <div className="main-container">
-          <div className="main-titlezone">
-            <h1>{currentTitle}</h1>
-          </div>
-          <Routes>
-            <Route path="/" element={<HomePage onSetTitle={setTitle}/>} />
-            <Route path="/trello" element={<TrelloPage onSetTitle={setTitle} />} />
-            <Route path="/copro" element={<Copro onSetTitle={setTitle} />} />
-            <Route path="/addfiches" element={<AddFiches onSetTitle={setTitle} />} />
-            <Route path="/listefiches" element={<ListeFiches onSetTitle={setTitle} />} />
-            <Route path="/clients" element={<Clients onSetTitle={setTitle} />} />
-            <Route path="/scripts" element={<Script onSetTitle={setTitle} />} />
-            <Route path="/detailcopro/:id" element={<DetailCopro onSetTitle={setTitle} />} />
-
-
-            {/* Add more routes as needed */}
-          </Routes>
-        </div>
-        <Footer />
-      </div>
-    </Router>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        <Layout title={currentTitle}>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/" element={<HomePage onSetTitle={setTitle}/>} />
+              <Route path="/trello" element={<TrelloPage onSetTitle={setTitle} />} />
+              <Route path="/copro" element={<Copro onSetTitle={setTitle} />} />
+              <Route path="/addfiches" element={<AddFiches onSetTitle={setTitle} />} />
+              <Route path="/listefiches" element={<ListeFiches onSetTitle={setTitle} />} />
+              <Route path="/clients" element={<Clients onSetTitle={setTitle} />} />
+              <Route path="/scripts" element={<Script onSetTitle={setTitle} />} />
+              <Route path="/detailcopro/:id" element={<DetailCopro onSetTitle={setTitle} />} />
+              <Route path="/settings" element={<Settings onSetTitle={setTitle} />} />
+            </Routes>
+          </Suspense>
+        </Layout>
+      </Router>
+    </ThemeProvider>
   );
 }
+
 
 export default App;

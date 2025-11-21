@@ -74,8 +74,12 @@ const Copro = ({ onSetTitle }) => {
     setFilteredCoproList(filteredData);
   };
 
+import { Box } from '@mui/material';
+
+// ...existing code...
+
   return (
-    <div className="container-main">
+    <Box>
       <CoproFilters
         filterVille={filterVille}
         handleFilter={handleFilter}

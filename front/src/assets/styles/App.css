@@ -4,18 +4,6 @@ body, h1, h2, h3, p, ul, li {
   padding: 0;
 }
 
-body, .root, #root {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #042C3C;
-  background: #042C3C;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
 /* Cron Information Styles */
 .cron-info-chip {
   margin: 2px 0;
@@ -37,103 +25,21 @@ body, .root, #root {
   color: #666;
 }
 
-.header {
-  background-color: #03ABEE;
-  color: #FFFFFF;
-  padding: 15px;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.main {
-  display: flex;
-  justify-content: space-between;
-}
-
-.main-container {
-  border-radius: 40px 0px 0px 0px;
-  background: var(--White, #FFF);
-  margin-left: 300px; /* Adjust the value based on your sidebar width */
-  padding: 20px; /* Optional: Add padding for better spacing */
-  display: flex;
-  padding-top: 32px;
-  flex-direction: column;
-  align-items: flex-start;
-  flex: 1 0 0;
-  align-self: stretch;
-  order: 2; /* Set the order to 2 to move it to the bottom */
-}
-
-.main-titlezone{
-    display: flex;
-  padding: 0px 32px;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 24px;
-  align-self: stretch;
-}
-
-.container-main {
-  display: flex;
-  padding: 0px 32px;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 24px;
-  align-self: stretch;
-}
+/* Utility classes that might still be used in components */
 .cropo_details_box {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  
 }
 
 .grid-container {
   display: grid;
-  grid-template-columns: auto auto auto;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 10px;
 }
 
 .container-top {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
 }
-
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.content {
-  flex: 1;
-  background-color: #FFFFFF;
-  padding: 20px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.footer {
-  margin-left: 300px; /* Adjust the value based on your sidebar width */
-  padding: 20px;
-  text-align: center;
-  padding: 15px;
-  background-color: #03ABEE;
-  color: #FFFFFF;
-  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
-  order: 1; /* Set the order to 1 to move it to the top */
-}
-
-/* Responsive styles for small screens */
-@media screen and (max-width: 768px) {
-  .main {
-    flex-direction: column;
-  }
-
-  .sidebar, .content {
-    width: 100%;
-    margin-bottom: 20px;
-  }
-}
-
-
-

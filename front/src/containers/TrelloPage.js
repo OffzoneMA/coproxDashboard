@@ -1,6 +1,6 @@
 // TrelloPage.js
 import React, { useState, useEffect } from 'react';
-import { fetchDataFromApi } from '@src/utils/api';
+import { Box } from '@mui/material';
 import ChecklistItemsList from '../components/ChecklistItemsList';
 import CoproListTrello from '../components/coprolisttrello';
 
@@ -24,11 +24,11 @@ function TrelloPage({ onSetTitle }) {
   };
 
   return (
-    <div className="container-main">
+    <Box>
       {/* Content of TrelloPage */}
       <ChecklistItemsList onSelectChange={handleSelectChange} />
       <CoproListTrello selectedTask={selectedTask} />
-    </div>
+    </Box>
   );
 }
 
