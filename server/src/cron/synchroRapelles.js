@@ -31,6 +31,7 @@ const synchroRapelles = {
                         }
                     }
                     await zendeskService.updateTicket(ticket.id, ticketData)
+                    console.log(`❌ ticket ouvert pour cause pas de rappel dans tag ${ticket.id} `);
             }
             const updatedAt = new Date(ticket.updated_at);
             const today = new Date();

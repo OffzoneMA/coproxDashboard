@@ -1,7 +1,6 @@
 const cors = require('cors');
 const express = require('express');
 const bodyParser = require('body-parser');
-const client = require('prom-client');
 const fs = require('fs');
 const path = require('path');
 
@@ -18,38 +17,44 @@ const scriptRoutes = require('./src/routes/scriptRoutes.js');
 const cronConfigRoutes = require('./src/routes/cronConfigRoutes.js');
 
 const scheduleCronJobs = require('./src/cron/cronStart.js');
-const batch = require('./src/cron/synchroFactureOCRMonday.js');
+const batch = require('./src/cron/synchroRapelles.js');
+
+// Import comprehensive metrics configuration
+const { 
+  prometheusMiddleware, 
+  setupMetricsEndpoint, 
+  setupHealthEndpoint,
+  trackServiceFunction 
+} = require('./src/config/metrics');
 
 const app = express();
-const port = 8082;
+const port = 8081;
 
 app.use(cors());
 app.use(bodyParser.json());
 
-// Prometheus Metrics
-const register = new client.Registry();
-client.collectDefaultMetrics({ register });
- 
-const httpRequestDurationMicroseconds = new client.Histogram({
-  name: 'http_request_duration_seconds',
-  help: "Durée des requêtes HTTP en secondes",
-  labelNames: ['method', 'route', 'status_code'],
-  buckets: [0.1, 0.5, 1, 2, 5]
-});
-register.registerMetric(httpRequestDurationMicroseconds);
+// Setup Prometheus metrics middleware
+prometheusMiddleware(app);
 
-// Middleware de mesure des requêtes
-app.use((req, res, next) => {
-  const start = process.hrtime();
-  res.on('finish', () => {
-    const duration = process.hrtime(start);
-    const durationInSeconds = duration[0] + duration[1] / 1e9;
-    httpRequestDurationMicroseconds.labels(req.method, req.path, res.statusCode).observe(durationInSeconds);
+// Setup metrics and health endpoints
+setupMetricsEndpoint(app);
+setupHealthEndpoint(app);
+
+// Chargement dynamique des services
+const services = fs.readdirSync(path.join(__dirname, 'src/services'))
+.filter(file => file.endsWith('.js'))
+.map(file => require(`./src/services/${file}`));
+
+// Instrumentation des services avec métriques avancées
+services.forEach((service, index) => {
+  const serviceName = path.basename(fs.readdirSync(path.join(__dirname, 'src/services'))[index], '.js');
+  
+  Object.keys(service).forEach(fnName => {
+    if (typeof service[fnName] === 'function') {
+      service[fnName] = trackServiceFunction(serviceName, service[fnName], 'CALL', fnName);
+    }
   });
-  next();
 });
-
-
 
 // Routes API
 app.use('/trello', trelloRoutes);
@@ -65,58 +70,6 @@ app.use('/monday', mondayRoutes);
 app.use('/script', scriptRoutes);
 app.use('/cron-config', cronConfigRoutes);
 
-
-// Exposer les métriques Prometheus
-app.get('/metrics', async (req, res) => {
-  res.set('Content-Type', register.contentType);
-  res.end(await register.metrics());
-});
-/// Chargement dynamique des services
-const services = fs.readdirSync(path.join(__dirname, 'src/services'))
-.filter(file => file.endsWith('.js'))
-.map(file => require(`./src/services/${file}`));
-
-// Instrumentation générique des services
-const serviceRequestCounter = new client.Counter({
-name: 'service_api_calls_total',
-help: "Nombre total d'appels aux services",
-labelNames: ['service', 'method', 'function']
-});
-register.registerMetric(serviceRequestCounter);
-
-// Histogram for execution time
-const serviceExecutionTime = new client.Histogram({
-name: 'service_execution_time_seconds',
-help: "Temps d'exécution des services en secondes",
-labelNames: ['service', 'method', 'function'],
-buckets: [0.1, 0.5, 1, 2, 5, 10] // Define buckets based on expected durations
-});
-register.registerMetric(serviceExecutionTime);
-
-function trackServiceFunction(serviceName, fn, method, functionName) {
-return async function (...args) {
-  const start = process.hrtime(); // Start timing
-  serviceRequestCounter.labels(serviceName, method, functionName).inc();
-
-  try {
-    return await fn(...args);
-  } finally {
-    const [seconds, nanoseconds] = process.hrtime(start);
-    const durationInSeconds = seconds + nanoseconds / 1e9;
-    serviceExecutionTime.labels(serviceName, method, functionName).observe(durationInSeconds);
-  }
-};
-}
-
-services.forEach((service, index) => {
-const serviceName = path.basename(fs.readdirSync(path.join(__dirname, 'src/services'))[index], '.js'); // Get file name as service name
-
-Object.keys(service).forEach(fnName => {
-  if (typeof service[fnName] === 'function') {
-    service[fnName] = trackServiceFunction(serviceName, service[fnName], 'CALL', fnName);
-  }
-});
-});
 app.get('/batch', (req, res) => {
   batch.start();
   res.send('Cron test is running!');
@@ -128,6 +81,6 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-module.exports = app;
+
 
 module.exports = app;

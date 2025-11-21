@@ -70,7 +70,7 @@ async function addAnnotationToPdf(filePath, text) {
         y,
         size: fontSize,
         font,
-        color: rgb(0.012, 0.671, 0.933)
+        color: rgb(162, 54, 101)
     });
 
     const pdfBytes = await pdfDoc.save();
