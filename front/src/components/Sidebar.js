@@ -1,61 +1,113 @@
 import React from 'react';
-import Drawer from '@mui/material/Drawer';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
-import Avatar from '@mui/material/Avatar';
-import { Home,Groups,Apartment,Task } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
-import '../assets/styles/Sidebar.css';
+import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box, useTheme, useMediaQuery } from '@mui/material';
+import { Home, Groups, Apartment, Task } from '@mui/icons-material';
+import { Link, useLocation } from 'react-router-dom';
 
-const Sidebar = () => {
-  return (
-    
-     
-    <Drawer className="drawer" variant="permanent" anchor="left">
+const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const location = useLocation();
+
+  const drawerContent = (
+    <div>
+      <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <img 
+          alt="Logo" 
+          src="https://www.coprox.immo/wp-content/uploads/2021/06/logo_coprox_baseline_degrade.png" 
+          style={{ maxWidth: '100%', height: 'auto', maxHeight: '80px' }}
+        />
+      </Box>
       <List>
-      <ListItem>
-
-          <ListItemAvatar className="drawer-avatar">
-          <img alt="Logo" src="https://www.coprox.immo/wp-content/uploads/2021/06/logo_coprox_baseline_degrade.png" />
-          </ListItemAvatar>
-        </ListItem>
-
-        <ListItem button component={Link} to="/">
-          <Home  className="drawer-icon" />
-          <ListItemText primary="Dashboard" />
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/" selected={location.pathname === '/'}>
+            <ListItemIcon>
+              <Home />
+            </ListItemIcon>
+            <ListItemText primary="Dashboard" />
+          </ListItemButton>
         </ListItem>
         
-        
-        <ListItem button component={Link} to="/trello">
-        <Task className="drawer-icon"/>
-          <ListItemText primary="Assemblées générales" />
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/trello" selected={location.pathname === '/trello'}>
+            <ListItemIcon>
+              <Task />
+            </ListItemIcon>
+            <ListItemText primary="Assemblées générales" />
+          </ListItemButton>
         </ListItem>
         
-        <ListItem button component={Link} to="/copro">
-          <Apartment  className="drawer-icon"/>
-          <ListItemText primary="Mes copros" />
-        </ListItem>
-        <ListItem button component={Link} to="/listefiches">
-          <Apartment  className="drawer-icon"/>
-          <ListItemText primary="Fiches d'informations" />
-        </ListItem>
-        
-        <ListItem button component={Link} to="/clients">
-          <Groups  className="drawer-icon"/>
-          <ListItemText primary="Mes Clients" />
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/copro" selected={location.pathname === '/copro'}>
+            <ListItemIcon>
+              <Apartment />
+            </ListItemIcon>
+            <ListItemText primary="Mes copros" />
+          </ListItemButton>
         </ListItem>
 
-        <ListItem button component={Link} to="/scripts">
-          <Groups  className="drawer-icon"/>
-          <ListItemText primary="Les Scripts" />
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/listefiches" selected={location.pathname === '/listefiches'}>
+            <ListItemIcon>
+              <Apartment />
+            </ListItemIcon>
+            <ListItemText primary="Fiches d'informations" />
+          </ListItemButton>
+        </ListItem>
+        
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/clients" selected={location.pathname === '/clients'}>
+            <ListItemIcon>
+              <Groups />
+            </ListItemIcon>
+            <ListItemText primary="Mes Clients" />
+          </ListItemButton>
         </ListItem>
 
-        {/* Add more list items as needed */}
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/scripts" selected={location.pathname === '/scripts'}>
+            <ListItemIcon>
+              <Groups />
+            </ListItemIcon>
+            <ListItemText primary="Les Scripts" />
+          </ListItemButton>
+        </ListItem>
       </List>
-    </Drawer>
-    
+    </div>
+  );
+
+  return (
+    <Box
+      component="nav"
+      sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+    >
+      {/* Mobile Drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+        }}
+      >
+        {drawerContent}
+      </Drawer>
+      
+      {/* Desktop Drawer */}
+      <Drawer
+        variant="permanent"
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+        }}
+        open
+      >
+        {drawerContent}
+      </Drawer>
+    </Box>
   );
 }
 

@@ -6,9 +6,14 @@ require('dotenv').config();
 module.exports = {
   entry: './src/index.js',
   output: {
-    filename: 'bundle.js',
+    filename: '[name].[contenthash].js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
+  },
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+    },
   },
   devServer: {
     historyApiFallback: true,

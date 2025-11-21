@@ -1,6 +1,6 @@
 // HomePage.js
 import React, { useState, useEffect } from 'react';
-import { fetchDataFromApi } from '@src/utils/api';
+import { Grid, CircularProgress, Box } from '@mui/material';
 import DashboardBox from '../components/DashboardBox';
 
 function HomePage({ onSetTitle }) {
@@ -31,24 +31,37 @@ function HomePage({ onSetTitle }) {
   }, [onSetTitle]);
 
   return (
-    <div className="container-main" >
-      {/* Content of HomePage component */}
-      <div  className="container-top" style={{  }}>
-        <DashboardBox title="AG à lancer ce mois" data={5} />
-        {coproWithoutAGCount === null ? (
-          <p>Loading...</p>
-        ) : (
-          <DashboardBox title="Copropriétés sans AG" data={coproWithoutAGCount} />
-        )}
-        {nonResolvedTicketsCount === null ? (
-          <p>Loading...</p>
-        ) : (
-          <DashboardBox title="Ticket Zendesk en cours" data={nonResolvedTicketsCount} />
-        )}
-        <DashboardBox title="Titre" data={50} />
-        <DashboardBox title="Titre" data={480} />
-      </div>
-    </div>
+    <Box sx={{ flexGrow: 1 }}>
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={6} md={4} lg={3}>
+          <DashboardBox title="AG à lancer ce mois" data={5} />
+        </Grid>
+        
+        <Grid item xs={12} sm={6} md={4} lg={3}>
+          {coproWithoutAGCount === null ? (
+            <CircularProgress />
+          ) : (
+            <DashboardBox title="Copropriétés sans AG" data={coproWithoutAGCount} />
+          )}
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={4} lg={3}>
+          {nonResolvedTicketsCount === null ? (
+            <CircularProgress />
+          ) : (
+            <DashboardBox title="Ticket Zendesk en cours" data={nonResolvedTicketsCount} />
+          )}
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={4} lg={3}>
+          <DashboardBox title="Titre" data={50} />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={4} lg={3}>
+          <DashboardBox title="Titre" data={480} />
+        </Grid>
+      </Grid>
+    </Box>
   );
 }
 
