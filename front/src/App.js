@@ -15,6 +15,7 @@ const ListeFiches = lazy(() => import('./containers/ListeFiches.js'));
 const Clients = lazy(() => import('./containers/clients'));
 const Script = lazy(() => import('./containers/script.js'));
 const DetailCopro = lazy(() => import('./containers/DetailCopro'));
+const Settings = lazy(() => import('./containers/Settings'));
 
 const Loading = () => (
   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -44,6 +45,7 @@ function App() {
               <Route path="/clients" element={<Clients onSetTitle={setTitle} />} />
               <Route path="/scripts" element={<Script onSetTitle={setTitle} />} />
               <Route path="/detailcopro/:id" element={<DetailCopro onSetTitle={setTitle} />} />
+              <Route path="/settings" element={<Settings onSetTitle={setTitle} />} />
             </Routes>
           </Suspense>
         </Layout>

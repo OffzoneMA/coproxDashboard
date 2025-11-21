@@ -11,6 +11,7 @@ import {
   ListItemText,
   Tabs,
   Tab,
+  Box
 } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
 import DashboardBox from '../components/DashboardBox';
@@ -112,32 +113,29 @@ const DetailCopro = ({ onSetTitle }) => {
   };
 
   return (
-    <div className="container-main">
-      {error && <div>Error: {error}</div>}
+    <Box>
+      {error && <Typography color="error">Error: {error}</Typography>}
 
-      <Paper elevation={3} style={{ padding: '16px', marginBottom: '16px' }}>
+      <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
         <Typography variant="h5">{coproDetails?.idCopro}</Typography>
-        <Divider style={{ margin: '8px 0' }} />
-        <Typography variant="subtitle1" style={{ color: statusColor }}>
+        <Divider sx={{ my: 1 }} />
+        <Typography variant="subtitle1" sx={{ color: statusColor }}>
           Status: {coproDetails?.status}
         </Typography>
       </Paper>
 
-
-
-      <div className='grid-container'>
-        <DashboardBox className="" title="Zendesk Ticket" data={nonResolvedTicketsCount || 0} />
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2, mb: 3 }}>
+        <DashboardBox title="Zendesk Ticket" data={nonResolvedTicketsCount || 0} />
         <DashboardBox title="Fin éxercice comptable" data={`${coproDetails?.exerciceCT || 'N/A'} `} />
         <DashboardBox title="Budget" data={`${coproDetails?.budget || 0} $`} />
         <DashboardBox title="Offre" data={coproDetails?.Offre || 'N/A'} />
         <DashboardBox title="Nombre de coproprietaire" data={coproDetails?.nombreCoproprietaire || 0} />
         <DashboardBox title="Satisfaction client" data={coproDetails?.satisfaction || 'N/A'} />
         <DashboardBox title="Lebarocopro" data={lebarocoproDetails || 'N/A'} />
-        {/* Additional DashboardBoxes as needed */}
-      </div>
+      </Box>
 
-      <div style={{ width: '100%', marginBottom:'5px' }}>
-        <Tabs style={{ marginBottom:'15px' }} value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
+      <Box sx={{ width: '100%', mb: 1 }}>
+        <Tabs sx={{ mb: 2 }} value={tabValue} onChange={handleTabChange} indicatorColor="primary" textColor="primary" centered>
           <Tab label="Avancement AG" />
           <Tab label="Conseil Syndical" />
         </Tabs>
@@ -154,24 +152,22 @@ const DetailCopro = ({ onSetTitle }) => {
 
         <TabPanel value={tabValue} index={1}>
           {councilMembers.length > 0 && (
-            <div style={{ width: '45%' }}>
+            <Box sx={{ maxWidth: 600, mx: 'auto' }}>
               <Typography variant="h6" gutterBottom>Liste conseil syndical</Typography>
-              <Paper elevation={3} style={{ padding: '16px', marginBottom: '16px' }}>
+              <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
                 <List>
                   {councilMembers.map((member) => (
                     <ListItem key={member.id}>
                       <ListItemText primary={member.autreNom} />
-                      {/* Add more information as needed */}
                     </ListItem>
                   ))}
                 </List>
               </Paper>
-            </div>
+            </Box>
           )}
         </TabPanel>
-      </div>
-      
-      </div>
+      </Box>
+    </Box>
   );
 };
 

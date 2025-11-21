@@ -1,6 +1,6 @@
 import React from 'react';
 import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Box, useTheme, useMediaQuery } from '@mui/material';
-import { Home, Groups, Apartment, Task } from '@mui/icons-material';
+import { Home, Groups, Apartment, Task, Settings } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
@@ -69,6 +69,15 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
               <Groups />
             </ListItemIcon>
             <ListItemText primary="Les Scripts" />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/settings" selected={location.pathname === '/settings'}>
+            <ListItemIcon>
+              <Settings />
+            </ListItemIcon>
+            <ListItemText primary="Settings" />
           </ListItemButton>
         </ListItem>
       </List>
