@@ -1,6 +1,6 @@
 // Copro.js
 import React, { useEffect, useState } from 'react';
-import CircularProgress from '@mui/material/CircularProgress';
+import { CircularProgress, Box } from '@mui/material';
 import CoproFilters from '../components/copros/CoproFilters';
 import CoproTable from '../components/copros/CoproTable';
 import CoproFabWithOptions from '../components/copros/CoproFabWithOptions';
@@ -74,10 +74,6 @@ const Copro = ({ onSetTitle }) => {
     setFilteredCoproList(filteredData);
   };
 
-import { Box } from '@mui/material';
-
-// ...existing code...
-
   return (
     <Box>
       <CoproFilters
@@ -104,7 +100,7 @@ import { Box } from '@mui/material';
           {tableLoading && <CircularProgress style={{ margin: '20px' }} />}
         </>
       )}
-    </div>
+    </Box>
   );
 };
 
