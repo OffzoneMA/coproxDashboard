@@ -16,6 +16,7 @@ const zendeskRoutes = require('./src/routes/zendeskRoutes.js');
 const scriptRoutes = require('./src/routes/scriptRoutes.js');
 const cronConfigRoutes = require('./src/routes/cronConfigRoutes.js');
 const prestataireRoutes = require('./src/routes/prestataireRoutes.js');
+const documentsRoutes = require('./src/routes/documentsRoutes.js');
 
 const scheduleCronJobs = require('./src/cron/cronStart.js');
 const batch = require('./src/cron/synchroPrestataire.js');
@@ -71,6 +72,7 @@ app.use('/monday', mondayRoutes);
 app.use('/script', scriptRoutes);
 app.use('/cron-config', cronConfigRoutes);
 app.use('/prestataire', prestataireRoutes);
+app.use('/documents', documentsRoutes);
 
 app.get('/batch', (req, res) => {
   batch.start();
