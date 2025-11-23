@@ -95,27 +95,74 @@ const listTags = async (req, res) => {
     // Define all available template tags organized by category
     const tags = {
       copro: [
-        { tag: '{{copro.name}}', description: 'Nom de la copropriété', example: sampleCopro.Nom || sampleCopro.name || 'Résidence Les Jardins' },
+        { tag: '{{copro.name}}', description: 'Nom de la copropriété', example: sampleCopro.Nom || 'Résidence Les Jardins' },
         { tag: '{{copro.idCopro}}', description: 'Identifiant de la copropriété', example: sampleCopro.idCopro || 'C001' },
         { tag: '{{copro.ville}}', description: 'Ville', example: sampleCopro.ville || 'Paris' },
         { tag: '{{copro.address}}', description: 'Adresse complète', example: sampleCopro.address || '123 Rue Example' },
         { tag: '{{copro.codepostal}}', description: 'Code postal', example: sampleCopro.codepostal || '75001' },
-        { tag: '{{copro.status}}', description: 'Statut', example: sampleCopro.status || 'Actif' },
-        { tag: '{{copro.Offre}}', description: 'Type d\'offre', example: sampleCopro.Offre || 'Premium' },
-        { tag: '{{copro.idVilogi}}', description: 'ID Vilogi', example: sampleCopro.idVilogi || '12345' }
+        { tag: '{{copro.address_full}}', description: 'Adresse complète (adresse + code postal + ville)', example: `${sampleCopro.address || '123 Rue Example'}, ${sampleCopro.codepostal || '75001'} ${sampleCopro.ville || 'Paris'}` },
+        { tag: '{{copro.status}}', description: 'Statut (Actif/Inactif)', example: sampleCopro.status || 'Actif' },
+        { tag: '{{copro.offre}}', description: 'Type d\'offre', example: sampleCopro.Offre || 'Premium' },
+        { tag: '{{copro.idVilogi}}', description: 'Identifiant Vilogi', example: sampleCopro.idVilogi || '12345' },
+        { tag: '{{copro.idMondayMortex}}', description: 'Identifiant Monday/Mortex', example: sampleCopro.idMondayMortex || 'MON123' },
+        { tag: '{{copro.immatriculation}}', description: 'Numéro d\'immatriculation', example: sampleCopro.immatriculation || 'IMM-2025-001' },
+        { tag: '{{copro.nbLotPrincipaux}}', description: 'Nombre de lots principaux', example: sampleCopro.nbLotPrincipaux || '45' },
+        { tag: '{{copro.typeChauffage}}', description: 'Type de chauffage', example: sampleCopro.typeChauffage || 'Collectif' },
+        { tag: '{{copro.dateConstruction}}', description: 'Date de construction', example: sampleCopro.dateConstruction || '1985' },
+        { tag: '{{copro.exerciceCT}}', description: 'Date d\'exercice comptable', example: sampleCopro.exerciceCT ? new Date(sampleCopro.exerciceCT).toLocaleDateString('fr-FR') : '01/01/2025' },
+        { tag: '{{copro.dateReprise}}', description: 'Date de reprise', example: sampleCopro.dateReprise ? new Date(sampleCopro.dateReprise).toLocaleDateString('fr-FR') : '15/03/2024' },
+        { tag: '{{copro.dateCreation}}', description: 'Date de création dans le système', example: sampleCopro.dateCreation ? new Date(sampleCopro.dateCreation).toLocaleDateString('fr-FR') : '01/01/2024' },
+        { tag: '{{copro.dateFin}}', description: 'Date de fin', example: sampleCopro.dateFin ? new Date(sampleCopro.dateFin).toLocaleDateString('fr-FR') : '' }
       ],
       date: [
-        { tag: '{{date.today}}', description: 'Date du jour', example: new Date().toLocaleDateString('fr-FR') },
-        { tag: '{{date.today_full}}', description: 'Date complète', example: new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) },
-        { tag: '{{date.year}}', description: 'Année', example: new Date().getFullYear().toString() },
-        { tag: '{{date.month}}', description: 'Mois', example: (new Date().getMonth() + 1).toString() },
-        { tag: '{{date.day}}', description: 'Jour', example: new Date().getDate().toString() }
+        { tag: '{{date.today}}', description: 'Date du jour (format court)', example: new Date().toLocaleDateString('fr-FR') },
+        { tag: '{{date.today_full}}', description: 'Date du jour (format long)', example: new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) },
+        { tag: '{{date.year}}', description: 'Année en cours', example: new Date().getFullYear().toString() },
+        { tag: '{{date.month}}', description: 'Mois en cours (numérique)', example: (new Date().getMonth() + 1).toString() },
+        { tag: '{{date.month_name}}', description: 'Nom du mois en cours', example: new Date().toLocaleDateString('fr-FR', { month: 'long' }) },
+        { tag: '{{date.day}}', description: 'Jour du mois', example: new Date().getDate().toString() },
+        { tag: '{{date.day_name}}', description: 'Nom du jour', example: new Date().toLocaleDateString('fr-FR', { weekday: 'long' }) },
+        { tag: '{{date.quarter}}', description: 'Trimestre actuel', example: `T${Math.floor(new Date().getMonth() / 3) + 1}` },
+        { tag: '{{date.week}}', description: 'Numéro de semaine', example: Math.ceil((new Date().getDate() + new Date(new Date().getFullYear(), 0, 1).getDay() + 1) / 7).toString() }
       ],
       company: [
         { tag: '{{company.name}}', description: 'Nom de l\'entreprise', example: 'Coprox' },
-        { tag: '{{company.address}}', description: 'Adresse de l\'entreprise', example: 'Paris, France' },
-        { tag: '{{company.phone}}', description: 'Téléphone', example: '+33 1 23 45 67 89' },
-        { tag: '{{company.email}}', description: 'Email', example: 'contact@coprox.fr' }
+        { tag: '{{company.legal_name}}', description: 'Raison sociale', example: 'Coprox SAS' },
+        { tag: '{{company.address}}', description: 'Adresse de l\'entreprise', example: '10 Rue de la Paix, 75002 Paris' },
+        { tag: '{{company.city}}', description: 'Ville du siège', example: 'Paris' },
+        { tag: '{{company.postal_code}}', description: 'Code postal', example: '75002' },
+        { tag: '{{company.phone}}', description: 'Téléphone principal', example: '+33 1 23 45 67 89' },
+        { tag: '{{company.fax}}', description: 'Télécopieur', example: '+33 1 23 45 67 90' },
+        { tag: '{{company.email}}', description: 'Email de contact', example: 'contact@coprox.fr' },
+        { tag: '{{company.website}}', description: 'Site web', example: 'www.coprox.fr' },
+        { tag: '{{company.siret}}', description: 'Numéro SIRET', example: '123 456 789 00012' },
+        { tag: '{{company.siren}}', description: 'Numéro SIREN', example: '123 456 789' },
+        { tag: '{{company.tva}}', description: 'Numéro TVA', example: 'FR 12 123456789' },
+        { tag: '{{company.rcs}}', description: 'RCS', example: 'RCS Paris B 123 456 789' },
+        { tag: '{{company.capital}}', description: 'Capital social', example: '100 000 €' }
+      ],
+      user: [
+        { tag: '{{user.name}}', description: 'Nom de l\'utilisateur connecté', example: 'Jean Dupont' },
+        { tag: '{{user.firstname}}', description: 'Prénom', example: 'Jean' },
+        { tag: '{{user.lastname}}', description: 'Nom de famille', example: 'Dupont' },
+        { tag: '{{user.email}}', description: 'Email de l\'utilisateur', example: 'jean.dupont@coprox.fr' },
+        { tag: '{{user.phone}}', description: 'Téléphone', example: '+33 6 12 34 56 78' },
+        { tag: '{{user.position}}', description: 'Fonction/Poste', example: 'Gestionnaire de copropriété' },
+        { tag: '{{user.signature}}', description: 'Signature de l\'utilisateur', example: 'Jean Dupont\nGestionnaire de copropriété\nCoprox' }
+      ],
+      financial: [
+        { tag: '{{financial.current_year}}', description: 'Exercice comptable en cours', example: '2025' },
+        { tag: '{{financial.previous_year}}', description: 'Exercice comptable précédent', example: '2024' },
+        { tag: '{{financial.budget_total}}', description: 'Budget total annuel', example: '125 000 €' },
+        { tag: '{{financial.charges_trimestre}}', description: 'Charges du trimestre', example: '31 250 €' },
+        { tag: '{{financial.date_echeance}}', description: 'Prochaine échéance', example: '01/01/2026' }
+      ],
+      legal: [
+        { tag: '{{legal.syndic_name}}', description: 'Nom du syndic', example: 'Coprox' },
+        { tag: '{{legal.syndic_address}}', description: 'Adresse du syndic', example: '10 Rue de la Paix, 75002 Paris' },
+        { tag: '{{legal.carte_pro}}', description: 'Numéro de carte professionnelle', example: 'CPI 7501 2025 000 123 456' },
+        { tag: '{{legal.garantie_financiere}}', description: 'Garantie financière', example: 'Galian Assurances - Police n° GF123456' },
+        { tag: '{{legal.assurance_rc}}', description: 'Assurance RC Professionnelle', example: 'AXA - Contrat n° RC987654' }
       ]
     };
     
@@ -123,7 +170,10 @@ const listTags = async (req, res) => {
     const allTags = [
       ...tags.copro,
       ...tags.date,
-      ...tags.company
+      ...tags.company,
+      ...tags.user,
+      ...tags.financial,
+      ...tags.legal
     ];
     
     logger.info(`Returning ${allTags.length} available template tags`);
@@ -132,7 +182,9 @@ const listTags = async (req, res) => {
       count: allTags.length,
       tags: allTags,
       tagsByCategory: tags,
-      usage: 'Use these tags in your document templates. They will be replaced with actual values during document generation.'
+      categories: Object.keys(tags),
+      usage: 'Use these tags in your document templates. They will be replaced with actual values during document generation.',
+      note: 'Some tags like user.*, financial.*, and legal.* will need to be populated with actual data from your system during document generation.'
     });
     
   } catch (error) {
