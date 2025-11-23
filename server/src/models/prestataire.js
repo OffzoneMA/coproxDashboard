@@ -17,6 +17,8 @@ const PrestataireSchema = new mongoose.Schema({
     bic: { type: String, required: false },
     virement: { type: Number, required: false, default: 0 },
     solde: { type: Number, required: false, default: 0 },
+    status: { type: String, required: false, default: 'Active' }, // 'Active' or 'Inactive'
+    dateRemoval: { type: Date, required: false }, // Date when prestataire was removed from Vilogi
     dateCreation: { type: Date, default: Date.now },
     dateModification: { type: Date, default: Date.now }
 });

@@ -6,7 +6,8 @@ const PrestataireService = require('../services/prestataireService');
 
 async function listPrestataires(req, res) {
   try {
-    const result = await PrestataireService.listPrestataires();
+    const includeInactive = req.query.includeInactive === 'true';
+    const result = await PrestataireService.listPrestataires(includeInactive);
     res.json(result);
   } catch (error) {
     console.error('Error listing prestataires:', error.message);

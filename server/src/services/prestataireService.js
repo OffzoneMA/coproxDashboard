@@ -19,12 +19,13 @@ async function connectAndExecute(callback) {
 
 // ============= PRESTATAIRE CRUD OPERATIONS =============
 
-// List all prestataires
-async function listPrestataires() {
+// List all prestataires (active by default)
+async function listPrestataires(includeInactive = false) {
   return connectAndExecute(async () => {
     const prestataireCollection = MongoDB.getCollection('prestataires');
-    const results = await prestataireCollection.find({}).toArray();
-    logger.info('listPrestataires', { meta: { count: results.length } });
+    const filter = includeInactive ? {} : { status: { $ne: 'Inactive' } };
+    const results = await prestataireCollection.find(filter).toArray();
+    logger.info('listPrestataires', { meta: { count: results.length, includeInactive } });
     return results;
   });
 }

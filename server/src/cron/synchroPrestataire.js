@@ -22,13 +22,19 @@ const synchroPrestataire = {
         try {
             console.log('===== Starting Prestataire Synchronization =====');
             
-            // Step 1: Sync from Vilogi to MongoDB
-            await vilogiToMongodb();
+            // Step 1: Sync from Vilogi to MongoDB and track active relationships
+            const activeRelationships = await vilogiToMongodb();
             
-            // Step 2: Update solde for each prestataire
+            // Step 2: Clean up obsolete links (prestataires no longer in copros)
+            await cleanupObsoleteLinks(activeRelationships);
+            
+            // Step 3: Mark or remove prestataires no longer in Vilogi
+            await cleanupRemovedPrestataires();
+            
+            // Step 4: Update solde for each active prestataire
             await updatePrestataireSoldes();
             
-            // Step 3: Sync to Monday.com
+            // Step 5: Sync to Monday.com
             //await mongodbToMonday();
             
             let counterEnd = await vilogiService.countConenction();
@@ -40,7 +46,7 @@ const synchroPrestataire = {
             
         } catch (error) {
             console.error("Error during prestataire synchronization:", error);
-            await scriptService.updateLogStatus('synchroPrestataire', LogId, -1, `Script executed with Error: ${error.message}`);
+            //await scriptService.updateLogStatus('synchroPrestataire', LogId, -1, `Script executed with Error: ${error.message}`);
             throw error;
         }
     }
@@ -48,9 +54,13 @@ const synchroPrestataire = {
 
 /**
  * Step 1: Fetch all prestataires from Vilogi for each copro and sync to MongoDB
+ * Returns: Set of active relationship keys for cleanup tracking
  */
 async function vilogiToMongodb() {
     console.log('\n--- Step 1: Syncing Prestataires from Vilogi to MongoDB ---');
+    
+    // Track all active relationships found in Vilogi
+    const activeRelationships = new Set();
     
     try {
         // Get all active copros
@@ -108,6 +118,10 @@ async function vilogiToMongodb() {
                         // Upsert prestataire
                         const savedPrestataire = await prestataireService.upsertPrestataire(prestataireData);
                         
+                        // Track this active relationship
+                        const relationshipKey = `${savedPrestataire._id.toString()}_${copro._id.toString()}`;
+                        activeRelationships.add(relationshipKey);
+                        
                         // Link prestataire to copro (if not already linked)
                         try {
                             await prestataireService.linkPrestataireToCopro(
@@ -143,6 +157,9 @@ async function vilogiToMongodb() {
         }
         
         console.log(`\n✓ Step 1 Complete: Processed ${totalPrestatairesProcessed} prestataires across ${allCopros.length} copros`);
+        console.log(`  → Tracked ${activeRelationships.size} active relationships`);
+        
+        return activeRelationships;
         
     } catch (error) {
         console.error('Error in vilogiToMongodb:', error);
@@ -151,10 +168,122 @@ async function vilogiToMongodb() {
 }
 
 /**
- * Step 2: Update solde for each prestataire by calling Vilogi API
+ * Step 2: Clean up obsolete links (prestataires no longer linked to copros in Vilogi)
+ */
+async function cleanupObsoleteLinks(activeRelationships) {
+    console.log('\n--- Step 2: Cleaning Up Obsolete Prestataire-Copro Links ---');
+    
+    try {
+        await MongoDB.connectToDatabase();
+        const prestataireCoproCollection = MongoDB.getCollection('prestatairecopros');
+        
+        // Get all existing relationships from database
+        const allLinks = await prestataireCoproCollection.find({}).toArray();
+        console.log(`Found ${allLinks.length} existing links in database`);
+        
+        let removedCount = 0;
+        
+        for (const link of allLinks) {
+            const relationshipKey = `${link.prestataireId.toString()}_${link.coproprieteId.toString()}`;
+            
+            // If this relationship is not in the active set, it should be removed
+            if (!activeRelationships.has(relationshipKey)) {
+                try {
+                    await prestataireCoproCollection.deleteOne({ _id: link._id });
+                    console.log(`  ✗ Removed obsolete link: Prestataire ${link.prestataireId} - Copro ${link.coproprieteId}`);
+                    removedCount++;
+                } catch (deleteError) {
+                    console.error(`  ⚠ Error removing link:`, deleteError.message);
+                }
+            }
+        }
+        
+        console.log(`\n✓ Step 2 Complete: Removed ${removedCount} obsolete links`);
+        
+    } catch (error) {
+        console.error('Error in cleanupObsoleteLinks:', error);
+        throw error;
+    }
+}
+
+/**
+ * Step 3: Clean up prestataires that are no longer in any Vilogi copro
+ * Configuration: Set PRESTATAIRE_HARD_DELETE=true for permanent deletion, false for soft delete
+ */
+async function cleanupRemovedPrestataires() {
+    console.log('\n--- Step 3: Cleaning Up Removed Prestataires ---');
+    
+    // Configuration: hard delete (true) or soft delete (false)
+    const HARD_DELETE = process.env.PRESTATAIRE_HARD_DELETE === 'true' || false;
+    console.log(`  Delete mode: ${HARD_DELETE ? 'Hard Delete (permanent)' : 'Soft Delete (mark as inactive)'}`);
+    
+    try {
+        await MongoDB.connectToDatabase();
+        const prestataireCollection = MongoDB.getCollection('prestataires');
+        const prestataireCoproCollection = MongoDB.getCollection('prestatairecopros');
+        
+        // Get all active prestataires (or all if hard delete mode)
+        const filter = HARD_DELETE ? {} : { status: { $ne: 'Inactive' } };
+        const allPrestataires = await prestataireCollection.find(filter).toArray();
+        console.log(`Found ${allPrestataires.length} prestataires to check`);
+        
+        let removedCount = 0;
+        let inactivatedCount = 0;
+        
+        for (const prestataire of allPrestataires) {
+            try {
+                // Check if this prestataire has any links
+                const linkCount = await prestataireCoproCollection.countDocuments({
+                    prestataireId: prestataire._id
+                });
+                
+                if (linkCount === 0) {
+                    // Prestataire is orphaned (no links to any copro)
+                    // This means it was removed from all copros in Vilogi
+                    
+                    if (HARD_DELETE) {
+                        // Option 1: Delete the prestataire completely
+                        await prestataireCollection.deleteOne({ _id: prestataire._id });
+                        console.log(`  ✗ DELETED: ${prestataire.societe} (idCompte: ${prestataire.idCompte})`);
+                        removedCount++;
+                    } else {
+                        // Option 2: Mark as inactive (soft delete)
+                        await prestataireCollection.updateOne(
+                            { _id: prestataire._id },
+                            { 
+                                $set: { 
+                                    status: 'Inactive', 
+                                    dateRemoval: new Date(),
+                                    dateModification: new Date()
+                                } 
+                            }
+                        );
+                        console.log(`  ⚠ INACTIVATED: ${prestataire.societe} (idCompte: ${prestataire.idCompte})`);
+                        inactivatedCount++;
+                    }
+                }
+            } catch (checkError) {
+                console.error(`  ⚠ Error checking prestataire ${prestataire.societe}:`, checkError.message);
+            }
+        }
+        
+        if (HARD_DELETE) {
+            console.log(`\n✓ Step 3 Complete: Permanently deleted ${removedCount} orphaned prestataires`);
+        } else {
+            console.log(`\n✓ Step 3 Complete: Marked ${inactivatedCount} prestataires as inactive`);
+        }
+        
+    } catch (error) {
+        console.error('Error in cleanupRemovedPrestataires:', error);
+        throw error;
+    }
+}
+
+/**
+ * Step 4: Update solde for each prestataire by calling Vilogi API
  */
 async function updatePrestataireSoldes() {
-    console.log('\n--- Step 2: Updating Prestataire Soldes from Vilogi ---');
+    console.log('\n--- Step 4: Updating Prestataire Soldes from Vilogi ---');
     
     try {
         // Get all prestataires from MongoDB
@@ -223,7 +352,7 @@ async function updatePrestataireSoldes() {
             }
         }
         
-        console.log(`\n✓ Step 2 Complete: Updated ${updatedCount} prestataires, ${errorCount} errors`);
+        console.log(`\n✓ Step 4 Complete: Updated ${updatedCount} prestataires, ${errorCount} errors`);
         
     } catch (error) {
         console.error('Error in updatePrestataireSoldes:', error);
@@ -232,10 +361,10 @@ async function updatePrestataireSoldes() {
 }
 
 /**
- * Step 3: Sync prestataires from MongoDB to Monday.com
+ * Step 5: Sync prestataires from MongoDB to Monday.com
  */
 async function mongodbToMonday() {
-    console.log('\n--- Step 3: Syncing Prestataires to Monday.com ---');
+    console.log('\n--- Step 5: Syncing Prestataires to Monday.com ---');
     
     try {
         // Check if board ID is configured
@@ -309,7 +438,7 @@ async function mongodbToMonday() {
             }
         }
         
-        console.log(`\n✓ Step 3 Complete: Created ${createdCount}, Updated ${updatedCount}, Errors ${errorCount}`);
+        console.log(`\n✓ Step 5 Complete: Created ${createdCount}, Updated ${updatedCount}, Errors ${errorCount}`);
         
     } catch (error) {
         console.error('Error in mongodbToMonday:', error);

@@ -46,4 +46,15 @@ router.get('/copro/:coproprieteId/prestataires', PrestataireController.getPresta
 // Trigger manual synchronization
 router.post('/sync', PrestataireController.triggerSync);
 
+// ============= TEST/HEALTH CHECK =============
+
+// Health check endpoint to verify routes are loaded
+router.get('/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        message: 'Prestataire routes are working',
+        timestamp: new Date().toISOString()
+    });
+});
+
 module.exports = router;
