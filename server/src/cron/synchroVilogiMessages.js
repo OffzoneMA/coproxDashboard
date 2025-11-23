@@ -29,6 +29,13 @@ const synchroVilogiMessages = {
 
             for (const copro of copros) {
                 console.log("ID Vilogi:", copro.idCopro);
+                
+                // Skip if not synchronizable with Vilogi
+                if (copro.isSynchronizable === false) {
+                    console.log(`⏭️  Skipping ${copro.idCopro} - not synchronizable with Vilogi`);
+                    continue;
+                }
+                
                 if (copro.idVilogi !== undefined) {
                     let persons = await vilogiService.getAllAdherents(copro.idVilogi);
                     for(const person of persons){

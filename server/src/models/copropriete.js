@@ -4,7 +4,7 @@ const CoproprieteSchema = new mongoose.Schema({
     idCopro: { type: String, required: true },
     Nom: { type: String, required: true },
     ville: { type: String, required: true },
-    status: { type: String, required: false },
+    status: { type: String, required: false }, // "Actif" or "Inactif"
     address: { type: String, required: false },
     codepostal: { type: String, required: false },
     Offre: { type: String, required: false },

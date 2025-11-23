@@ -46,8 +46,11 @@ const synchroCopro = {
 async function vilogiToMongodb(){
         ///get all copros from Vilogi: 
         const allCoprosFromVilogi = await vilogiService.getAllCopros();
+        const vilogiCoproIds = new Set();
+        
         for(const copro of allCoprosFromVilogi){
           //console.log(copro.lot)
+          vilogiCoproIds.add(copro.id);
 
           const detailData=await vilogiService.getCoproData(copro.id)
           //console.log(detailData)
@@ -63,6 +66,7 @@ async function vilogiToMongodb(){
             dateReprise:copro.dateReprise,
             immatriculation:detailData.site,
             nbLotPrincipaux:detailData.coproInfo.nbLotPrincipaux,
+            status:"Actif"
           }
           
           data.idCopro = copro.lot ? copro.lot : "S-Autre";
@@ -70,13 +74,24 @@ async function vilogiToMongodb(){
             let edit= await coproService.editCopropriete(findCopro._id,data)
             //console.log(copro.lot, " Edit info")
           }else{
-            data = {
-              ...data, 
-              status:"Actif"}
             let add= await coproService.addCopropriete(data)
             //console.log(copro.lot, " add info")
           }
           await delay(100)
+        }
+        
+        // Mark copros that are no longer in Vilogi as Inactif
+        // Get ALL copros including inactive ones to properly update status
+        const coproprieteCollection = MongoDB.getCollection('copropriete');
+        const allDbCopros = await coproprieteCollection.find({}).toArray();
+        
+        for (const dbCopro of allDbCopros) {
+          if (dbCopro.idVilogi && !vilogiCoproIds.has(dbCopro.idVilogi) && dbCopro.status !== 'Inactif') {
+            console.log(`⚠️  Copro ${dbCopro.idCopro} (Vilogi ID: ${dbCopro.idVilogi}) is no longer in Vilogi - marking as Inactif`);
+            await coproService.editCopropriete(dbCopro._id, {
+              status: 'Inactif'
+            });
+          }
         }
         const copros = await coproService.listCopropriete();
         for (const copro of copros) {

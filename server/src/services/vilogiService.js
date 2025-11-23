@@ -339,6 +339,48 @@ const getFactureOCRBrouillon = async () => {
   catch (e) { logError(e, 'getFactureOCRBrouillon() failed'); throw e; }
 };
 
+/**
+ * Check if a copro still exists in Vilogi system
+ * @param {string} coproID - The Vilogi copro ID to check
+ * @returns {Object} - { exists: boolean, status: string, error: string|null }
+ */
+const checkCoproExistsInVilogi = async (coproID) => {
+  try {
+    logger.info('Checking if copro exists in Vilogi', { meta: { coproID } });
+    
+    // Try to fetch basic copro data - if it exists, this should succeed
+    const url = `/copro?token=${process.env.VILOGI_TOKEN}&copro=${coproID}&id=${process.env.VILOGI_IDAUTH}`;
+    const response = await axiosInstance.get(url);
+    
+    // If we get data back, the copro exists
+    if (response.data && response.status === 200) {
+      logger.info('Copro exists in Vilogi', { meta: { coproID } });
+      return { exists: true, status: 'active', error: null };
+    }
+    
+    return { exists: false, status: 'not_in_vilogi', error: 'No data returned' };
+  } catch (error) {
+    // Check if it's a 404 or similar "not found" error
+    if (error.response) {
+      if (error.response.status === 404) {
+        logger.warn('Copro not found in Vilogi (404)', { meta: { coproID } });
+        return { exists: false, status: 'not_in_vilogi', error: 'Not found in Vilogi' };
+      } else if (error.response.status === 403 || error.response.status === 401) {
+        logger.warn('Access denied for copro', { meta: { coproID, status: error.response.status } });
+        return { exists: false, status: 'not_in_vilogi', error: 'Access denied - copro may have been removed' };
+      }
+    }
+    
+    // For other errors, mark as API error but don't definitively say it doesn't exist
+    logError(error, 'Error checking copro existence', { coproID });
+    return { 
+      exists: false, 
+      status: 'api_error', 
+      error: error.message || 'API error during validation'
+    };
+  }
+};
+
 module.exports = {
   authenticateUser,
   countConenction,
@@ -367,5 +409,6 @@ module.exports = {
   getUserHasMessage,
   getUserMessagePushLu,
   sendFactureToOCR,
-  getFactureOCRBrouillon
+  getFactureOCRBrouillon,
+  checkCoproExistsInVilogi
 };
