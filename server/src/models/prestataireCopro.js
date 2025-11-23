@@ -16,6 +16,7 @@ const PrestataireCoproSchema = new mongoose.Schema({
     dateFin: { type: Date, required: false },
     typePrestation: { type: String, required: false }, // e.g., "Entretien", "Réparation", etc.
     notes: { type: String, required: false },
+    solde: { type: Number, required: false, default: 0 }, // Solde for this specific prestataire-copro relationship
     dateCreation: { type: Date, default: Date.now },
     dateModification: { type: Date, default: Date.now }
 });

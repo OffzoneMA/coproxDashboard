@@ -17,19 +17,19 @@ const synchroPrestataire = {
     start: async () => {
         logs.logExecution("synchroPrestataire");
         let counterStart = await vilogiService.countConenction();
-        //const LogId = await scriptService.logScriptStart('synchroPrestataire');
+        const LogId = await scriptService.logScriptStart('synchroPrestataire');
         
         try {
             console.log('===== Starting Prestataire Synchronization =====');
             
             // Step 1: Sync from Vilogi to MongoDB and track active relationships
-            const activeRelationships = await vilogiToMongodb();
+            //const activeRelationships = await vilogiToMongodb();
             
             // Step 2: Clean up obsolete links (prestataires no longer in copros)
-            await cleanupObsoleteLinks(activeRelationships);
+            //await cleanupObsoleteLinks(activeRelationships);
             
             // Step 3: Mark or remove prestataires no longer in Vilogi
-            await cleanupRemovedPrestataires();
+            //await cleanupRemovedPrestataires();
             
             // Step 4: Update solde for each active prestataire
             await updatePrestataireSoldes();
@@ -41,7 +41,7 @@ const synchroPrestataire = {
             let VolumeCalls = counterEnd[0].nombreAppel - counterStart[0].nombreAppel;
             
             console.log(`Total API calls: ${VolumeCalls}`);
-            //await scriptService.updateLogStatus('synchroPrestataire', LogId, 0, `Script executed successfully`, VolumeCalls);
+            await scriptService.updateLogStatus('synchroPrestataire', LogId, 0, `Script executed successfully`, VolumeCalls);
             console.log('===== Prestataire Synchronization Completed =====');
             
         } catch (error) {
@@ -307,35 +307,58 @@ async function updatePrestataireSoldes() {
                     continue;
                 }
                 
-                // Use the first linked copro to fetch solde (or aggregate if needed)
-                const firstCopro = linkedCopros[0];
+                // Format date as DD/MM/YYYY for Vilogi API
+                const today = new Date();
+                const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
                 
-                if (!firstCopro.idVilogi) {
-                    console.log(`  → Copro ${firstCopro.idCopro} has no Vilogi ID, skipping`);
-                    continue;
+                // Aggregate soldes across all linked copros
+                let totalSolde = 0;
+                let successfulCopros = 0;
+                
+                console.log(`  → Found ${linkedCopros.length} linked copro(s), fetching soldes...`);
+                
+                for (const copro of linkedCopros) {
+                    if (!copro.idVilogi) {
+                        console.log(`    ⚠ Copro ${copro.idCopro} has no Vilogi ID, skipping`);
+                        continue;
+                    }
+                    
+                    try {
+                        // Call Vilogi API to get solde for this copro
+                        // The compte parameter is the prestataire's account number (idCompte)
+                        const soldeData = await vilogiService.getbudgetComptebyDate(
+                            copro.idVilogi,
+                            prestataire.idCompte.toString(),
+                            formattedDate
+                        );
+                        
+                        // Response format: [{ "name": "40101273-SLAM ENERGY", "dateSolde": "23/11/2025", "solde": 0 }]
+                        if (Array.isArray(soldeData) && soldeData.length > 0) {
+                            const coproSolde = parseFloat(soldeData[0].solde) || 0;
+                            totalSolde += coproSolde;
+                            successfulCopros++;
+                            console.log(`    ✓ ${copro.idCopro}: ${coproSolde}€ (${soldeData[0].name})`);
+                            
+                            // Update the solde in the PrestataireCopro junction table
+                            await prestataireService.updatePrestataireCoproSolde(
+                                prestataire._id,
+                                copro._id,
+                                coproSolde
+                            );
+                        } else {
+                            console.log(`    ⚠ ${copro.idCopro}: No solde data returned`);
+                        }
+                        
+                        // Small delay between API calls
+                        await delay(200);
+                        
+                    } catch (coproSoldeError) {
+                        console.error(`    ✗ ${copro.idCopro}: Error fetching solde - ${coproSoldeError.message}`);
+                    }
                 }
                 
-                // Get current date for solde calculation
-                const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-                
-                // Call Vilogi API to get solde
-                // The compte parameter should be the prestataire's account number (idCompte)
-                const soldeData = await vilogiService.getbudgetComptebyDate(
-                    firstCopro.idVilogi,
-                    prestataire.idCompte.toString(),
-                    currentDate
-                );
-                
-                let solde = 0;
-                if (soldeData && soldeData.solde !== undefined) {
-                    solde = parseFloat(soldeData.solde) || 0;
-                } else if (soldeData && soldeData.balance !== undefined) {
-                    solde = parseFloat(soldeData.balance) || 0;
-                } else if (Array.isArray(soldeData) && soldeData.length > 0) {
-                    solde = parseFloat(soldeData[0].solde || soldeData[0].balance || 0);
-                }
-                
-                console.log(`  → Solde retrieved: ${solde}€`);
+                const solde = totalSolde;
+                console.log(`  → Total solde across ${successfulCopros} copro(s): ${solde}€`);
                 
                 // Update prestataire with new solde
                 await prestataireService.editPrestataire(prestataire._id, { solde });

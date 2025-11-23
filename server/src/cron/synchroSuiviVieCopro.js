@@ -1,6 +1,7 @@
 const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
+const viCoproService = require('../services/viCoproService');
 const mondayService = require('../services/mondayService');
 const scriptService = require('../services/scriptService');
 const zendeskService = require('../services/zendeskService');
@@ -131,10 +132,16 @@ async function generateData(data, copro) {
       console.log("columnValues", columnValues);
 
       await saveMonday(copro.name + " - " + item.title, columnValues);
-      await coproService.editCopropriete(
-        coproData._id,
-        { [`suiviCopro.${item.title}`]: formatDate(futureDate) }
-      );
+      
+      // Save to vicopro collection instead of copro.suiviCopro
+      await viCoproService.createViCopro({
+        idCopro: copro.name,
+        actionTitle: item.title,
+        dateCreation: today,
+        dateEcheance: futureDate,
+        copro: verifResult.coproData._id,
+        status: 'active'
+      });
     }
   } catch (error) {
     console.error("Erreur lors de la création de l'élément:", error);
@@ -143,40 +150,45 @@ async function generateData(data, copro) {
 
 async function verification(item,copro) {
   try {
-  coproData= await coproService.detailsCoproprieteByidCopro(copro)
-  console.log("coproData",coproData)
-  if (coproData.status == "Inactif") {
-    //console.log("Copro Inactif", coproData.status)
-    return {status:false}
-  }
+    coproData = await coproService.detailsCoproprieteByidCopro(copro);
+    console.log("coproData", coproData);
+    
+    if (coproData.status == "Inactif") {
+      console.log("Copro Inactif", coproData.status);
+      return { status: false };
+    }
 
-  if (coproData.suiviCopro && coproData.suiviCopro.hasOwnProperty(item.title)) {
-    const suiviDate = new Date(coproData.suiviCopro[item.title]);
-    console.log("Found in suiviCopro:", suiviDate);
-  
-    if (suiviDate > today) {
-      console.log("✅ Date is in the future — skipping item.");
-      return { status: false }; // or `continue` if you want to skip only this item
+    // Check vicopro collection for existing future entries
+    const hasFutureEntry = await viCoproService.hasFutureActiveEntry(copro, item.title);
+    
+    if (hasFutureEntry) {
+      console.log("✅ Future active entry exists in vicopro — skipping item.");
+      return { status: false };
     }
-  
-    if (suiviDate <= today) {
-      console.log("⛔ Date is in the past or today — proceeding.");
-      return{
-        "coproData": coproData,
-        "status": true,
-      }
+    
+    // Check for latest entry to determine if we should create a new one
+    const latestEntry = await viCoproService.findLatestByIdCoproAndAction(copro, item.title);
+    
+    if (latestEntry && latestEntry.dateEcheance > today) {
+      console.log("✅ Latest entry date is in the future — skipping item.");
+      return { status: false };
     }
-  } else {
-    console.log(`🔍 '${item.title}' not found in suiviCopro — proceeding by default.`);
+    
+    if (latestEntry && latestEntry.dateEcheance <= today) {
+      console.log("⛔ Latest entry date is in the past or today — proceeding.");
+    } else {
+      console.log(`🔍 No entry found for '${item.title}' in vicopro — proceeding by default.`);
+    }
+    
     return {
-      "coproData": coproData,
-      "status": true,
-    }
-  }
+      coproData: coproData,
+      status: true,
+    };
   
-} catch (error) {
-  console.error("Erreur lors de la verification de l'élement:", error);
-}
+  } catch (error) {
+    console.error("Erreur lors de la verification de l'élement:", error);
+    return { status: false };
+  }
 }
 
 async function saveMonday(itemName,data) {

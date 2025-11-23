@@ -199,11 +199,13 @@ async function getCoprosForPrestataire(prestataireId) {
         const copro = await coproprieteCollection.findOne({ _id: rel.coproprieteId });
         return {
           ...copro,
+          solde: rel.solde || 0, // Include the solde for this specific copro
           relationshipDetails: {
             dateDebut: rel.dateDebut,
             dateFin: rel.dateFin,
             typePrestation: rel.typePrestation,
-            notes: rel.notes
+            notes: rel.notes,
+            solde: rel.solde || 0 // Also include in relationshipDetails for backwards compatibility
           }
         };
       })
@@ -248,6 +250,31 @@ async function getPrestatairesForCopro(coproprieteId) {
   });
 }
 
+// Update solde for a specific prestataire-copro relationship
+async function updatePrestataireCoproSolde(prestataireId, coproprieteId, solde) {
+  return connectAndExecute(async () => {
+    const prestataireCoproCollection = MongoDB.getCollection('prestatairecopros');
+    
+    const result = await prestataireCoproCollection.updateOne(
+      {
+        prestataireId: new mongoose.Types.ObjectId(prestataireId),
+        coproprieteId: new mongoose.Types.ObjectId(coproprieteId)
+      },
+      { 
+        $set: { 
+          solde: solde,
+          dateModification: new Date()
+        } 
+      }
+    );
+    
+    logger.info('Updated prestataire-copro solde', { 
+      meta: { prestataireId, coproprieteId, solde, modifiedCount: result.modifiedCount } 
+    });
+    return result;
+  });
+}
+
 module.exports = {
   // CRUD operations
   listPrestataires,
@@ -263,5 +290,6 @@ module.exports = {
   unlinkPrestataireFromCopro,
   updatePrestataireCooproLink,
   getCoprosForPrestataire,
-  getPrestatairesForCopro
+  getPrestatairesForCopro,
+  updatePrestataireCoproSolde
 };
