@@ -15,9 +15,10 @@ const suiviFicheRoutes = require('./src/routes/suiviFicheRoutes.js');
 const zendeskRoutes = require('./src/routes/zendeskRoutes.js');
 const scriptRoutes = require('./src/routes/scriptRoutes.js');
 const cronConfigRoutes = require('./src/routes/cronConfigRoutes.js');
+const prestataireRoutes = require('./src/routes/prestataireRoutes.js');
 
 const scheduleCronJobs = require('./src/cron/cronStart.js');
-const batch = require('./src/cron/synchroRapelles.js');
+const batch = require('./src/cron/synchroPrestataire.js');
 
 // Import comprehensive metrics configuration
 const { 
@@ -69,6 +70,7 @@ app.use('/mongodb', trelloRoutes);
 app.use('/monday', mondayRoutes);
 app.use('/script', scriptRoutes);
 app.use('/cron-config', cronConfigRoutes);
+app.use('/prestataire', prestataireRoutes);
 
 app.get('/batch', (req, res) => {
   batch.start();
