@@ -82,29 +82,57 @@ const listDocuments = async (req, res) => {
 };
 
 /**
- * Get all unique tags/categories from documents (based on copro names)
+ * Get all available template tags/variables for document generation
  */
 const listTags = async (req, res) => {
   try {
-    logger.info('Listing document tags (copro names)');
+    logger.info('Listing available template tags');
     
-    // Get all active copropriétés from database
+    // Get sample copro to extract all available fields
     const copros = await coproService.listCopropriete();
+    const sampleCopro = copros.length > 0 ? copros[0] : {};
     
-    // Extract unique copro names and IDs
-    const tags = copros.map(copro => ({
-      id: copro._id,
-      idCopro: copro.idCopro,
-      name: copro.Nom || copro.name || copro.idCopro,
-      ville: copro.ville,
-      status: copro.status || 'Actif'
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    // Define all available template tags organized by category
+    const tags = {
+      copro: [
+        { tag: '{{copro.name}}', description: 'Nom de la copropriété', example: sampleCopro.Nom || sampleCopro.name || 'Résidence Les Jardins' },
+        { tag: '{{copro.idCopro}}', description: 'Identifiant de la copropriété', example: sampleCopro.idCopro || 'C001' },
+        { tag: '{{copro.ville}}', description: 'Ville', example: sampleCopro.ville || 'Paris' },
+        { tag: '{{copro.address}}', description: 'Adresse complète', example: sampleCopro.address || '123 Rue Example' },
+        { tag: '{{copro.codepostal}}', description: 'Code postal', example: sampleCopro.codepostal || '75001' },
+        { tag: '{{copro.status}}', description: 'Statut', example: sampleCopro.status || 'Actif' },
+        { tag: '{{copro.Offre}}', description: 'Type d\'offre', example: sampleCopro.Offre || 'Premium' },
+        { tag: '{{copro.idVilogi}}', description: 'ID Vilogi', example: sampleCopro.idVilogi || '12345' }
+      ],
+      date: [
+        { tag: '{{date.today}}', description: 'Date du jour', example: new Date().toLocaleDateString('fr-FR') },
+        { tag: '{{date.today_full}}', description: 'Date complète', example: new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) },
+        { tag: '{{date.year}}', description: 'Année', example: new Date().getFullYear().toString() },
+        { tag: '{{date.month}}', description: 'Mois', example: (new Date().getMonth() + 1).toString() },
+        { tag: '{{date.day}}', description: 'Jour', example: new Date().getDate().toString() }
+      ],
+      company: [
+        { tag: '{{company.name}}', description: 'Nom de l\'entreprise', example: 'Coprox' },
+        { tag: '{{company.address}}', description: 'Adresse de l\'entreprise', example: 'Paris, France' },
+        { tag: '{{company.phone}}', description: 'Téléphone', example: '+33 1 23 45 67 89' },
+        { tag: '{{company.email}}', description: 'Email', example: 'contact@coprox.fr' }
+      ]
+    };
     
-    logger.info(`Found ${tags.length} copro tags`);
+    // Flatten for simple list view
+    const allTags = [
+      ...tags.copro,
+      ...tags.date,
+      ...tags.company
+    ];
+    
+    logger.info(`Returning ${allTags.length} available template tags`);
     res.json({
       success: true,
-      count: tags.length,
-      tags: tags
+      count: allTags.length,
+      tags: allTags,
+      tagsByCategory: tags,
+      usage: 'Use these tags in your document templates. They will be replaced with actual values during document generation.'
     });
     
   } catch (error) {
@@ -118,12 +146,12 @@ const listTags = async (req, res) => {
 };
 
 /**
- * Get documents by tag/category (copro name)
+ * Get documents by category/type
  */
 const getDocumentsByTag = async (req, res) => {
   try {
     const { tag } = req.params;
-    logger.info('Getting documents by copro name', { meta: { tag } });
+    logger.info('Getting documents by category', { meta: { tag } });
     
     // Get all documents from all folders
     const allDocuments = [];
@@ -141,17 +169,21 @@ const getDocumentsByTag = async (req, res) => {
       }
     }
     
-    // Filter documents that contain the copro name in their filename or path
+    // Filter documents by category or search term
     const filteredDocuments = allDocuments.filter(doc => {
+      // Check if tag matches category
+      if (doc.category === tag) return true;
+      
+      // Check if tag is in filename or path
       const searchText = `${doc.name} ${doc.path}`.toLowerCase();
       const tagLower = tag.toLowerCase();
       return searchText.includes(tagLower);
     });
     
-    logger.info(`Found ${filteredDocuments.length} documents for copro: ${tag}`);
+    logger.info(`Found ${filteredDocuments.length} documents for: ${tag}`);
     res.json({
       success: true,
-      tag,
+      category: tag,
       count: filteredDocuments.length,
       documents: filteredDocuments
     });
