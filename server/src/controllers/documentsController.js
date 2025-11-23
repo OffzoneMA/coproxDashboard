@@ -6,6 +6,39 @@ const { logger, logError } = createServiceLogger('documents');
 const DOWNLOADS_PATH = path.join(__dirname, '../../downloads');
 
 /**
+ * Health check endpoint
+ */
+const healthCheck = async (req, res) => {
+  try {
+    const folderChecks = {};
+    const folders = ['archives', 'contrats', 'factureOCR', 'zendesk'];
+    
+    for (const folder of folders) {
+      const folderPath = path.join(DOWNLOADS_PATH, folder);
+      try {
+        await fs.access(folderPath);
+        folderChecks[folder] = 'accessible';
+      } catch {
+        folderChecks[folder] = 'not found';
+      }
+    }
+    
+    res.json({
+      status: 'ok',
+      message: 'Documents API is working',
+      downloadsPath: DOWNLOADS_PATH,
+      folders: folderChecks,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+/**
  * Get list of all documents with their metadata
  */
 const listDocuments = async (req, res) => {
@@ -54,12 +87,10 @@ const listTags = async (req, res) => {
   try {
     logger.info('Listing document tags');
     
-    const tags = new Set();
+    const tagsMap = new Map();
     const folders = ['archives', 'contrats', 'factureOCR', 'zendesk'];
     
     for (const folder of folders) {
-      tags.add(folder);
-      
       const folderPath = path.join(DOWNLOADS_PATH, folder);
       
       try {
@@ -67,19 +98,43 @@ const listTags = async (req, res) => {
         
         // Check for subfolders (like archives/courrier, archives/sinistres, etc.)
         const entries = await fs.readdir(folderPath, { withFileTypes: true });
+        const subfolders = [];
+        let fileCount = 0;
+        
         for (const entry of entries) {
           if (entry.isDirectory()) {
-            tags.add(`${folder}/${entry.name}`);
+            const subfolderPath = path.join(folderPath, entry.name);
+            const subfolderFiles = await fs.readdir(subfolderPath);
+            const subfolderFileCount = subfolderFiles.filter(f => !f.startsWith('.')).length;
+            
+            subfolders.push({
+              name: entry.name,
+              path: `${folder}/${entry.name}`,
+              fileCount: subfolderFileCount
+            });
+          } else if (!entry.name.startsWith('.')) {
+            fileCount++;
           }
         }
+        
+        // Add main folder tag
+        tagsMap.set(folder, {
+          category: folder,
+          label: formatCategoryLabel(folder),
+          path: folder,
+          fileCount: fileCount,
+          subfolders: subfolders,
+          hasSubfolders: subfolders.length > 0
+        });
+        
       } catch (error) {
         logger.warn(`Folder not found: ${folder}`);
       }
     }
     
-    const tagsList = Array.from(tags).sort();
+    const tagsList = Array.from(tagsMap.values());
     
-    logger.info(`Found ${tagsList.length} tags`);
+    logger.info(`Found ${tagsList.length} main categories`);
     res.json({
       success: true,
       count: tagsList.length,
@@ -275,7 +330,24 @@ function getFileType(ext) {
   return types[ext] || 'Unknown';
 }
 
+/**
+ * Format category name to readable label
+ */
+function formatCategoryLabel(category) {
+  const labels = {
+    'archives': 'Archives',
+    'contrats': 'Contrats',
+    'factureOCR': 'Factures OCR',
+    'zendesk': 'Zendesk',
+    'courrier': 'Courrier',
+    'sinistres': 'Sinistres'
+  };
+  
+  return labels[category] || category.charAt(0).toUpperCase() + category.slice(1);
+}
+
 module.exports = {
+  healthCheck,
   listDocuments,
   listTags,
   getDocumentsByTag,

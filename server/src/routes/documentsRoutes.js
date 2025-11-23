@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const documentsController = require('../controllers/documentsController');
 
+// Health check
+router.get('/health', documentsController.healthCheck);
+
 // Get all documents
 router.get('/list', documentsController.listDocuments);
 
