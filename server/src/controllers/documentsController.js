@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const { createServiceLogger } = require('../services/logger');
 const { logger, logError } = createServiceLogger('documents');
+const coproService = require('../services/coproService');
 
 const DOWNLOADS_PATH = path.join(__dirname, '../../downloads');
 
@@ -81,64 +82,29 @@ const listDocuments = async (req, res) => {
 };
 
 /**
- * Get all unique tags/categories from documents
+ * Get all unique tags/categories from documents (based on copro names)
  */
 const listTags = async (req, res) => {
   try {
-    logger.info('Listing document tags');
+    logger.info('Listing document tags (copro names)');
     
-    const tagsMap = new Map();
-    const folders = ['archives', 'contrats', 'factureOCR', 'zendesk'];
+    // Get all active copropriétés from database
+    const copros = await coproService.listCopropriete();
     
-    for (const folder of folders) {
-      const folderPath = path.join(DOWNLOADS_PATH, folder);
-      
-      try {
-        await fs.access(folderPath);
-        
-        // Check for subfolders (like archives/courrier, archives/sinistres, etc.)
-        const entries = await fs.readdir(folderPath, { withFileTypes: true });
-        const subfolders = [];
-        let fileCount = 0;
-        
-        for (const entry of entries) {
-          if (entry.isDirectory()) {
-            const subfolderPath = path.join(folderPath, entry.name);
-            const subfolderFiles = await fs.readdir(subfolderPath);
-            const subfolderFileCount = subfolderFiles.filter(f => !f.startsWith('.')).length;
-            
-            subfolders.push({
-              name: entry.name,
-              path: `${folder}/${entry.name}`,
-              fileCount: subfolderFileCount
-            });
-          } else if (!entry.name.startsWith('.')) {
-            fileCount++;
-          }
-        }
-        
-        // Add main folder tag
-        tagsMap.set(folder, {
-          category: folder,
-          label: formatCategoryLabel(folder),
-          path: folder,
-          fileCount: fileCount,
-          subfolders: subfolders,
-          hasSubfolders: subfolders.length > 0
-        });
-        
-      } catch (error) {
-        logger.warn(`Folder not found: ${folder}`);
-      }
-    }
+    // Extract unique copro names and IDs
+    const tags = copros.map(copro => ({
+      id: copro._id,
+      idCopro: copro.idCopro,
+      name: copro.Nom || copro.name || copro.idCopro,
+      ville: copro.ville,
+      status: copro.status || 'Actif'
+    })).sort((a, b) => a.name.localeCompare(b.name));
     
-    const tagsList = Array.from(tagsMap.values());
-    
-    logger.info(`Found ${tagsList.length} main categories`);
+    logger.info(`Found ${tags.length} copro tags`);
     res.json({
       success: true,
-      count: tagsList.length,
-      tags: tagsList
+      count: tags.length,
+      tags: tags
     });
     
   } catch (error) {
@@ -152,30 +118,42 @@ const listTags = async (req, res) => {
 };
 
 /**
- * Get documents by tag/category
+ * Get documents by tag/category (copro name)
  */
 const getDocumentsByTag = async (req, res) => {
   try {
     const { tag } = req.params;
-    logger.info('Getting documents by tag', { meta: { tag } });
+    logger.info('Getting documents by copro name', { meta: { tag } });
     
-    const documents = [];
-    const tagPath = path.join(DOWNLOADS_PATH, tag);
+    // Get all documents from all folders
+    const allDocuments = [];
+    const folders = ['archives', 'contrats', 'factureOCR', 'zendesk'];
     
-    try {
-      await fs.access(tagPath);
-      const files = await getFilesRecursively(tagPath, tag);
-      documents.push(...files);
-    } catch (error) {
-      logger.warn(`Tag folder not found: ${tag}`);
+    for (const folder of folders) {
+      const folderPath = path.join(DOWNLOADS_PATH, folder);
+      
+      try {
+        await fs.access(folderPath);
+        const files = await getFilesRecursively(folderPath, folder);
+        allDocuments.push(...files);
+      } catch (error) {
+        logger.warn(`Folder not found: ${folder}`);
+      }
     }
     
-    logger.info(`Found ${documents.length} documents for tag: ${tag}`);
+    // Filter documents that contain the copro name in their filename or path
+    const filteredDocuments = allDocuments.filter(doc => {
+      const searchText = `${doc.name} ${doc.path}`.toLowerCase();
+      const tagLower = tag.toLowerCase();
+      return searchText.includes(tagLower);
+    });
+    
+    logger.info(`Found ${filteredDocuments.length} documents for copro: ${tag}`);
     res.json({
       success: true,
       tag,
-      count: documents.length,
-      documents
+      count: filteredDocuments.length,
+      documents: filteredDocuments
     });
     
   } catch (error) {
