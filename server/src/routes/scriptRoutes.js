@@ -23,4 +23,7 @@ router.post('/log-start', scriptController.logScriptStart);
 // Route to update log status
 router.post('/update-log-status', scriptController.updateLogStatus);
 
+// Route to cleanup stale in-progress scripts
+router.post('/cleanup-stale', scriptController.cleanupStaleScripts);
+
 module.exports = router;

@@ -59,6 +59,12 @@ class ScriptController {
       ScriptService.getScriptsDashboardView()
     );
   }
+
+  static async cleanupStaleScripts(req, res) {
+    return ScriptController.sendResponse(res, () => 
+      ScriptService.markStaleInProgressScriptsAsFailed()
+    );
+  }
 }
 
 module.exports = ScriptController;

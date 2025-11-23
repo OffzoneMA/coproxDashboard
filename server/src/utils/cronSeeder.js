@@ -209,6 +209,29 @@ const defaultCronConfigs = [
     }
   },
   {
+    name: 'daily-cleanup-2am',
+    schedule: '0 2 * * *',
+    enabled: true,
+    timezone: 'Etc/UTC',
+    description: 'Daily cleanup of stale in-progress scripts at 2 AM UTC',
+    category: 'cleanup',
+    priority: 7,
+    scripts: [
+      {
+        name: 'cleanupStaleScripts',
+        modulePath: '../cron/cleanupStaleScripts',
+        enabled: true,
+        order: 1
+      }
+    ],
+    timeout: 300000, // 5 minutes
+    maxRetries: 2,
+    notifications: {
+      onError: true,
+      onSuccess: false
+    }
+  },
+  {
     name: 'every-5-minutes',
     schedule: '*/5 * * * *',
     enabled: true,

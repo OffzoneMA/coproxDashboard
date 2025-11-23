@@ -65,28 +65,8 @@ async function getPerson(id) {
     const person = await personCollection.findOne({ _id });
     if (!person) return null;
 
-    // If vilogi expects string ids, convert here:
-    const vilogiId = String(_id);
-
-    const [
-      proprietaireInfo,
-      proprietaireLots,
-      proprietaireComptes,
-      proprietaireDocuments
-    ] = await Promise.all([
-      vilogiService.getProprietaireInfo(vilogiId),
-      vilogiService.getProprietaireLots(vilogiId),
-      vilogiService.getProprietaireComptes(vilogiId),
-      vilogiService.getProprietaireDocuments(vilogiId)
-    ]);
-
-    return {
-      ...person,
-      proprietaireInfo,
-      proprietaireLots,
-      proprietaireComptes,
-      proprietaireDocuments
-    };
+    logger.info('Get person', { meta: { id: String(_id) } });
+    return person;
   });
 }
 
@@ -148,37 +128,27 @@ async function getAllPersonsWithCopro() {
     // Enrich in parallel but don’t fail the whole call if one enrichment fails
     const enriched = await Promise.all(
       persons.map(async (p) => {
-        const vilogiId = String(p._id);
         try {
-          const [
-            proprietaireInfo,
-            proprietaireLots,
-            proprietaireComptes,
-            proprietaireDocuments
-          ] = await Promise.all([
-            vilogiService.getProprietaireInfo(vilogiId),
-            vilogiService.getProprietaireLots(vilogiId),
-            vilogiService.getProprietaireComptes(vilogiId),
-            vilogiService.getProprietaireDocuments(vilogiId)
-          ]);
-
-          return {
-            ...p,
-            proprietaireInfo,
-            proprietaireLots,
-            proprietaireComptes,
-            proprietaireDocuments
-          };
+          if (p.idCopro) {
+            const coproCollection = MongoDB.getCollection('copropriete');
+            const copro = await coproCollection.findOne({ _id: p.idCopro });
+            return {
+              ...p,
+              copro
+            };
+          }
+          return p;
         } catch (e) {
-          // If Vilogi fails for one person, still return the base person
+          // If copro lookup fails for one person, still return the base person
           return {
             ...p,
-            vilogiError: e?.message || 'Failed to fetch Vilogi data'
+            coproError: e?.message || 'Failed to fetch copro data'
           };
         }
       })
     );
 
+    logger.info('Get all persons with copro', { meta: { count: enriched.length } });
     return enriched;
   });
 }

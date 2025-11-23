@@ -77,7 +77,26 @@ app.get('/batch', (req, res) => {
   res.send('Cron test is running!');
 });
 
-scheduleCronJobs();
+// ⚠️ IMPORTANT: Do NOT run cron jobs on Vercel (serverless environment)
+// Cron execution should only happen on a dedicated server with persistent process
+// Vercel is ONLY for API endpoints (configuration and monitoring)
+const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+const isServerless = process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.FUNCTION_NAME;
+
+if (isVercel || isServerless) {
+  console.log('========================================');
+  console.log('⚠️  SERVERLESS ENVIRONMENT DETECTED');
+  console.log('⚠️  Cron execution is DISABLED');
+  console.log('⚠️  This instance only serves API endpoints');
+  console.log('⚠️  Run cron jobs on a dedicated server');
+  console.log('========================================');
+} else {
+  console.log('========================================');
+  console.log('✓ Regular server environment detected');
+  console.log('✓ Initializing cron system...');
+  console.log('========================================');
+  scheduleCronJobs();
+}
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

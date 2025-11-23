@@ -1,3 +1,33 @@
+/**
+ * CRON SYSTEM ARCHITECTURE
+ * ========================
+ * 
+ * This file manages TWO DISTINCT execution systems:
+ * 
+ * 1. SCHEDULED CRON EXECUTION (Automated)
+ *    - Scripts run automatically on their configured schedule
+ *    - Examples: Daily at 3am, Weekly on Sunday, Every 5 minutes
+ *    - Uses: executeScheduledScript()
+ *    - Does NOT check status flags
+ *    - ⚠️  100% DATABASE-DRIVEN: All schedules come from MongoDB CronConfig collection
+ *    - NO hardcoded fallbacks - database is single source of truth
+ * 
+ * 2. MANUAL SCRIPT EXECUTION (User-triggered)
+ *    - User clicks "Run" button in UI
+ *    - Sets script status to 1 (waiting to start)
+ *    - Requires a cron configuration to check for status=1 scripts
+ *    - Uses: executeManualScript()
+ *    - Updates status: 1→2→0/-1 (waiting→running→success/error)
+ * 
+ * KEY DIFFERENCE:
+ * - Scheduled: Runs on time, ignores status
+ * - Manual: Runs when status=1, updates status through lifecycle
+ * 
+ * INITIALIZATION:
+ * - First time setup: POST /cron-config/seed to populate database
+ * - After changes: POST /cron-config/reload to restart cron jobs
+ */
+
 const cron = require('node-cron');
 const MongoDB = require('../utils/mongodb');
 const ScriptService = require('../services/scriptService');
@@ -39,128 +69,79 @@ async function connectAndExecute(callback) {
   }
 }
 
-async function startScriptCron(name, script) {
-  console.log("startCrontab from script cont start ")
-  await script.start();
+/**
+ * Execute script as part of scheduled cron job (automated execution)
+ * This runs scripts on their schedule regardless of status flags
+ */
+async function executeScheduledScript(name, script) {
+  const startTime = new Date();
+  console.log(`[CRON] Executing scheduled script: ${name}`);
+  
+  try {
+    logs.logExecution(name);
+    await script.start();
+    
+    const endTime = new Date();
+    await ScriptService.logExecutionHistory(name, startTime, endTime, 0, "Scheduled cron execution completed successfully");
+    console.log(`[CRON] ✓ Script ${name} completed successfully`);
+  } catch (error) {
+    console.error(`[CRON] ✗ Error executing scheduled script ${name}:`, error);
+    const endTime = new Date();
+    await ScriptService.logExecutionHistory(name, startTime, endTime, -1, `Scheduled cron execution error: ${error.message}`);
+  }
 }
 
-async function executeScript(name, script) {
-  const startTime = new Date(); // Moved startTime to ensure it is always initialized
+/**
+ * Execute script manually (triggered by user button click)
+ * This checks the status flag to see if user requested execution
+ */
+async function executeManualScript(name, script) {
+  const startTime = new Date();
+  
   try {
     const scriptState = await ScriptService.getScriptState(name);
+    
+    // Only execute if status is 1 (user clicked the "run" button)
     if (scriptState && scriptState.status === 1) {
-      console.log(`Starting script from Dashbaord: ${name}`);
-      logs.logExecution(name)
+      console.log(`[MANUAL] Starting user-triggered script: ${name}`);
+      logs.logExecution(name);
 
-      await ScriptService.updateScriptStatus(name, 2); // Status 0 for "Running"
-      await script.start(); // Assume script has a 'start' function
+      await ScriptService.updateScriptStatus(name, 2); // Status 2 = "Running"
+      await script.start();
 
       const endTime = new Date();
-      await ScriptService.updateScriptStatus(name, 0); // Status 2 for "Completed"
-      await ScriptService.logExecutionHistory(name, startTime, endTime, 0, "Script executed successfully");
+      await ScriptService.updateScriptStatus(name, 0); // Status 0 = "Success"
+      await ScriptService.logExecutionHistory(name, startTime, endTime, 0, "Manual execution completed successfully");
+      console.log(`[MANUAL] ✓ Script ${name} completed successfully`);
     }
   } catch (error) {
-    console.error(`Error executing ${name} script: ${error}`);
-    const endTime = new Date(); // Initialize endTime in case of error
-    await ScriptService.logExecutionHistory(name, startTime, endTime, -1, `Script executed with Error: ${error.message}`);
-    await ScriptService.updateScriptStatus(name, -1); // Status -1 for "Failed"
+    console.error(`[MANUAL] ✗ Error executing manual script ${name}:`, error);
+    const endTime = new Date();
+    await ScriptService.logExecutionHistory(name, startTime, endTime, -1, `Manual execution error: ${error.message}`);
+    await ScriptService.updateScriptStatus(name, -1); // Status -1 = "Failed"
   }
 }
 
 /**
  * Load cron configurations from MongoDB
+ * NO HARDCODED FALLBACKS - Database is the single source of truth
  */
 async function loadCronConfigs() {
   try {
     cronConfigs = await CronConfigService.getEnabledConfigs();
-    console.log(`Loaded ${cronConfigs.length} enabled cron configurations from database`);
+    console.log(`✓ Loaded ${cronConfigs.length} enabled cron configurations from database`);
+    
+    if (cronConfigs.length === 0) {
+      console.warn('⚠️  No enabled cron configurations found in database!');
+      console.warn('⚠️  Run POST /cron-config/seed to initialize default configurations');
+    }
+    
     return cronConfigs;
   } catch (error) {
-    console.error('Failed to load cron configurations from database:', error.message);
-    // Fall back to legacy hardcoded schedules if database is unavailable
-    return await loadLegacySchedules();
+    console.error('✗ Failed to load cron configurations from database:', error.message);
+    console.error('✗ Cron system will not start. Please check database connection and run seed endpoint.');
+    throw error; // Don't start cron system without database
   }
-}
-
-/**
- * Legacy fallback schedules (hardcoded as before)
- */
-async function loadLegacySchedules() {
-  console.log('Using legacy hardcoded cron schedules as fallback');
-  return [
-    {
-      name: 'morning-sync-3am',
-      schedule: '0 3 * * *',
-      timezone: TIMEZONE,
-      description: 'Morning synchronization tasks at 3 AM',
-      scripts: [
-        { name: 'synchroRapelles', modulePath: '../cron/synchroRapelles', enabled: true },
-        { name: 'synchroFacture', modulePath: '../cron/synchroFacture', enabled: true },
-        { name: 'zendeskTicket', modulePath: '../cron/zendeskTicket', enabled: true },
-        { name: 'recoverAllSuspendedTickets', modulePath: '../services/zendeskService', enabled: true }
-      ]
-    },
-    {
-      name: 'early-morning-5am',
-      schedule: '0 5 * * *',
-      timezone: TIMEZONE,
-      description: 'Early morning accounting sync at 5 AM',
-      scripts: [
-        { name: 'synchroComptaList401', modulePath: '../cron/synchroComptaList401', enabled: true },
-        { name: 'synchroComptaList472', modulePath: '../cron/synchroComptaList472', enabled: true },
-        { name: 'synchroComptaRapprochementBancaire', modulePath: '../cron/synchroComptaRapprochementBancaire', enabled: true }
-      ]
-    },
-    {
-      name: 'midnight-1am',
-      schedule: '0 1 * * *',
-      timezone: TIMEZONE,
-      description: 'Midnight tasks at 1 AM',
-      scripts: [
-        { name: 'synchroMandats', modulePath: '../cron/synchroMandats', enabled: true },
-        { name: 'synchroContratEntretien', modulePath: '../cron/synchroContratEntretien', enabled: true },
-        { name: 'contratAssurance', modulePath: './synchroContratAssurance', enabled: true },
-        { name: 'synchroSuiviVieCopro', modulePath: '../cron/synchroSuiviVieCopro', enabled: true }
-      ]
-    },
-    {
-      name: 'weekly-sunday',
-      schedule: '0 0 * * 0',
-      timezone: TIMEZONE,
-      description: 'Weekly tasks on Sunday midnight',
-      scripts: [
-        { name: 'synchoBudgetCoproprietaire', modulePath: '../cron/synchoBudgetCoproprietaire', enabled: true },
-        { name: 'synchroCopro', modulePath: '../cron/synchroCopro', enabled: true },
-        { name: 'synchroUsers', modulePath: '../cron/synchroUsers', enabled: true }
-      ]
-    },
-    {
-      name: 'weekly-saturday',
-      schedule: '0 0 * * 6',
-      timezone: TIMEZONE,
-      description: 'Weekly tasks on Saturday midnight',
-      scripts: [
-        { name: 'contratAssurance', modulePath: './synchroContratAssurance', enabled: true },
-        { name: 'synchroTravaux', modulePath: '../cron/synchroTravaux', enabled: true }
-      ]
-    },
-    {
-      name: 'evening-7pm',
-      schedule: '0 19 * * *',
-      timezone: TIMEZONE,
-      description: 'Evening OCR processing at 7 PM',
-      scripts: [
-        { name: 'synchroFactureOCRMonday', modulePath: '../cron/synchroFactureOCRMonday', enabled: true }
-      ]
-    },
-    {
-      name: 'every-5-minutes',
-      schedule: '*/5 * * * *',
-      timezone: TIMEZONE,
-      description: 'Database-driven scripts every 5 minutes',
-      scripts: [] // This will use the scriptsList from database
-    }
-  ];
 }
 
 /**
@@ -179,30 +160,30 @@ async function executeCronScripts(cronConfig) {
     logs.logVilogiCounter(counter[0].nombreAppel);
     logs.logExecution(`------------- Lancement ${cronConfig.name} - `, counter[0].nombreAppel);
 
-    // Special handling for the 5-minute cron that uses scriptsList
+    // Special handling for the 5-minute cron - this checks for MANUAL triggers
     if (cronConfig.name === 'every-5-minutes') {
-      console.log('Starting cron 5 minutes - database scripts');
+      console.log('[MANUAL TRIGGER CHECK] Scanning for user-triggered scripts (status=1)');
       for (const { name, script } of scriptsList) {
         try {
-          await executeScript(name, script);
+          await executeManualScript(name, script); // Only runs if status === 1
           successCount++;
         } catch (error) {
-          console.error(`Error in 5-minute script ${name}:`, error);
+          console.error(`[MANUAL] Error checking script ${name}:`, error);
           errorCount++;
         }
       }
     } else {
-      // Execute configured scripts
+      // Execute configured scripts on their SCHEDULED cron time
       const enabledScripts = cronConfig.scripts ? cronConfig.scripts.filter(s => s.enabled !== false) : [];
       
       for (const scriptConfig of enabledScripts) {
         try {
-          console.log(`Executing script: ${scriptConfig.name}`);
+          console.log(`[SCHEDULED] Executing script: ${scriptConfig.name}`);
           const scriptModule = require(scriptConfig.modulePath);
-          await startScriptCron(scriptConfig.name, scriptModule);
+          await executeScheduledScript(scriptConfig.name, scriptModule);
           successCount++;
         } catch (error) {
-          console.error(`Error executing script ${scriptConfig.name}:`, error);
+          console.error(`[SCHEDULED] Error executing script ${scriptConfig.name}:`, error);
           errorCount++;
         }
       }
@@ -306,35 +287,51 @@ async function reloadCronJobs() {
 
 /**
  * Main function to initialize and schedule cron jobs
+ * DATABASE-ONLY: All cron configurations must exist in MongoDB
  */
 async function scheduleCronJobs() {
   try {
-    console.log('Initializing cron job system...');
+    console.log('========================================');
+    console.log('Initializing DATABASE-DRIVEN cron system');
+    console.log('========================================');
     
     // Initialize scripts for backward compatibility
     await initializeScripts();
     
-    // Load cron configurations from database
+    // Load cron configurations from database (NO hardcoded fallbacks)
     const configs = await loadCronConfigs();
     
-    // Start cron jobs
+    if (configs.length === 0) {
+      console.warn('⚠️  ========================================');
+      console.warn('⚠️  NO CRON JOBS CONFIGURED IN DATABASE!');
+      console.warn('⚠️  ========================================');
+      console.warn('⚠️  To initialize: POST /cron-config/seed');
+      console.warn('⚠️  Cron system running but no jobs scheduled');
+      return; // Exit without starting jobs
+    }
+    
+    // Start cron jobs from database
     await startCronJobs(configs);
     
-    console.log(`Cron job system initialized with ${configs.length} jobs`);
+    console.log('========================================');
+    console.log(`✓ Cron system initialized with ${configs.length} jobs`);
+    console.log('========================================');
     
     // Set up periodic reload (every hour) to pick up configuration changes
     const reloadJob = cron.schedule('0 * * * *', async () => {
       try {
+        console.log('[AUTO-RELOAD] Reloading cron configurations from database...');
         await reloadCronJobs();
       } catch (error) {
-        console.error('Failed to reload cron jobs:', error);
+        console.error('[AUTO-RELOAD] Failed to reload cron jobs:', error);
       }
     }, { timezone: TIMEZONE });
     
     activeJobs.set('__reload__', reloadJob);
     
   } catch (error) {
-    console.error('Failed to initialize cron job system:', error);
+    console.error('✗ Failed to initialize cron job system:', error);
+    console.error('✗ Check database connection and run: POST /cron-config/seed');
     throw error;
   }
 }

@@ -286,11 +286,19 @@ function TrelloPage({ onSetTitle }) {
                             <TableCell>ID</TableCell>
                             <TableCell>Nom</TableCell>
                             <TableCell>Option</TableCell>
-                            <TableCell>Fréquence</TableCell>
+                            <TableCell>
+                                <Tooltip title="Configuration de l'exécution automatique (cron)">
+                                    <span>Planification Cron</span>
+                                </Tooltip>
+                            </TableCell>
                             <TableCell>Dernière exécution</TableCell>
                             <TableCell>Date de lancement</TableCell>
                             <TableCell>Status</TableCell>
-                            <TableCell>Actions</TableCell>
+                            <TableCell>
+                                <Tooltip title="Lancer le script manuellement, sans attendre le cron">
+                                    <span>Exécution Manuelle</span>
+                                </Tooltip>
+                            </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -353,14 +361,20 @@ function TrelloPage({ onSetTitle }) {
                                     <TableCell>{row.lastExecution}</TableCell>
                                     <TableCell>{getStatusChip(row.status)}</TableCell>
                                     <TableCell>
-                                        <Button
-                                            variant="contained"
-                                            onClick={() => handleButtonClick(row.name)}
-                                            disabled={loading}
-                                            size="small"
-                                        >
-                                            {loading ? <CircularProgress size={20} /> : 'Lancer'}
-                                        </Button>
+                                        <Tooltip title="Exécution manuelle - Lance le script immédiatement (indépendant du cron)">
+                                            <span>
+                                                <Button
+                                                    variant="contained"
+                                                    color="secondary"
+                                                    onClick={() => handleButtonClick(row.name)}
+                                                    disabled={loading || row.status === 2}
+                                                    size="small"
+                                                    startIcon={<SyncIcon />}
+                                                >
+                                                    {loading ? <CircularProgress size={20} /> : 'Lancer Manuellement'}
+                                                </Button>
+                                            </span>
+                                        </Tooltip>
                                     </TableCell>
                                 </TableRow>
                             );

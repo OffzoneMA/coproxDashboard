@@ -333,6 +333,86 @@ class ScriptService {
       return result;
     });
   }
+
+  /**
+   * Mark scripts that have been "In Progress" (status: 2) for more than 3 days as "Failed" (status: -1)
+   * @returns {Promise<Object>} Object with counts of updated logs
+   */
+  static async markStaleInProgressScriptsAsFailed() {
+    return this.connectAndExecute(async () => {
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+      logger.info('Marking stale in-progress scripts as failed', { 
+        meta: { thresholdDate: threeDaysAgo.toISOString() } 
+      });
+
+      // Find all scripts with logs that have status 2 (In Progress) and startTime older than 3 days
+      const scripts = await this.getScriptCollection().find({
+        'logs': {
+          $elemMatch: {
+            status: 2, // In Progress
+            startTime: { $lt: threeDaysAgo }
+          }
+        }
+      }).toArray();
+
+      let totalUpdated = 0;
+      const updatedScripts = [];
+
+      for (const script of scripts) {
+        let scriptUpdated = false;
+        
+        // Update each stale log in the script
+        for (const log of script.logs) {
+          if (log.status === 2 && new Date(log.startTime) < threeDaysAgo) {
+            await this.getScriptCollection().updateOne(
+              { 
+                _id: script._id,
+                'logs.logId': log.logId 
+              },
+              {
+                $set: {
+                  'logs.$.status': -1,
+                  'logs.$.endTime': new Date(),
+                  'logs.$.message': 'Script marked as failed - exceeded 3 day timeout'
+                }
+              }
+            );
+            totalUpdated++;
+            scriptUpdated = true;
+            
+            logger.info('Marked stale log as failed', { 
+              meta: { 
+                scriptName: script.name, 
+                logId: log.logId,
+                startTime: log.startTime 
+              } 
+            });
+          }
+        }
+
+        if (scriptUpdated) {
+          updatedScripts.push(script.name);
+        }
+      }
+
+      logger.info('Completed marking stale scripts as failed', { 
+        meta: { 
+          totalLogsUpdated: totalUpdated,
+          scriptsAffected: updatedScripts.length,
+          scriptNames: updatedScripts
+        } 
+      });
+
+      return {
+        totalLogsUpdated: totalUpdated,
+        scriptsAffected: updatedScripts.length,
+        scriptNames: updatedScripts,
+        thresholdDate: threeDaysAgo
+      };
+    });
+  }
 }
 
 module.exports = ScriptService;
