@@ -48,6 +48,9 @@ async function vilogiToMongodb(){
         const allCoprosFromVilogi = await vilogiService.getAllCopros();
         const vilogiCoproIds = new Set();
         
+        // Use upsert to avoid race conditions and duplicates
+        const coproprieteCollection = MongoDB.getCollection('copropriete');
+        
         for(const copro of allCoprosFromVilogi){
           //console.log(copro.lot)
           vilogiCoproIds.add(copro.id);
@@ -55,8 +58,6 @@ async function vilogiToMongodb(){
           const detailData=await vilogiService.getCoproData(copro.id)
           //console.log(detailData)
           console.log(copro.lot, " Managing Data")
-          let findCopro = await coproService.detailsCoproprieteByidVilogi(copro.id)
-          //console.log(copro)
           
           // Check if archive date is past - if so, mark as inactive
           let isActive = true;
@@ -86,23 +87,37 @@ async function vilogiToMongodb(){
             nbLotPrincipaux:detailData.coproInfo.nbLotPrincipaux,
             archive: copro.archive || null,
             isActive: isActive,
-            status: isActive ? "Actif" : "Inactif" // Keep string for backward compatibility
+            status: isActive ? "Actif" : "Inactif", // Keep string for backward compatibility
+            updatedAt: new Date()
           }
           
           data.idCopro = copro.lot ? copro.lot : "S-Autre";
-          if (findCopro){
-            let edit= await coproService.editCopropriete(findCopro._id,data)
-            //console.log(copro.lot, " Edit info")
-          }else{
-            let add= await coproService.addCopropriete(data)
-            //console.log(copro.lot, " add info")
+          
+          // Use updateOne with upsert to prevent duplicates
+          // This is atomic and prevents race conditions
+          try {
+            await coproprieteCollection.updateOne(
+              { idVilogi: copro.id }, // Find by unique idVilogi
+              { 
+                $set: data,
+                $setOnInsert: { createdAt: new Date() } // Only set createdAt on insert
+              },
+              { upsert: true } // Create if doesn't exist, update if exists
+            );
+          } catch (error) {
+            if (error.code === 11000) {
+              // Duplicate key error - should not happen with upsert, but handle gracefully
+              console.error(`⚠️  Duplicate key error for idVilogi ${copro.id}, skipping...`);
+            } else {
+              throw error;
+            }
           }
+          
           await delay(100)
         }
         
         // Mark copros that are no longer in Vilogi as Inactif
         // Get ALL copros including inactive ones to properly update status
-        const coproprieteCollection = MongoDB.getCollection('copropriete');
         const allDbCopros = await coproprieteCollection.find({}).toArray();
         
         for (const dbCopro of allDbCopros) {
