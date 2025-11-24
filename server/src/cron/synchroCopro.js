@@ -57,6 +57,20 @@ async function vilogiToMongodb(){
           console.log(copro.lot, " Managing Data")
           let findCopro = await coproService.detailsCoproprieteByidVilogi(copro.id)
           //console.log(copro)
+          
+          // Check if archive date is past - if so, mark as Inactif
+          let status = "Actif";
+          if (copro.archive) {
+            const archiveDate = new Date(copro.archive);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate date comparison
+            
+            if (archiveDate < today) {
+              status = "Inactif";
+              console.log(`⚠️  Copro ${copro.lot} has archive date ${copro.archive} which is past - marking as Inactif`);
+            }
+          }
+          
           let data={
             Nom:copro.nom.replace(/'/g, ' '),
             ville:copro.ville,
@@ -66,7 +80,8 @@ async function vilogiToMongodb(){
             dateReprise:copro.dateReprise,
             immatriculation:detailData.site,
             nbLotPrincipaux:detailData.coproInfo.nbLotPrincipaux,
-            status:"Actif"
+            archive: copro.archive || null,
+            status: status
           }
           
           data.idCopro = copro.lot ? copro.lot : "S-Autre";
