@@ -488,6 +488,44 @@ class ScriptService {
       };
     });
   }
+
+  /**
+   * Reset all script statuses to 0 (Success) to allow manual re-execution
+   * @returns {Promise<Object>} Object with count of updated scripts
+   */
+  static async resetAllScriptsToSuccess() {
+    return this.connectAndExecute(async () => {
+      logger.info('Resetting all script statuses to 0 (Success)');
+
+      // Update all scripts to status 0
+      const result = await this.getScriptCollection().updateMany(
+        { status: { $ne: 0 } }, // Only update scripts that are not already at status 0
+        { 
+          $set: { 
+            status: 0
+          } 
+        }
+      );
+
+      logger.info('Completed resetting script statuses', { 
+        meta: { 
+          scriptsUpdated: result.modifiedCount
+        } 
+      });
+
+      // Get list of all scripts after reset
+      const allScripts = await this.getScriptCollection()
+        .find({})
+        .project({ name: 1, status: 1, _id: 0 })
+        .toArray();
+
+      return {
+        scriptsUpdated: result.modifiedCount,
+        totalScripts: allScripts.length,
+        scripts: allScripts
+      };
+    });
+  }
 }
 
 module.exports = ScriptService;

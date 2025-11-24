@@ -65,6 +65,18 @@ class ScriptController {
       ScriptService.markStaleInProgressScriptsAsFailed()
     );
   }
+
+  static async cleanupAllInProgressScripts(req, res) {
+    return ScriptController.sendResponse(res, () => 
+      ScriptService.markAllInProgressScriptsAsFailed()
+    );
+  }
+
+  static async resetAllScriptsToSuccess(req, res) {
+    return ScriptController.sendResponse(res, () => 
+      ScriptService.resetAllScriptsToSuccess()
+    );
+  }
 }
 
 module.exports = ScriptController;
