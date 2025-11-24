@@ -335,24 +335,99 @@ class ScriptService {
   }
 
   /**
-   * Mark scripts that have been "In Progress" (status: 2) for more than 3 days as "Failed" (status: -1)
+   * Mark ALL scripts with "In Progress" (status: 2) as "Failed" (status: -1)
+   * Useful for cleaning up execution history
+   * @returns {Promise<Object>} Object with counts of updated logs
+   */
+  static async markAllInProgressScriptsAsFailed() {
+    return this.connectAndExecute(async () => {
+      logger.info('Marking ALL in-progress scripts as failed');
+
+      // Find all scripts with logs that have status 2 (In Progress)
+      const scripts = await this.getScriptCollection().find({
+        'logs': {
+          $elemMatch: {
+            status: 2 // In Progress
+          }
+        }
+      }).toArray();
+
+      let totalUpdated = 0;
+      const updatedScripts = [];
+
+      for (const script of scripts) {
+        let scriptUpdated = false;
+        
+        // Update each in-progress log in the script
+        for (const log of script.logs) {
+          if (log.status === 2) {
+            await this.getScriptCollection().updateOne(
+              { 
+                _id: script._id,
+                'logs.logId': log.logId 
+              },
+              {
+                $set: {
+                  'logs.$.status': -1,
+                  'logs.$.endTime': new Date(),
+                  'logs.$.message': 'Script marked as failed - manual cleanup of execution history'
+                }
+              }
+            );
+            totalUpdated++;
+            scriptUpdated = true;
+            
+            logger.info('Marked in-progress log as failed', { 
+              meta: { 
+                scriptName: script.name, 
+                logId: log.logId,
+                startTime: log.startTime 
+              } 
+            });
+          }
+        }
+
+        if (scriptUpdated) {
+          updatedScripts.push(script.name);
+        }
+      }
+
+      logger.info('Completed marking all in-progress scripts as failed', { 
+        meta: { 
+          totalLogsUpdated: totalUpdated,
+          scriptsAffected: updatedScripts.length,
+          scriptNames: updatedScripts
+        } 
+      });
+
+      return {
+        totalLogsUpdated: totalUpdated,
+        scriptsAffected: updatedScripts.length,
+        scriptNames: updatedScripts,
+        message: `Successfully marked ${totalUpdated} in-progress execution(s) as failed across ${updatedScripts.length} script(s)`
+      };
+    });
+  }
+
+  /**
+   * Mark scripts that have been "In Progress" (status: 2) for more than 24 hours as "Failed" (status: -1)
    * @returns {Promise<Object>} Object with counts of updated logs
    */
   static async markStaleInProgressScriptsAsFailed() {
     return this.connectAndExecute(async () => {
-      const threeDaysAgo = new Date();
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
       logger.info('Marking stale in-progress scripts as failed', { 
-        meta: { thresholdDate: threeDaysAgo.toISOString() } 
+        meta: { thresholdDate: twentyFourHoursAgo.toISOString() } 
       });
 
-      // Find all scripts with logs that have status 2 (In Progress) and startTime older than 3 days
+      // Find all scripts with logs that have status 2 (In Progress) and startTime older than 24 hours
       const scripts = await this.getScriptCollection().find({
         'logs': {
           $elemMatch: {
             status: 2, // In Progress
-            startTime: { $lt: threeDaysAgo }
+            startTime: { $lt: twentyFourHoursAgo }
           }
         }
       }).toArray();
@@ -365,7 +440,7 @@ class ScriptService {
         
         // Update each stale log in the script
         for (const log of script.logs) {
-          if (log.status === 2 && new Date(log.startTime) < threeDaysAgo) {
+          if (log.status === 2 && new Date(log.startTime) < twentyFourHoursAgo) {
             await this.getScriptCollection().updateOne(
               { 
                 _id: script._id,
@@ -375,7 +450,7 @@ class ScriptService {
                 $set: {
                   'logs.$.status': -1,
                   'logs.$.endTime': new Date(),
-                  'logs.$.message': 'Script marked as failed - exceeded 3 day timeout'
+                  'logs.$.message': 'Script marked as failed - exceeded 24 hour timeout'
                 }
               }
             );
@@ -409,7 +484,7 @@ class ScriptService {
         totalLogsUpdated: totalUpdated,
         scriptsAffected: updatedScripts.length,
         scriptNames: updatedScripts,
-        thresholdDate: threeDaysAgo
+        thresholdDate: twentyFourHoursAgo
       };
     });
   }
