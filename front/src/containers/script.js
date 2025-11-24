@@ -25,7 +25,15 @@ function TrelloPage({ onSetTitle }) {
     // Dialog states
     const [openAddScript, setOpenAddScript] = useState(false);
     const [openCronConfig, setOpenCronConfig] = useState(false);
-    const [newScript, setNewScript] = useState({ name: '', content: '' });
+    const [newScript, setNewScript] = useState({ 
+        name: '', 
+        content: '',
+        label: '',
+        description: '',
+        category: 'sync',
+        priority: 5,
+        timeout: 300000
+    });
     const [currentCron, setCurrentCron] = useState({ 
         name: '', 
         schedule: '0 0 * * *', 
@@ -198,16 +206,40 @@ function TrelloPage({ onSetTitle }) {
 
         try {
             setLoading(true);
-            await fetchApiData('script/add', 'POST', {
+            const response = await fetchApiData('script/add', 'POST', {
                 scriptName: newScript.name,
-                scriptContent: newScript.content
+                scriptContent: newScript.content,
+                label: newScript.label || newScript.name,
+                description: newScript.description,
+                category: newScript.category || 'sync',
+                priority: newScript.priority || 5,
+                timeout: newScript.timeout || 300000
             });
-            setSnackbar({ open: true, message: "Script ajouté avec succès", severity: 'success' });
+            
+            const message = response?.data?.message || response?.message || "Script ajouté avec succès";
+            setSnackbar({ open: true, message, severity: 'success' });
             setOpenAddScript(false);
-            setNewScript({ name: '', content: '' });
-            fetchData();
+            setNewScript({ 
+                name: '', 
+                content: '',
+                label: '',
+                description: '',
+                category: 'sync',
+                priority: 5,
+                timeout: 300000
+            });
+            
+            // Refresh the script list to show the new script
+            await fetchData();
         } catch (error) {
-            setSnackbar({ open: true, message: "Erreur lors de l'ajout du script", severity: 'error' });
+            console.error('Error adding script:', error);
+            
+            // Extract error message from response
+            const errorMessage = error.response?.data?.error || 
+                               error.message || 
+                               "Erreur lors de l'ajout du script";
+            
+            setSnackbar({ open: true, message: errorMessage, severity: 'error' });
         } finally {
             setLoading(false);
         }
@@ -384,31 +416,117 @@ function TrelloPage({ onSetTitle }) {
             </TableContainer>
 
             {/* Add Script Dialog */}
-            <Dialog open={openAddScript} onClose={() => setOpenAddScript(false)} maxWidth="md" fullWidth>
+            <Dialog open={openAddScript} onClose={() => setOpenAddScript(false)} maxWidth="lg" fullWidth>
                 <DialogTitle>Ajouter un nouveau script</DialogTitle>
                 <DialogContent>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                        Le script doit exporter un objet avec une méthode <code>start()</code>. 
+                        Exemple: <code>module.exports = {'{'} start: async () =&gt; {'{'} /* votre code */ {'}'} {'}'}</code>
+                    </Alert>
+                    
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            label="Nom du script *"
+                            placeholder="ex: monScript ou monScript.js"
+                            fullWidth
+                            value={newScript.name}
+                            onChange={(e) => setNewScript({ ...newScript, name: e.target.value })}
+                            helperText="Sans extension (sera ajouté automatiquement)"
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Label (affichage)"
+                            placeholder="ex: Synchronisation des prestataires"
+                            fullWidth
+                            value={newScript.label}
+                            onChange={(e) => setNewScript({ ...newScript, label: e.target.value })}
+                            helperText="Nom affiché dans l'interface (optionnel)"
+                        />
+                    </Box>
+
                     <TextField
-                        autoFocus
                         margin="dense"
-                        label="Nom du script (ex: monScript.js)"
+                        label="Description"
+                        placeholder="ex: Synchronisation des informations prestataires de Vilogi vers Monday"
                         fullWidth
-                        value={newScript.name}
-                        onChange={(e) => setNewScript({ ...newScript, name: e.target.value })}
+                        value={newScript.description}
+                        onChange={(e) => setNewScript({ ...newScript, description: e.target.value })}
+                        helperText="Description du script (optionnel)"
+                        sx={{ mb: 2 }}
                     />
+
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, mb: 2 }}>
+                        <TextField
+                            select
+                            margin="dense"
+                            label="Catégorie"
+                            fullWidth
+                            value={newScript.category}
+                            onChange={(e) => setNewScript({ ...newScript, category: e.target.value })}
+                            SelectProps={{ native: true }}
+                        >
+                            <option value="sync">Synchronisation</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="report">Rapport</option>
+                            <option value="cleanup">Nettoyage</option>
+                            <option value="other">Autre</option>
+                        </TextField>
+                        
+                        <TextField
+                            type="number"
+                            margin="dense"
+                            label="Priorité"
+                            fullWidth
+                            value={newScript.priority}
+                            onChange={(e) => setNewScript({ ...newScript, priority: parseInt(e.target.value) })}
+                            helperText="1 (haute) à 10 (basse)"
+                            inputProps={{ min: 1, max: 10 }}
+                        />
+                        
+                        <TextField
+                            type="number"
+                            margin="dense"
+                            label="Timeout (ms)"
+                            fullWidth
+                            value={newScript.timeout}
+                            onChange={(e) => setNewScript({ ...newScript, timeout: parseInt(e.target.value) })}
+                            helperText="Délai max d'exécution"
+                            inputProps={{ min: 10000, step: 10000 }}
+                        />
+                    </Box>
+
                     <TextField
                         margin="dense"
-                        label="Contenu du script"
+                        label="Contenu du script *"
+                        placeholder="const monScript = { start: async () => { console.log('Hello!'); } }; module.exports = monScript;"
                         fullWidth
                         multiline
-                        rows={10}
+                        rows={15}
                         value={newScript.content}
                         onChange={(e) => setNewScript({ ...newScript, content: e.target.value })}
-                        sx={{ fontFamily: 'monospace' }}
+                        sx={{ 
+                            fontFamily: 'monospace',
+                            '& textarea': {
+                                fontFamily: 'monospace',
+                                fontSize: '0.875rem'
+                            }
+                        }}
+                        helperText="Le contenu sera validé avant d'être sauvegardé"
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenAddScript(false)}>Annuler</Button>
-                    <Button onClick={handleAddScript} variant="contained">Ajouter</Button>
+                    <Button onClick={() => setOpenAddScript(false)} disabled={loading}>
+                        Annuler
+                    </Button>
+                    <Button 
+                        onClick={handleAddScript} 
+                        variant="contained" 
+                        disabled={loading || !newScript.name || !newScript.content}
+                    >
+                        {loading ? <CircularProgress size={20} /> : 'Ajouter'}
+                    </Button>
                 </DialogActions>
             </Dialog>
 

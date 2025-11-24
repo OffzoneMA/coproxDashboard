@@ -17,20 +17,23 @@ const path = require('path');
  */
 
 class ScriptService {
-  static async addScript(scriptName, scriptContent) {
+  static async addScript(scriptName, scriptContent, options = {}) {
     if (!scriptName || !scriptContent) {
       throw new Error('Script name and content are required');
     }
 
-    if (!scriptName.endsWith('.js')) {
-      scriptName += '.js';
-    }
+    // Extract base name without extension for database
+    const baseNameWithoutExt = scriptName.replace(/\.js$/, '');
+    
+    // Add .js extension for file if not present
+    const scriptFileName = scriptName.endsWith('.js') ? scriptName : `${scriptName}.js`;
 
     // Sanitize script name to prevent directory traversal
-    const sanitizedScriptName = path.basename(scriptName);
+    const sanitizedScriptName = path.basename(scriptFileName);
+    const sanitizedBaseName = path.basename(baseNameWithoutExt);
     const scriptPath = path.join(__dirname, '../cron', sanitizedScriptName);
 
-    // Check if file exists
+    // Check if file already exists
     try {
       await fs.access(scriptPath);
       throw new Error(`Script "${sanitizedScriptName}" already exists`);
@@ -38,29 +41,98 @@ class ScriptService {
       if (error.code !== 'ENOENT') {
         throw error;
       }
+      // File doesn't exist, which is what we want - continue
     }
 
-    // Write file
-    await fs.writeFile(scriptPath, scriptContent, 'utf8');
+    // Validate script content has basic module structure
+    if (!scriptContent.includes('module.exports')) {
+      logger.warn('Script content does not include module.exports', { meta: { scriptName: sanitizedScriptName } });
+      // Add a warning but don't fail - user might add it later
+    }
 
-    // Add to database
-    return this.connectAndExecute(async () => {
-      const result = await this.getScriptCollection().updateOne(
-        { name: sanitizedScriptName },
-        { 
-          $set: { 
-            name: sanitizedScriptName,
-            status: 0, // Initial status
-            logs: [],
-            execution_history: []
+    // Validate JavaScript syntax by attempting to parse it
+    try {
+      // Use Node's VM module to check syntax without executing
+      const vm = require('vm');
+      new vm.Script(scriptContent);
+    } catch (syntaxError) {
+      logger.error('Invalid JavaScript syntax', { meta: { scriptName: sanitizedScriptName, error: syntaxError.message } });
+      throw new Error(`Invalid JavaScript syntax: ${syntaxError.message}`);
+    }
+
+    try {
+      // Write file to disk
+      await fs.writeFile(scriptPath, scriptContent, 'utf8');
+      logger.info('Script file written to disk', { meta: { scriptName: sanitizedScriptName, path: scriptPath } });
+
+      // Add to database with complete structure
+      return this.connectAndExecute(async () => {
+        const scriptDocument = {
+          name: sanitizedBaseName,
+          status: 0, // Initial status (Success)
+          endpoint: options.endpoint || `script/${sanitizedBaseName}`,
+          label: options.label || sanitizedBaseName,
+          options: options.scriptOptions || '',
+          logs: [],
+          execution_history: [],
+          cronConfig: {
+            enabled: false,
+            schedule: null,
+            timezone: 'Etc/UTC',
+            description: options.description || '',
+            category: options.category || 'sync',
+            priority: options.priority || 5,
+            timeout: options.timeout || 300000,
+            maxRetries: options.maxRetries || 1,
+            runCount: 0,
+            errorCount: 0,
+            averageRunTime: 0,
+            lastRun: null,
+            notifications: {
+              onError: options.notifyOnError || false,
+              onSuccess: options.notifyOnSuccess || false
+            }
+          },
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        const result = await this.getScriptCollection().updateOne(
+          { name: sanitizedBaseName },
+          { $set: scriptDocument },
+          { upsert: true }
+        );
+        
+        logger.info('Added new script to database', { 
+          meta: { 
+            scriptName: sanitizedBaseName,
+            upserted: result.upsertedCount > 0,
+            modified: result.modifiedCount > 0
           } 
-        },
-        { upsert: true }
-      );
-      
-      logger.info('Added new script', { meta: { scriptName: sanitizedScriptName } });
-      return { name: sanitizedScriptName, path: scriptPath };
-    });
+        });
+
+        // Return detailed information about the created script
+        return { 
+          success: true,
+          name: sanitizedBaseName,
+          fileName: sanitizedScriptName,
+          path: scriptPath,
+          endpoint: scriptDocument.endpoint,
+          label: scriptDocument.label,
+          message: `Script "${sanitizedBaseName}" created successfully`,
+          createdAt: new Date()
+        };
+      });
+    } catch (error) {
+      // If database operation fails, attempt to clean up the file
+      try {
+        await fs.unlink(scriptPath);
+        logger.info('Cleaned up script file after database error', { meta: { scriptName: sanitizedScriptName } });
+      } catch (unlinkError) {
+        logger.error('Failed to cleanup script file', { meta: { scriptName: sanitizedScriptName, error: unlinkError.message } });
+      }
+      throw error;
+    }
   }
 
   static async connectAndExecute(callback) {

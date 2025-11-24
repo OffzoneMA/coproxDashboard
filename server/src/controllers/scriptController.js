@@ -15,10 +15,62 @@ class ScriptController {
   }
 
   static async addScript(req, res) {
-    const { scriptName, scriptContent } = req.body;
-    return ScriptController.sendResponse(res, () => 
-      ScriptService.addScript(scriptName, scriptContent)
-    );
+    try {
+      const { 
+        scriptName, 
+        scriptContent,
+        label,
+        endpoint,
+        description,
+        category,
+        priority,
+        timeout,
+        maxRetries,
+        scriptOptions,
+        notifyOnError,
+        notifyOnSuccess
+      } = req.body;
+      
+      // Validate required fields
+      if (!scriptName || !scriptContent) {
+        return res.status(400).json({
+          success: false,
+          error: 'Script name and content are required'
+        });
+      }
+
+      // Pass optional parameters
+      const options = {
+        label,
+        endpoint,
+        description,
+        category,
+        priority,
+        timeout,
+        maxRetries,
+        scriptOptions,
+        notifyOnError,
+        notifyOnSuccess
+      };
+
+      const result = await ScriptService.addScript(scriptName, scriptContent, options);
+      return res.status(201).json({ 
+        success: true, 
+        data: result,
+        message: result.message || 'Script added successfully'
+      });
+    } catch (error) {
+      console.error(`Add script failed: ${error.message}`);
+      
+      // Provide more specific error status codes
+      const statusCode = error.message.includes('already exists') ? 409 : 
+                         error.message.includes('syntax') ? 400 : 500;
+      
+      return res.status(statusCode).json({
+        success: false,
+        error: error.message
+      });
+    }
   }
 
   static async updateScriptStatus(req, res) {
