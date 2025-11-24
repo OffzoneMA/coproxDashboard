@@ -21,12 +21,11 @@ async function connectAndExecute(callback) {
 async function listCopropriete() {
   return connectAndExecute(async () => {
     const coproprieteCollection = MongoDB.getCollection('copropriete');
-    // Check both isActive boolean and status string for backward compatibility
+    // Exclude records where EITHER isActive is false OR status is 'Inactif'
+    // Since isActive: false = status: 'Inactif', we check both for backward compatibility
     const results = await coproprieteCollection.find({ 
-      $or: [
-        { isActive: { $ne: false } },
-        { status: { $ne: 'Inactif' } }
-      ]
+      isActive: { $ne: false },
+      status: { $ne: 'Inactif' }
     }).toArray();
     logger.info('listCopropriete', { meta: { count: results.length } });
     return results;
