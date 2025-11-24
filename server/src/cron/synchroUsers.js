@@ -137,13 +137,34 @@ async function getAllUsersAndManageThem(idVilogi, Copro) {
           email: user.email,
           idVilogi: user.id,
           idCompteVilogi: user.compte,
+          
+          // Personal information
+          civilite: user.civilite,
           nom: user.nom,
           prenom: user.prenom,
+          
+          // Contact information
           telephone: formatPhoneNumber(user.telephone),
           telephone2: formatPhoneNumber(user.telephone2),
           mobile: formatPhoneNumber(user.mobile),
           mobile2: formatPhoneNumber(user.mobile2),
+          fax: formatPhoneNumber(user.fax),
+          
+          // Address information
+          adresse: user.adresse,
+          complement: user.complement,
+          codepostal: user.codepostal,
+          ville: user.ville,
+          pays: user.pays,
+          region: user.region,
+          
+          // Professional information
           typePersonne: user.typePersonne,
+          profession: user.profession,
+          organisme: user.organisme,
+          poste: user.poste,
+          
+          // Status and metadata
           active: finalActiveStatus,
           lastSyncDate: new Date(),
           url: `https://copro.vilogi.com/AfficheProprietaire.do?operation=change&copropriete=${idVilogi}&id=${user.id}`,
@@ -224,17 +245,40 @@ async function SynchoMongoDB(userData, Copro) {
       // Update user - merge data, don't overwrite everything
       const updateData = {
         idCopro: updatedCopros,
+        
+        // Personal information
+        civilite: userData.civilite || existingUser.civilite,
         nom: userData.nom || existingUser.nom,
         prenom: userData.prenom || existingUser.prenom,
+        
+        // Contact information
         telephone: userData.telephone || existingUser.telephone,
         telephone2: userData.telephone2 || existingUser.telephone2,
         mobile: userData.mobile || existingUser.mobile,
         mobile2: userData.mobile2 || existingUser.mobile2,
+        fax: userData.fax || existingUser.fax,
+        
+        // Address information
+        adresse: userData.adresse || existingUser.adresse,
+        complement: userData.complement || existingUser.complement,
+        codepostal: userData.codepostal || existingUser.codepostal,
+        ville: userData.ville || existingUser.ville,
+        pays: userData.pays || existingUser.pays,
+        region: userData.region || existingUser.region,
+        
+        // Professional information
         typePersonne: userData.typePersonne || existingUser.typePersonne,
+        profession: userData.profession || existingUser.profession,
+        organisme: userData.organisme || existingUser.organisme,
+        poste: userData.poste || existingUser.poste,
+        
+        // Status and IDs
         active: userData.active !== undefined ? userData.active : existingUser.active,
         idVilogi: userData.idVilogi || existingUser.idVilogi,
         idCompteVilogi: userData.idCompteVilogi || existingUser.idCompteVilogi,
         url: userData.url || existingUser.url,
+        
+        // Metadata
         lastSyncDate: new Date(),
         updatedAt: new Date()
       };
@@ -341,13 +385,34 @@ async function fixUserRole(coproId, Copro) {
                 email: userCS.email,
                 idVilogi: userCS.id,
                 idCompteVilogi: userCS.compte,
+                
+                // Personal information
+                civilite: userCS.civilite,
                 nom: userCS.nom,
                 prenom: userCS.prenom,
+                
+                // Contact information
                 telephone: formatPhoneNumber(userCS.telephone),
                 telephone2: formatPhoneNumber(userCS.telephone2),
                 mobile: formatPhoneNumber(userCS.mobile),
                 mobile2: formatPhoneNumber(userCS.mobile2),
+                fax: formatPhoneNumber(userCS.fax),
+                
+                // Address information
+                adresse: userCS.adresse,
+                complement: userCS.complement,
+                codepostal: userCS.codepostal,
+                ville: userCS.ville,
+                pays: userCS.pays,
+                region: userCS.region,
+                
+                // Professional information
                 typePersonne: "CS",
+                profession: userCS.profession,
+                organisme: userCS.organisme,
+                poste: userCS.poste,
+                
+                // Status and metadata
                 active: finalActiveStatus,
                 lastSyncDate: new Date(),
                 url: `https://copro.vilogi.com/AfficheProprietaire.do?operation=change&copropriete=${user.idCoproprietaire}&id=${userCS.id}`

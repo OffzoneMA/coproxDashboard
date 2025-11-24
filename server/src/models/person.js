@@ -7,16 +7,39 @@ const persoSchema = new mongoose.Schema({
   idVilogi: String,
   idZendesk: String,
   idCompteVilogi: String,
+  
+  // Personal information
+  civilite: String, // Mr, Mme, etc.
   nom: String,
   prenom: String,
+  
+  // Contact information
   telephone: String,
   telephone2: String,
   mobile: String,
   mobile2: String,
-  typePersonne: String,
+  fax: String,
+  
+  // Address information
+  adresse: String,
+  complement: String, // Address complement
+  codepostal: String,
+  ville: String,
+  pays: String,
+  region: String,
+  
+  // Professional information
+  typePersonne: String, // CS, Adherent, etc.
+  profession: String,
+  organisme: String, // Organization name
+  poste: String, // Job position
+  
+  // Additional info
   active: { type: Boolean, default: true },
   url: String,
   solde: { type: Number, default: 0 },
+  
+  // Dates and metadata
   lastSyncDate: { type: Date, default: Date.now },
   lastSoldeSyncDate: Date,
   createdAt: { type: Date, default: Date.now },
