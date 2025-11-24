@@ -12,6 +12,7 @@ router.get('/solde/stats', PersonController.getSoldeStats);
 router.get('/copro', PersonController.getAllPersonsWithCopro);  // GET /person/copro?limit=50&page=1
 router.get('/getAllPersons', PersonController.getAllPersons);
 router.get('/getAllPersonsWithCopro', PersonController.getAllPersonsWithCopro);
+router.get('/getAllPersonsWithCoppro', PersonController.getAllPersonsWithCopro); // Alias for typo (backward compatibility)
 router.get('/countAllPersons', PersonController.countAllPersons);
 
 // CRUD operations (specific paths before generic ones)
