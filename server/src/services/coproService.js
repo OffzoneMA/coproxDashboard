@@ -21,7 +21,13 @@ async function connectAndExecute(callback) {
 async function listCopropriete() {
   return connectAndExecute(async () => {
     const coproprieteCollection = MongoDB.getCollection('copropriete');
-    const results = await coproprieteCollection.find({ status: { $ne: 'Inactif' } }).toArray();
+    // Check both isActive boolean and status string for backward compatibility
+    const results = await coproprieteCollection.find({ 
+      $or: [
+        { isActive: { $ne: false } },
+        { status: { $ne: 'Inactif' } }
+      ]
+    }).toArray();
     logger.info('listCopropriete', { meta: { count: results.length } });
     return results;
   });
@@ -31,7 +37,13 @@ async function listCopropriete() {
 async function listCoproprieteInactive() {
   return connectAndExecute(async () => {
     const coproprieteCollection = MongoDB.getCollection('copropriete');
-    const results = await coproprieteCollection.find({ status: { $ne: 'Actif' } }).toArray();
+    // Check both isActive boolean and status string for backward compatibility
+    const results = await coproprieteCollection.find({ 
+      $or: [
+        { isActive: false },
+        { status: 'Inactif' }
+      ]
+    }).toArray();
     logger.info('listCoproprieteInactive', { meta: { count: results.length } });
     return results;
   });

@@ -58,16 +58,20 @@ async function vilogiToMongodb(){
           let findCopro = await coproService.detailsCoproprieteByidVilogi(copro.id)
           //console.log(copro)
           
-          // Check if archive date is past - if so, mark as Inactif
-          let status = "Actif";
+          // Check if archive date is past - if so, mark as inactive
+          let isActive = true;
           if (copro.archive) {
-            const archiveDate = new Date(copro.archive);
+            // Parse date in DD/MM/YYYY format from Vilogi
+            const [day, month, year] = copro.archive.split('/').map(num => parseInt(num, 10));
+            const archiveDate = new Date(year, month - 1, day); // month is 0-indexed in JS
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate date comparison
             
             if (archiveDate < today) {
-              status = "Inactif";
-              console.log(`⚠️  Copro ${copro.lot} has archive date ${copro.archive} which is past - marking as Inactif`);
+              isActive = false;
+              console.log(`⚠️  Copro ${copro.lot} has archive date ${copro.archive} which is past (${archiveDate.toISOString()}) - marking as Inactive`);
+            } else {
+              console.log(`✅ Copro ${copro.lot} archive date ${copro.archive} is in the future (${archiveDate.toISOString()}) - keeping Active`);
             }
           }
           
@@ -81,7 +85,8 @@ async function vilogiToMongodb(){
             immatriculation:detailData.site,
             nbLotPrincipaux:detailData.coproInfo.nbLotPrincipaux,
             archive: copro.archive || null,
-            status: status
+            isActive: isActive,
+            status: isActive ? "Actif" : "Inactif" // Keep string for backward compatibility
           }
           
           data.idCopro = copro.lot ? copro.lot : "S-Autre";
@@ -101,9 +106,10 @@ async function vilogiToMongodb(){
         const allDbCopros = await coproprieteCollection.find({}).toArray();
         
         for (const dbCopro of allDbCopros) {
-          if (dbCopro.idVilogi && !vilogiCoproIds.has(dbCopro.idVilogi) && dbCopro.status !== 'Inactif') {
-            console.log(`⚠️  Copro ${dbCopro.idCopro} (Vilogi ID: ${dbCopro.idVilogi}) is no longer in Vilogi - marking as Inactif`);
+          if (dbCopro.idVilogi && !vilogiCoproIds.has(dbCopro.idVilogi) && dbCopro.isActive !== false) {
+            console.log(`⚠️  Copro ${dbCopro.idCopro} (Vilogi ID: ${dbCopro.idVilogi}) is no longer in Vilogi - marking as Inactive`);
             await coproService.editCopropriete(dbCopro._id, {
+              isActive: false,
               status: 'Inactif'
             });
           }
