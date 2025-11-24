@@ -228,7 +228,15 @@ async function SynchoMongoDB(userData, Copro) {
       }
       
       // ✅ MULTI-COPRO LOGIC: Add copro to array if not present
-      const existingCopros = existingUser.idCopro || [];
+      // Handle both array and single ObjectId (for backward compatibility)
+      let existingCopros = existingUser.idCopro || [];
+      
+      // Convert single ObjectId to array if needed
+      if (!Array.isArray(existingCopros)) {
+        existingCopros = existingCopros ? [existingCopros] : [];
+        console.log(`🔄 Converting single copro to array for user ${userData.email}`);
+      }
+      
       const coproIdStr = newCoproId.toString();
       const hasCopro = existingCopros.some(id => id.toString() === coproIdStr);
       
