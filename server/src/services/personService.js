@@ -4,6 +4,7 @@ const MongoDB = require('../utils/mongodb');
 const vilogiService = require('./vilogiService');
 const { createServiceLogger } = require('./logger');
 const { logger, logError } = createServiceLogger('person');
+const { executePaginatedQuery } = require('../utils/paginationHelper');
 
 /* ------------------------- Helpers ------------------------- */
 
@@ -107,12 +108,47 @@ async function getPersonsByCoproId(idCopro) {
   });
 }
 
-async function getAllPersons() {
+async function getAllPersons(options = {}) {
   return connectAndExecute(async () => {
     const personCollection = MongoDB.getCollection('person');
-    const res = await personCollection.find({}).toArray();
-    logger.info('Get all persons', { meta: { count: res.length } });
-    return res;
+    
+    const {
+      limit = 100,
+      skip = 0,
+      sort = { createdAt: -1 },
+      filter = {},
+      projection = {}
+    } = options;
+    
+    // Use pagination helper
+    const result = await executePaginatedQuery(
+      personCollection,
+      filter,
+      { limit, skip, sort, projection }
+    );
+    
+    logger.info('Get all persons', { 
+      meta: { 
+        count: result.count, 
+        total: result.total, 
+        skip, 
+        limit,
+        hasMore: skip + result.count < result.total
+      } 
+    });
+    
+    return {
+      data: result.data,
+      pagination: {
+        total: result.total,
+        count: result.count,
+        skip,
+        limit,
+        hasMore: skip + result.count < result.total,
+        page: Math.floor(skip / limit) + 1,
+        totalPages: Math.ceil(result.total / limit)
+      }
+    };
   });
 }
 
@@ -162,6 +198,241 @@ async function countAllPersons() {
   });
 }
 
+/* ------------------------- Solde Management ------------------------- */
+
+/**
+ * Update solde for a person by ID
+ * @param {string|ObjectId} personId - The person's MongoDB ID
+ * @param {number} newSolde - The new solde value
+ * @param {string} source - The source of the update (e.g., 'synchoBudgetCoproprietaire')
+ * @returns {Promise<Object>} Update result
+ */
+async function updatePersonSolde(personId, newSolde, source = 'manual') {
+  return connectAndExecute(async () => {
+    const personCollection = MongoDB.getCollection('person');
+    const _id = toObjectId(personId);
+    
+    // Get current person data
+    const person = await personCollection.findOne({ _id });
+    if (!person) {
+      throw new Error(`Person with ID ${personId} not found`);
+    }
+    
+    const oldSolde = person.solde || 0;
+    const soldeChanged = oldSolde !== newSolde;
+    
+    const updateData = {
+      solde: newSolde,
+      lastSoldeSyncDate: new Date(),
+      updatedAt: new Date()
+    };
+    
+    // Update the solde
+    await personCollection.updateOne(
+      { _id },
+      { $set: updateData }
+    );
+    
+    if (soldeChanged) {
+      logger.info('Updated person solde', { 
+        meta: { 
+          id: String(_id), 
+          oldSolde, 
+          newSolde, 
+          source 
+        } 
+      });
+    } else {
+      logger.info('Refreshed person solde timestamp (no change)', { 
+        meta: { id: String(_id), solde: newSolde, source } 
+      });
+    }
+    
+    return { 
+      success: true, 
+      soldeChanged, 
+      oldSolde, 
+      newSolde 
+    };
+  });
+}
+
+/**
+ * Update solde for a person by Vilogi ID
+ * @param {string} idVilogi - The person's Vilogi ID
+ * @param {number} newSolde - The new solde value
+ * @param {string|ObjectId} idCopro - Optional: copro ID for validation
+ * @param {string} source - The source of the update
+ * @returns {Promise<Object>} Update result
+ */
+async function updatePersonSoldeByVilogiId(idVilogi, newSolde, idCopro = null, source = 'synchoBudgetCoproprietaire') {
+  return connectAndExecute(async () => {
+    const personCollection = MongoDB.getCollection('person');
+    
+    // Build query
+    const query = { idVilogi };
+    if (idCopro) {
+      query.idCopro = toObjectId(idCopro, 'idCopro');
+    }
+    
+    const persons = await personCollection.find(query).toArray();
+    
+    if (persons.length === 0) {
+      logger.warn('No person found for solde update', { meta: { idVilogi, idCopro } });
+      return { success: false, message: 'Person not found' };
+    }
+    
+    if (persons.length > 1) {
+      logger.warn('Multiple persons found for solde update', { meta: { idVilogi, count: persons.length } });
+    }
+    
+    const results = [];
+    for (const person of persons) {
+      const result = await updatePersonSolde(person._id, newSolde, source);
+      results.push({ personId: person._id, email: person.email, ...result });
+    }
+    
+    return { 
+      success: true, 
+      updated: results.length, 
+      results 
+    };
+  });
+}
+
+/**
+ * Get all persons with negative solde (debts) - with pagination
+ * @param {Object} options - Pagination options
+ * @returns {Promise<Object>} Paginated result with persons with negative solde
+ */
+async function getPersonsWithNegativeSolde(options = {}) {
+  return connectAndExecute(async () => {
+    const personCollection = MongoDB.getCollection('person');
+    
+    const {
+      limit = 100,
+      skip = 0,
+      sort = { solde: 1 } // Most negative first by default
+    } = options;
+    
+    const result = await executePaginatedQuery(
+      personCollection,
+      { solde: { $lt: 0 } },
+      { limit, skip, sort }
+    );
+    
+    logger.info('Retrieved persons with negative solde', { 
+      meta: { 
+        count: result.count, 
+        total: result.total,
+        skip,
+        limit 
+      } 
+    });
+    
+    return {
+      data: result.data,
+      pagination: {
+        total: result.total,
+        count: result.count,
+        skip,
+        limit,
+        hasMore: skip + result.count < result.total,
+        page: Math.floor(skip / limit) + 1,
+        totalPages: Math.ceil(result.total / limit)
+      }
+    };
+  });
+}
+
+/**
+ * Get all persons with positive solde (credits) - with pagination
+ * @param {Object} options - Pagination options
+ * @returns {Promise<Object>} Paginated result with persons with positive solde
+ */
+async function getPersonsWithPositiveSolde(options = {}) {
+  return connectAndExecute(async () => {
+    const personCollection = MongoDB.getCollection('person');
+    
+    const {
+      limit = 100,
+      skip = 0,
+      sort = { solde: -1 } // Highest first by default
+    } = options;
+    
+    const result = await executePaginatedQuery(
+      personCollection,
+      { solde: { $gt: 0 } },
+      { limit, skip, sort }
+    );
+    
+    logger.info('Retrieved persons with positive solde', { 
+      meta: { 
+        count: result.count, 
+        total: result.total,
+        skip,
+        limit 
+      } 
+    });
+    
+    return {
+      data: result.data,
+      pagination: {
+        total: result.total,
+        count: result.count,
+        skip,
+        limit,
+        hasMore: skip + result.count < result.total,
+        page: Math.floor(skip / limit) + 1,
+        totalPages: Math.ceil(result.total / limit)
+      }
+    };
+  });
+}
+
+/**
+ * Get solde statistics
+ * @returns {Promise<Object>} Statistics about soldes
+ */
+async function getSoldeStats() {
+  return connectAndExecute(async () => {
+    const personCollection = MongoDB.getCollection('person');
+    
+    const [totals, negativeCount, positiveCount, zeroCount] = await Promise.all([
+      personCollection.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalSolde: { $sum: '$solde' },
+            avgSolde: { $avg: '$solde' },
+            minSolde: { $min: '$solde' },
+            maxSolde: { $max: '$solde' },
+            count: { $sum: 1 }
+          }
+        }
+      ]).toArray(),
+      personCollection.countDocuments({ solde: { $lt: 0 } }),
+      personCollection.countDocuments({ solde: { $gt: 0 } }),
+      personCollection.countDocuments({ $or: [{ solde: 0 }, { solde: { $exists: false } }] })
+    ]);
+    
+    const stats = totals[0] || {
+      totalSolde: 0,
+      avgSolde: 0,
+      minSolde: 0,
+      maxSolde: 0,
+      count: 0
+    };
+    
+    return {
+      ...stats,
+      negativeCount,
+      positiveCount,
+      zeroCount
+    };
+  });
+}
+
 /* ------------------------- Exports ------------------------- */
 
 module.exports = {
@@ -176,4 +447,10 @@ module.exports = {
   getAllPersonsWithCopro,
   // Backward-compat alias for the previous typo
   getAllPersonsWithCoppro: getAllPersonsWithCopro,
+  // Solde management functions
+  updatePersonSolde,
+  updatePersonSoldeByVilogiId,
+  getPersonsWithNegativeSolde,
+  getPersonsWithPositiveSolde,
+  getSoldeStats,
 };

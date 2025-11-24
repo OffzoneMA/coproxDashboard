@@ -1,3 +1,14 @@
+// synchoBudgetCoproprietaire.js
+// This script synchronizes budget and balance (solde) information for copropriétaires
+// It fetches budget data from Vilogi, updates Monday.com, and saves the solde to the person database
+// 
+// Features:
+// - Fetches budget data for J, J-30, J-60, J-90
+// - Syncs budget information to Monday.com board
+// - Updates person.solde field in database
+// - Maintains soldeHistory for audit trail
+// - Processes relances (reminders) as subitems
+
 const vilogiService = require('../services/vilogiService');
 const json2csv = require('json2csv').parse;
 const coproService = require('../services/coproService');
@@ -93,6 +104,10 @@ const synchroMandats = {
                           const IDLine= `${copro.idCopro} - ${personne.compte}`
                           const newItemData=await saveMonday(itemName,columnValues,IDLine,boardId)
                           await delay(100);
+                          
+                          // ✅ UPDATE SOLDE IN PERSON DATABASE
+                          await updatePersonSolde(personne.id, budgetj[0].solde, copro._id);
+                          
                           const relances = await vilogiService.getRelanceAdherant(personne.id,copro.idVilogi)
 
                           for (relance of relances){
@@ -166,6 +181,36 @@ const synchroMandats = {
     }
 };
 
+/**
+ * Update the solde for a person by their Vilogi ID
+ * @param {string} idVilogi - The Vilogi ID of the person
+ * @param {number} newSolde - The new solde value
+ * @param {ObjectId} idCopro - The copro ID for validation
+ */
+async function updatePersonSolde(idVilogi, newSolde, idCopro) {
+    try {
+        const result = await personService.updatePersonSoldeByVilogiId(
+            idVilogi, 
+            newSolde, 
+            idCopro, 
+            'synchoBudgetCoproprietaire'
+        );
+        
+        if (result.success && result.results) {
+            for (const personResult of result.results) {
+                if (personResult.soldeChanged) {
+                    console.log(`💰 Solde updated for ${personResult.email}: ${personResult.oldSolde} → ${personResult.newSolde}`);
+                }
+            }
+        } else if (!result.success) {
+            console.log(`⚠️ ${result.message} for idVilogi ${idVilogi}`);
+        }
+        
+    } catch (error) {
+        console.error(`❌ Error updating solde for idVilogi ${idVilogi}:`, error.message);
+        logs.logExecutionError(`Failed to update solde for idVilogi ${idVilogi}: ${error.message}`);
+    }
+}
 
 async function saveMonday(itemName,data,idVilogi,boardIDFunction) {
     try {
