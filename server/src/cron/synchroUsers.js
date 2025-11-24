@@ -123,13 +123,12 @@ async function getAllUsersAndManageThem(idVilogi, Copro) {
 
         const idcoproVar = new mongoose.Types.ObjectId(Copro._id);
 
-        // Determine active status: both user AND copro must be active
-        const isUserActiveInVilogi = user.active === 1 || user.active === true;
-        const finalActiveStatus = isUserActiveInVilogi && isCoproActive;
+        // ✅ Determine active status: user is inactive ONLY if copro is inactive
+        // User's Vilogi active status doesn't matter - if they exist in Vilogi, keep them active
+        const finalActiveStatus = isCoproActive;
 
         if (!finalActiveStatus) {
-          const reason = !isCoproActive ? 'copro inactive' : 'user inactive in Vilogi';
-          console.log(`⚠️ User ${user.email} will be marked INACTIVE (${reason})`);
+          console.log(`⚠️ User ${user.email} will be marked INACTIVE (copro ${Copro.idCopro} is inactive)`);
         }
 
         const userData = {
@@ -379,13 +378,12 @@ async function fixUserRole(coproId, Copro) {
             if (userCS && userCS.email) {
               const idcoproVar = new mongoose.Types.ObjectId(Copro._id);
 
-              // Determine active status
-              const isUserActiveInVilogi = userCS.active === 1 || userCS.active === true;
-              const finalActiveStatus = isUserActiveInVilogi && isCoproActive;
+              // ✅ Determine active status: user is inactive ONLY if copro is inactive
+              // User's Vilogi active status doesn't matter - if they exist in Vilogi, keep them active
+              const finalActiveStatus = isCoproActive;
 
               if (!finalActiveStatus) {
-                const reason = !isCoproActive ? 'copro inactive' : 'user inactive in Vilogi';
-                console.log(`⚠️ CS User ${userCS.email} will be marked INACTIVE (${reason})`);
+                console.log(`⚠️ CS User ${userCS.email} will be marked INACTIVE (copro ${Copro.idCopro} is inactive)`);
               }
 
               const userData = {
@@ -440,6 +438,10 @@ async function fixUserRole(coproId, Copro) {
 
 async function validateAndCleanupOrphanedUsers() {
   console.log('🔍 Validating and cleaning up orphaned users...');
+  console.log('📋 Deactivation rules:');
+  console.log('   1. User has no copros (orphaned) → inactive');
+  console.log('   2. User has only inactive copros → inactive');
+  console.log('   3. User not found in Vilogi → removed from copro list');
   
   try {
     const allUsers = await PersonService.getAllPersons();
@@ -454,7 +456,7 @@ async function validateAndCleanupOrphanedUsers() {
     
     for (const user of allUsers) {
       if (!user.idCopro || user.idCopro.length === 0) {
-        console.log(`⚠️ User ${user.email} has no copro IDs - marking inactive`);
+        console.log(`⚠️ User ${user.email} has no copro IDs - marking inactive (orphaned)`);
         if (user.active) {
           await PersonService.editPerson(user._id, { 
             active: false, 
