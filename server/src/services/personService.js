@@ -67,17 +67,29 @@ async function getPerson(id) {
     const person = await personCollection.findOne({ _id });
     if (!person) return null;
 
-    // Enrich with full copro details for detail view
-    if (person.idCopro) {
+    // ✅ MULTI-COPRO: Enrich with full copro details for ALL copros
+    if (person.idCopro && Array.isArray(person.idCopro) && person.idCopro.length > 0) {
+      try {
+        const copros = await coproCollection.find({ 
+          _id: { $in: person.idCopro } 
+        }).toArray();
+        person.copros = copros; // Array of copros
+        person.copro = copros[0]; // Keep backward compatibility with single copro
+      } catch (e) {
+        logger.warn('Failed to fetch copros for person', { meta: { personId: String(_id), error: e.message } });
+      }
+    } else if (person.idCopro && !Array.isArray(person.idCopro)) {
+      // Legacy: single copro as ObjectId (shouldn't happen after migration)
       try {
         const copro = await coproCollection.findOne({ _id: person.idCopro });
+        person.copros = copro ? [copro] : [];
         person.copro = copro;
       } catch (e) {
         logger.warn('Failed to fetch copro for person', { meta: { personId: String(_id), error: e.message } });
       }
     }
 
-    logger.info('Get person with full copro', { meta: { id: String(_id) } });
+    logger.info('Get person with full copro details', { meta: { id: String(_id), coproCount: person.copros?.length || 0 } });
     return person;
   });
 }
@@ -178,15 +190,15 @@ async function getAllPersonsWithCopro(options = {}) {
       filter = {}
     } = options;
     
-    // Use aggregation pipeline for efficient lookup with projection
+    // ✅ MULTI-COPRO: Use aggregation pipeline for efficient lookup with projection
     const pipeline = [
       { $match: filter },
       {
         $lookup: {
           from: 'copropriete',
-          localField: 'idCopro',
+          localField: 'idCopro', // Now an array
           foreignField: '_id',
-          as: 'copro',
+          as: 'copros', // Renamed from 'copro' to 'copros'
           // Project only minimal copro fields
           pipeline: [
             {
@@ -201,7 +213,12 @@ async function getAllPersonsWithCopro(options = {}) {
           ]
         }
       },
-      { $unwind: { path: '$copro', preserveNullAndEmptyArrays: true } },
+      // Add copro field for backward compatibility (first copro in array)
+      {
+        $addFields: {
+          copro: { $arrayElemAt: ['$copros', 0] }
+        }
+      },
       { $sort: sort },
       {
         $facet: {

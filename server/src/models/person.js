@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 
 const persoSchema = new mongoose.Schema({
-  idCopro: { type: mongoose.Schema.Types.ObjectId, ref: 'Copropriete' },
-  email: String,
+  // Changed to array to support multiple copros per person
+  idCopro: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Copropriete' }],
+  email: { type: String, unique: true, sparse: true }, // Add unique constraint
   idVilogi: String,
   idZendesk: String,
   idCompteVilogi: String,
@@ -27,6 +28,27 @@ persoSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
+
+// Helper methods
+persoSchema.methods.addCopro = function(coproId) {
+  if (!this.idCopro) this.idCopro = [];
+  const coproIdStr = coproId.toString();
+  if (!this.idCopro.some(id => id.toString() === coproIdStr)) {
+    this.idCopro.push(coproId);
+  }
+};
+
+persoSchema.methods.removeCopro = function(coproId) {
+  if (!this.idCopro) return;
+  const coproIdStr = coproId.toString();
+  this.idCopro = this.idCopro.filter(id => id.toString() !== coproIdStr);
+};
+
+persoSchema.methods.hasCopro = function(coproId) {
+  if (!this.idCopro || this.idCopro.length === 0) return false;
+  const coproIdStr = coproId.toString();
+  return this.idCopro.some(id => id.toString() === coproIdStr);
+};
 
 const person = mongoose.model('person', persoSchema);
 

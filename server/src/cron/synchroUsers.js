@@ -178,37 +178,27 @@ async function SynchoMongoDB(userData, Copro) {
 
     if (val === 1) {
       const existingUser = result[0];
-      
-      // ✅ VALIDATE AND REFRESH COPRO ID
-      // Check if copro ID has changed or needs validation
-      const currentCoproId = existingUser.idCopro?.toString();
-      const newCoproId = userData.idCopro?.toString();
-      
-      if (currentCoproId !== newCoproId) {
-        console.log(`🔄 Copro ID mismatch for user ${userData.email}`);
-        console.log(`   Old: ${currentCoproId} -> New: ${newCoproId}`);
-        FileLog('| SyncUsers | SynchoMongoDB | Copro ID updated for user:', userData.email, 
-                `from ${currentCoproId} to ${newCoproId}`);
-      }
+      const newCoproId = userData.idCopro; // This is now always an ObjectId from the caller
       
       // ✅ VERIFY COPRO EXISTS
       try {
-        const coproExists = await coproService.detailsCopropriete(newCoproId);
+        const coproExists = await coproService.detailsCopropriete(newCoproId.toString());
         if (!coproExists) {
           console.error(`❌ Copro ${newCoproId} does not exist for user ${userData.email}`);
           FileLog('| SyncUsers | SynchoMongoDB | Copro not found:', newCoproId, 'for user:', userData.email);
-          // Don't update if copro doesn't exist
           return;
         }
         
-        // ✅ CHECK IF COPRO IS INACTIVE - mark user as inactive
-        if (coproExists.status !== 'Actif') {
-          console.log(`⚠️ Copro ${coproExists.idCopro} is inactive - marking user ${userData.email} as inactive`);
+        // ✅ CHECK IF COPRO IS INACTIVE
+        const isCoproActive = coproExists.status === 'Actif' && coproExists.isActive !== false;
+        if (!isCoproActive) {
+          console.log(`⚠️ Copro ${coproExists.idCopro} is inactive - user ${userData.email} will be marked inactive for this copro`);
           userData.active = false;
         }
       } catch (error) {
         console.error(`Error validating copro for user ${userData.email}:`, error);
         FileLog('| SyncUsers | SynchoMongoDB | Error validating copro:', error.message);
+        return;
       }
       
       // Convert boolean active status (handle legacy numeric values)
@@ -216,17 +206,44 @@ async function SynchoMongoDB(userData, Copro) {
         userData.active = userData.active === 1;
       }
       
-      // Update user with refreshed data
-      const newDataDocument = new personModel(userData);
-      const newDataObject = newDataDocument.toObject({ transform: true });
-      delete newDataObject._id;
-      newDataObject.updatedAt = new Date();
+      // ✅ MULTI-COPRO LOGIC: Add copro to array if not present
+      const existingCopros = existingUser.idCopro || [];
+      const coproIdStr = newCoproId.toString();
+      const hasCopro = existingCopros.some(id => id.toString() === coproIdStr);
       
-      await PersonService.editPerson(existingUser._id, newDataObject);
-      console.log(`✅ Updated user: ${userData.email} (active: ${userData.active})`);
+      let updatedCopros;
+      if (!hasCopro) {
+        updatedCopros = [...existingCopros, newCoproId];
+        console.log(`➕ Adding copro ${Copro.idCopro} to user ${userData.email}`);
+        FileLog('| SyncUsers | SynchoMongoDB | Adding copro:', Copro.idCopro, 'to user:', userData.email);
+      } else {
+        updatedCopros = existingCopros;
+        console.log(`✓ User ${userData.email} already has copro ${Copro.idCopro}`);
+      }
+      
+      // Update user - merge data, don't overwrite everything
+      const updateData = {
+        idCopro: updatedCopros,
+        nom: userData.nom || existingUser.nom,
+        prenom: userData.prenom || existingUser.prenom,
+        telephone: userData.telephone || existingUser.telephone,
+        telephone2: userData.telephone2 || existingUser.telephone2,
+        mobile: userData.mobile || existingUser.mobile,
+        mobile2: userData.mobile2 || existingUser.mobile2,
+        typePersonne: userData.typePersonne || existingUser.typePersonne,
+        active: userData.active !== undefined ? userData.active : existingUser.active,
+        idVilogi: userData.idVilogi || existingUser.idVilogi,
+        idCompteVilogi: userData.idCompteVilogi || existingUser.idCompteVilogi,
+        url: userData.url || existingUser.url,
+        lastSyncDate: new Date(),
+        updatedAt: new Date()
+      };
+      
+      await PersonService.editPerson(existingUser._id, updateData);
+      console.log(`✅ Updated user: ${userData.email} (${updatedCopros.length} copros, active: ${updateData.active})`);
       
     } else if (val === 0) {
-      // ✅ VERIFY COPRO EXISTS BEFORE ADDING NEW USER
+      // ✅ NEW USER: VERIFY COPRO EXISTS
       try {
         const coproExists = await coproService.detailsCopropriete(userData.idCopro.toString());
         if (!coproExists) {
@@ -237,7 +254,8 @@ async function SynchoMongoDB(userData, Copro) {
         }
         
         // Check if copro is inactive
-        if (coproExists.status !== 'Actif') {
+        const isCoproActive = coproExists.status === 'Actif' && coproExists.isActive !== false;
+        if (!isCoproActive) {
           console.log(`⚠️ Adding user ${userData.email} to inactive copro - marking as inactive`);
           userData.active = false;
         }
@@ -252,18 +270,18 @@ async function SynchoMongoDB(userData, Copro) {
         userData.active = userData.active === 1;
       }
       
+      // ✅ NEW USER: idCopro should be array
+      userData.idCopro = [userData.idCopro];
       userData.createdAt = new Date();
       userData.updatedAt = new Date();
       
       await PersonService.addPerson(userData);
-      console.log(`✅ Added new user: ${userData.email} (active: ${userData.active})`);
+      console.log(`✅ Added new user: ${userData.email} (1 copro, active: ${userData.active})`);
       
     } else if (val > 1) {
-      console.error(`❌ Duplicate users found for email: ${userData.email} (${val} records)`);
-      FileLog('| SyncUsers | SynchoMongoDB | User with email :', userData.email, ` --- ${val} duplicate users found.`);
-      
-      // TODO: Could implement deduplication logic here
-      // For now, just log the issue
+      console.error(`❌ CRITICAL: Duplicate users found for email: ${userData.email} (${val} records)`);
+      console.error(`   This should not happen after migration! Please run migration script.`);
+      FileLog('| SyncUsers | SynchoMongoDB | DUPLICATE USERS:', userData.email, ` --- ${val} records found.`);
     }
 
   } catch (error) {
@@ -354,48 +372,87 @@ async function validateAndCleanupOrphanedUsers() {
     const allUsers = await PersonService.getAllPersons();
     const activeCopros = await coproService.listCopropriete();
     const activeCoproIds = new Set(activeCopros.map(c => c._id.toString()));
+    const allCopros = await MongoDB.getDatabase().collection('copropriete').find({}).toArray();
+    const allCoproIds = new Set(allCopros.map(c => c._id.toString()));
     
     let deactivatedCount = 0;
     let orphanedCount = 0;
+    let cleanedCoprosCount = 0;
     
     for (const user of allUsers) {
-      if (!user.idCopro) {
-        console.log(`⚠️ User ${user.email} has no copro ID - skipping`);
+      if (!user.idCopro || user.idCopro.length === 0) {
+        console.log(`⚠️ User ${user.email} has no copro IDs - marking inactive`);
+        if (user.active) {
+          await PersonService.editPerson(user._id, { 
+            active: false, 
+            updatedAt: new Date() 
+          });
+          orphanedCount++;
+        }
         continue;
       }
       
-      const userCoproId = user.idCopro.toString();
+      // ✅ MULTI-COPRO: Validate each copro in array
+      const validCopros = [];
+      let hasActiveCopro = false;
       
-      // Check if copro exists
-      const coproExists = await coproService.detailsCopropriete(userCoproId);
+      for (const coproId of user.idCopro) {
+        const coproIdStr = coproId.toString();
+        
+        // Check if copro exists
+        if (!allCoproIds.has(coproIdStr)) {
+          console.log(`❌ Copro ${coproIdStr} doesn't exist - removing from user ${user.email}`);
+          FileLog('| SyncUsers | validateAndCleanupOrphanedUsers | Removing non-existent copro:', coproIdStr, 'from user:', user.email);
+          continue; // Don't add to validCopros
+        }
+        
+        validCopros.push(coproId);
+        
+        // Check if at least one copro is active
+        if (activeCoproIds.has(coproIdStr)) {
+          hasActiveCopro = true;
+        }
+      }
       
-      if (!coproExists) {
-        // Copro doesn't exist - mark user as inactive
-        console.log(`❌ Copro ${userCoproId} doesn't exist for user ${user.email} - marking inactive`);
-        FileLog('| SyncUsers | validateAndCleanupOrphanedUsers | Orphaned user:', user.email, 'copro:', userCoproId);
-        
-        await PersonService.editPerson(user._id, { 
-          active: false, 
-          updatedAt: new Date() 
-        });
-        orphanedCount++;
-        
-      } else if (coproExists.status !== 'Actif' && user.active) {
-        // Copro is inactive but user is still active - deactivate user
-        console.log(`⚠️ Copro ${coproExists.idCopro} is inactive - deactivating user ${user.email}`);
-        FileLog('| SyncUsers | validateAndCleanupOrphanedUsers | Deactivating user:', user.email, 
-                'due to inactive copro:', coproExists.idCopro);
-        
-        await PersonService.editPerson(user._id, { 
-          active: false, 
-          updatedAt: new Date() 
-        });
-        deactivatedCount++;
+      // Update user if copros changed
+      const needsUpdate = validCopros.length !== user.idCopro.length || (!hasActiveCopro && user.active);
+      
+      if (needsUpdate) {
+        if (validCopros.length === 0) {
+          console.log(`⚠️ User ${user.email} has no valid copros - marking inactive and clearing copros`);
+          await PersonService.editPerson(user._id, { 
+            idCopro: [],
+            active: false, 
+            updatedAt: new Date() 
+          });
+          orphanedCount++;
+        } else {
+          const updateData = {
+            idCopro: validCopros,
+            updatedAt: new Date()
+          };
+          
+          if (!hasActiveCopro && user.active) {
+            console.log(`⚠️ User ${user.email} has no active copros - marking inactive`);
+            updateData.active = false;
+            deactivatedCount++;
+          }
+          
+          await PersonService.editPerson(user._id, updateData);
+          
+          if (validCopros.length < user.idCopro.length) {
+            console.log(`🧹 Cleaned ${user.idCopro.length - validCopros.length} invalid copros from user ${user.email}`);
+            cleanedCoprosCount++;
+          }
+        }
       }
     }
     
-    console.log(`✅ Cleanup complete: ${orphanedCount} orphaned users, ${deactivatedCount} users deactivated due to inactive copro`);
-    FileStatLog(`| SyncUsers | Cleanup Summary | Orphaned: ${orphanedCount}, Deactivated: ${deactivatedCount}`);
+    console.log(`✅ Cleanup complete:`);
+    console.log(`   ${orphanedCount} users with no valid copros marked inactive`);
+    console.log(`   ${deactivatedCount} users with only inactive copros marked inactive`);
+    console.log(`   ${cleanedCoprosCount} users had invalid copros removed`);
+    FileStatLog(`| SyncUsers | Cleanup Summary | Orphaned: ${orphanedCount}, Deactivated: ${deactivatedCount}, Cleaned: ${cleanedCoprosCount}`);
     
   } catch (error) {
     console.error('Error in validateAndCleanupOrphanedUsers:', error);
