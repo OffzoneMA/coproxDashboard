@@ -483,18 +483,23 @@ class ScriptService {
 
   /**
    * Mark scripts that have been "In Progress" (status: 2) for more than 24 hours as "Failed" (status: -1)
+   * Optimized version using bulk operations for better performance on serverless platforms
+   * @param {number} maxScripts - Maximum number of scripts to process (default: 50 for timeout safety)
    * @returns {Promise<Object>} Object with counts of updated logs
    */
-  static async markStaleInProgressScriptsAsFailed() {
+  static async markStaleInProgressScriptsAsFailed(maxScripts = 50) {
     return this.connectAndExecute(async () => {
       const twentyFourHoursAgo = new Date();
       twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
       logger.info('Marking stale in-progress scripts as failed', { 
-        meta: { thresholdDate: twentyFourHoursAgo.toISOString() } 
+        meta: { 
+          thresholdDate: twentyFourHoursAgo.toISOString(),
+          maxScripts 
+        } 
       });
 
-      // Find all scripts with logs that have status 2 (In Progress) and startTime older than 24 hours
+      // Find scripts with stale in-progress logs (limit for timeout safety)
       const scripts = await this.getScriptCollection().find({
         'logs': {
           $elemMatch: {
@@ -502,61 +507,82 @@ class ScriptService {
             startTime: { $lt: twentyFourHoursAgo }
           }
         }
-      }).toArray();
+      }).limit(maxScripts).toArray();
 
+      if (scripts.length === 0) {
+        logger.info('No stale scripts found');
+        return {
+          totalLogsUpdated: 0,
+          scriptsAffected: 0,
+          scriptNames: [],
+          thresholdDate: twentyFourHoursAgo,
+          hasMore: false
+        };
+      }
+
+      // Prepare bulk operations
+      const bulkOps = [];
       let totalUpdated = 0;
       const updatedScripts = [];
 
       for (const script of scripts) {
         let scriptUpdated = false;
-        
-        // Update each stale log in the script
-        for (const log of script.logs) {
+        const updatedLogs = script.logs.map(log => {
           if (log.status === 2 && new Date(log.startTime) < twentyFourHoursAgo) {
-            await this.getScriptCollection().updateOne(
-              { 
-                _id: script._id,
-                'logs.logId': log.logId 
-              },
-              {
-                $set: {
-                  'logs.$.status': -1,
-                  'logs.$.endTime': new Date(),
-                  'logs.$.message': 'Script marked as failed - exceeded 24 hour timeout'
-                }
-              }
-            );
             totalUpdated++;
             scriptUpdated = true;
-            
-            logger.info('Marked stale log as failed', { 
-              meta: { 
-                scriptName: script.name, 
-                logId: log.logId,
-                startTime: log.startTime 
-              } 
-            });
+            return {
+              ...log,
+              status: -1,
+              endTime: new Date(),
+              message: 'Script marked as failed - exceeded 24 hour timeout'
+            };
           }
-        }
+          return log;
+        });
 
         if (scriptUpdated) {
+          bulkOps.push({
+            updateOne: {
+              filter: { _id: script._id },
+              update: { $set: { logs: updatedLogs } }
+            }
+          });
           updatedScripts.push(script.name);
         }
       }
 
-      logger.info('Completed marking stale scripts as failed', { 
-        meta: { 
-          totalLogsUpdated: totalUpdated,
-          scriptsAffected: updatedScripts.length,
-          scriptNames: updatedScripts
-        } 
+      // Execute all updates in one bulk operation
+      if (bulkOps.length > 0) {
+        await this.getScriptCollection().bulkWrite(bulkOps);
+        
+        logger.info('Completed marking stale scripts as failed', { 
+          meta: { 
+            totalLogsUpdated: totalUpdated,
+            scriptsAffected: updatedScripts.length,
+            scriptNames: updatedScripts.slice(0, 10) // Log first 10 to avoid huge logs
+          } 
+        });
+      }
+
+      // Check if there might be more stale scripts
+      const remainingCount = await this.getScriptCollection().countDocuments({
+        'logs': {
+          $elemMatch: {
+            status: 2,
+            startTime: { $lt: twentyFourHoursAgo }
+          }
+        }
       });
 
       return {
         totalLogsUpdated: totalUpdated,
         scriptsAffected: updatedScripts.length,
         scriptNames: updatedScripts,
-        thresholdDate: twentyFourHoursAgo
+        thresholdDate: twentyFourHoursAgo,
+        hasMore: remainingCount > maxScripts,
+        processed: scripts.length,
+        remaining: Math.max(0, remainingCount - scripts.length)
       };
     });
   }

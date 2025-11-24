@@ -113,9 +113,33 @@ class ScriptController {
   }
 
   static async cleanupStaleScripts(req, res) {
-    return ScriptController.sendResponse(res, () => 
-      ScriptService.markStaleInProgressScriptsAsFailed()
-    );
+    try {
+      // Get limit from query params (default: 50 for timeout safety)
+      const limit = parseInt(req.query.limit) || 50;
+      
+      // Set timeout warning (serverless functions have limited time)
+      const timeoutWarning = setTimeout(() => {
+        console.warn('Cleanup operation taking longer than expected');
+      }, 25000); // Warn after 25 seconds
+      
+      const result = await ScriptService.markStaleInProgressScriptsAsFailed(limit);
+      clearTimeout(timeoutWarning);
+      
+      return res.status(200).json({ 
+        success: true, 
+        data: result,
+        message: result.hasMore 
+          ? `Processed ${result.processed} scripts. ${result.remaining} more need processing. Call again to continue.`
+          : 'All stale scripts have been cleaned up.'
+      });
+    } catch (error) {
+      console.error(`Cleanup stale scripts failed: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        error: error.message,
+        hint: 'Try using ?limit=25 for smaller batches if timeout occurs'
+      });
+    }
   }
 
   static async cleanupAllInProgressScripts(req, res) {

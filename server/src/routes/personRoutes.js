@@ -13,6 +13,10 @@ router.get('/getAllPersons', PersonController.getAllPersons);
 router.get('/getAllPersonsWithCopro', PersonController.getAllPersonsWithCopro);
 router.get('/countAllPersons', PersonController.countAllPersons);
 
+// Modern API endpoints (cleaner URLs)
+router.get('/', PersonController.getAllPersons);  // GET /person?limit=50&page=1
+router.get('/copro', PersonController.getAllPersonsWithCopro);  // GET /person/copro?limit=50&page=1
+
 // Solde management routes
 router.post('/:id/solde', PersonController.updatePersonSolde);
 router.get('/solde/negative', PersonController.getPersonsWithNegativeSolde);
