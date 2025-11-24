@@ -61,12 +61,23 @@ async function editPerson(id, updatedPersonData = {}) {
 async function getPerson(id) {
   return connectAndExecute(async () => {
     const personCollection = MongoDB.getCollection('person');
+    const coproCollection = MongoDB.getCollection('copropriete');
     const _id = toObjectId(id);
 
     const person = await personCollection.findOne({ _id });
     if (!person) return null;
 
-    logger.info('Get person', { meta: { id: String(_id) } });
+    // Enrich with full copro details for detail view
+    if (person.idCopro) {
+      try {
+        const copro = await coproCollection.findOne({ _id: person.idCopro });
+        person.copro = copro;
+      } catch (e) {
+        logger.warn('Failed to fetch copro for person', { meta: { personId: String(_id), error: e.message } });
+      }
+    }
+
+    logger.info('Get person with full copro', { meta: { id: String(_id) } });
     return person;
   });
 }
@@ -153,39 +164,83 @@ async function getAllPersons(options = {}) {
 }
 
 /**
- * Returns all persons, each enriched with Vilogi proprietaire details.
- * (Fixes the old typo "Coppro".)
+ * Returns persons with minimal copro data - optimized for list views
+ * Only includes: Nom, ville, codepostal, idCopro from copro
  */
-async function getAllPersonsWithCopro() {
+async function getAllPersonsWithCopro(options = {}) {
   return connectAndExecute(async () => {
     const personCollection = MongoDB.getCollection('person');
-    const persons = await personCollection.find({}).toArray();
-
-    // Enrich in parallel but don’t fail the whole call if one enrichment fails
-    const enriched = await Promise.all(
-      persons.map(async (p) => {
-        try {
-          if (p.idCopro) {
-            const coproCollection = MongoDB.getCollection('copropriete');
-            const copro = await coproCollection.findOne({ _id: p.idCopro });
-            return {
-              ...p,
-              copro
-            };
-          }
-          return p;
-        } catch (e) {
-          // If copro lookup fails for one person, still return the base person
-          return {
-            ...p,
-            coproError: e?.message || 'Failed to fetch copro data'
-          };
+    
+    const {
+      limit = 100,
+      skip = 0,
+      sort = { nom: 1 },
+      filter = {}
+    } = options;
+    
+    // Use aggregation pipeline for efficient lookup with projection
+    const pipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'copropriete',
+          localField: 'idCopro',
+          foreignField: '_id',
+          as: 'copro',
+          // Project only minimal copro fields
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                Nom: 1,
+                ville: 1,
+                codepostal: 1,
+                idCopro: 1
+              }
+            }
+          ]
         }
-      })
-    );
-
-    logger.info('Get all persons with copro', { meta: { count: enriched.length } });
-    return enriched;
+      },
+      { $unwind: { path: '$copro', preserveNullAndEmptyArrays: true } },
+      { $sort: sort },
+      {
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: limit }
+          ],
+          totalCount: [
+            { $count: 'count' }
+          ]
+        }
+      }
+    ];
+    
+    const [result] = await personCollection.aggregate(pipeline).toArray();
+    const data = result.data || [];
+    const total = result.totalCount[0]?.count || 0;
+    
+    logger.info('Get all persons with minimal copro', { 
+      meta: { 
+        count: data.length, 
+        total, 
+        skip, 
+        limit 
+      } 
+    });
+    
+    return {
+      data,
+      pagination: {
+        total,
+        count: data.length,
+        skip,
+        limit,
+        hasMore: skip + data.length < total,
+        page: Math.floor(skip / limit) + 1,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   });
 }
 

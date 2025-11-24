@@ -2841,26 +2841,139 @@ Monitor application health through:
 
 ## 🚀 Deployment
 
-### Docker Deployment
+### ⚠️ IMPORTANT: Deployment Architecture
+
+CoproxDashboard has **TWO DISTINCT COMPONENTS** that require different deployment strategies:
+
+#### 1. API Server (Can deploy on Vercel/Serverless)
+- ✅ All REST API endpoints
+- ✅ Cron configuration endpoints (`/cron-config/*`)
+- ✅ Script management (`/script/*`)
+- ✅ Monitoring and stats
+- ❌ Does NOT execute cron jobs
+
+#### 2. Cron Execution Server (Requires Dedicated Server)
+- ✅ Runs scheduled cron jobs
+- ✅ Executes scripts on schedule
+- ✅ Processes manual triggers
+- ⚠️ MUST be a persistent process (VPS, EC2, etc.)
+- ⚠️ Cannot run on Vercel/AWS Lambda/serverless platforms
+
+**See `VERCEL_CRON_SEPARATION.md` for detailed architecture explanation**
+
+### Deployment Option 1: Hybrid (Recommended)
+
+**Vercel for API + Dedicated Server for Cron**
+
+```bash
+# Deploy API to Vercel
+vercel deploy
+
+# Deploy cron server to VPS/EC2/DigitalOcean
+# (Same codebase, different environment)
+git clone <repo>
+cd server
+npm install
+node index.js  # Cron system will auto-start (no VERCEL env var)
+```
+
+### Deployment Option 2: All-in-One Server
+
+**Single VPS/Cloud VM running both API and Cron**
+
 ```bash
 # Production build
 docker-compose -f docker-compose.prod.yml up --build -d
 
-# Scaling services
-docker-compose up --scale server=3 --scale front=2
+# Or manual deployment
+cd server
+npm install
+NODE_ENV=production node index.js
 ```
 
-### Manual Deployment
-1. Build frontend: `cd front && npm run build`
-2. Start backend: `cd server && npm start`
-3. Configure reverse proxy (nginx/apache)
-4. Set up SSL certificates
-5. Configure monitoring and logging
+### Deployment Option 3: Docker Deployment
+
+```bash
+# Scaling services
+docker-compose up --scale server=3 --scale front=2
+
+# Cron runs in one of the server instances
+```
+
+### Environment Detection
+
+The system automatically detects the environment:
+
+**On Vercel/Serverless:**
+```
+⚠️ SERVERLESS ENVIRONMENT DETECTED
+⚠️ Cron execution is DISABLED
+⚠️ This instance only serves API endpoints
+```
+
+**On Dedicated Server:**
+```
+✓ Regular server environment detected
+✓ Initializing cron system...
+✓ Cron system initialized with X jobs
+```
+
+### First-Time Cron Setup
+
+**Required on dedicated server only:**
+
+```bash
+# 1. Seed database with cron configurations
+curl -X POST http://your-server:8081/cron-config/seed
+
+# 2. Reload cron system
+curl -X POST http://your-server:8081/cron-config/reload
+
+# 3. Verify
+curl http://your-server:8081/cron-config/enabled
+```
+
+### Manual Deployment Steps
+
+1. **Build frontend**: `cd front && npm run build`
+2. **Deploy API** (Vercel or server): API endpoints only
+3. **Deploy Cron Server** (dedicated server): Full system with cron
+4. **Configure MongoDB**: Same database for both
+5. **Set environment variables**: Different for each deployment
+6. **Initialize cron database**: Run seed endpoint
+7. **Set up reverse proxy**: nginx/apache for dedicated server
+8. **Configure SSL certificates**: For production
+9. **Set up monitoring**: Prometheus metrics
 
 ### Environment-specific Configurations
-- **Development**: Hot reload, debug logging
-- **Staging**: Production-like with test data
-- **Production**: Optimized builds, error tracking
+
+- **Development**: Hot reload, debug logging, cron enabled
+- **Staging**: Production-like with test data, cron optional
+- **Production API (Vercel)**: Optimized builds, cron disabled
+- **Production Cron (Dedicated)**: Error tracking, cron enabled
+
+### Recommended Architecture
+
+```
+┌─────────────────────────┐
+│   Vercel (Serverless)   │
+│   - API Endpoints       │ ← Users access here
+│   - Configuration UI    │
+└─────────────────────────┘
+           ↓ (HTTP)
+      Same MongoDB
+           ↑ (MongoDB)
+┌─────────────────────────┐
+│  Dedicated Server (VPS) │
+│  - Cron Execution       │ ← Scheduled jobs run here
+│  - Script Processing    │
+└─────────────────────────┘
+```
+
+**Documentation:**
+- `VERCEL_CRON_SEPARATION.md` - Deployment architecture
+- `QUICKSTART_CRON.md` - Cron setup guide
+- `DATABASE_CRON_MIGRATION.md` - Database configuration
 
 ## 🤝 Contributing
 
